@@ -38,7 +38,9 @@ class ApiSettings(Fieldset):
 
 
 class AppSettings(Fieldset):
-    hash_salt = Field[str](generate_random_string).label("Salt for generate user tokens")
+    hash_salt = Field[str](generate_random_string).label("Salt for generate user password")
+    tokens_expirations_days = Field[int](30).label("Expiration date of the user token") \
+        .hint("If set to 0, the tokens will never expire (NOT RECOMENDED)")
 
 
 class LogSettings(Fieldset):

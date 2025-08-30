@@ -60,3 +60,7 @@ class NotFoundError(BaseHourtimeException):
 class DataUniqueError(BaseHourtimeException):
     api_status_code = 409
 
+
+class AuthentificationError(BaseHourtimeException):
+    api_status_code = 401
+
