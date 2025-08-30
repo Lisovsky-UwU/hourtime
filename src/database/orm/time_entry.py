@@ -10,7 +10,7 @@ from . import Base
 class TimeEntryORM(Base):
     __tablename__ = "time_entries"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     comment: Mapped[str | None]
     workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"))

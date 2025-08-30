@@ -1,7 +1,8 @@
 from src.database.orm.organization import OrganizationORM
 from src.database.orm.user import UserORM
+from src.database.orm.user_token import UserTokenORM
 from src.models.organization import OrganizationModel
-from src.models.user import UserModel
+from src.models.user import UserModel, UserTokenModel
 
 
 class DatabaseModelsConverter:
@@ -13,6 +14,15 @@ class DatabaseModelsConverter:
             username=user_orm.username,
             display_name=user_orm.display_name,
             pass_hash=user_orm.pass_hash,
+        )
+
+    @classmethod
+    def user_token_orm_to_model(cls, token_orm: UserTokenORM) -> UserTokenModel:
+        return UserTokenModel(
+            id=token_orm.id,
+            user=cls.user_orm_to_model(token_orm.user),
+            token=token_orm.token,
+            created_at=token_orm.created_at,
         )
 
     @staticmethod

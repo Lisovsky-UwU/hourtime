@@ -12,3 +12,8 @@ class UpdateUserPayload(BaseModel):
     username: str
     display_name: str
 
+
+class CreateUserTokenPayload(BaseModel):
+    user_id: int
+    token: str
+
