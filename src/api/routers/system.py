@@ -11,3 +11,4 @@ def ping() -> dict:
         "status": True,
         "version": APP_VERSION,
     }
+

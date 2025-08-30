@@ -23,6 +23,10 @@ class PostgreSettings(Fieldset):
     def connection_string(self) -> str:
         return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
 
+    @property
+    def connection_string_psycopg(self) -> str:
+        return f"postgresql+psycopg2://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
+
 
 class ApiSettings(Fieldset):
     host = Field[str]("0.0.0.0").label("API address (default 0.0.0.0 - host to all networks)")
@@ -42,7 +46,6 @@ class LogSettings(Fieldset):
         f'Available values: {", ".join(val.value for val in LoggerLevel)}',
     )
     retention = Field[int](10).label("How many days are the old logs stored")
-    max_log_file_size = Field[int](100).label("Maximum log file size in MB")
     output_log_to_stdout = Field[bool](False).label("Output logs in StdOut")
 
 

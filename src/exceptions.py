@@ -52,3 +52,11 @@ class BaseHourtimeException(Exception):
 class ConfigurationError(BaseHourtimeException):
     api_status_code = 500
 
+
+class NotFoundError(BaseHourtimeException):
+    api_status_code = 404
+
+
+class DataUniqueError(BaseHourtimeException):
+    api_status_code = 409
+
