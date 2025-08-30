@@ -8,7 +8,7 @@ class BaseHourtimeException(Exception):
         self.error_code = error_code
         self.message = message
         self.detail = detail
-        super().__init__(message)
+        super().__init__(detail)
 
     def to_fastapi_response(self) -> Response:
         return JSONResponse(
@@ -47,4 +47,8 @@ class BaseHourtimeException(Exception):
             result[cls.api_status_code]["description"] = api_description
 
         return result
+
+
+class ConfigurationError(BaseHourtimeException):
+    api_status_code = 500
 

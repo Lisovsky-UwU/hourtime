@@ -34,9 +34,10 @@ def alembic_cfg(db_connection_string: str) -> Generator[config.Config, Any, Any]
 
 def do_migrate(db_connection_string: str) -> None:
     try:
-        logger.info("Check database migrations")
+        logger.info("Checking and applying database migrations")
         with alembic_cfg(db_connection_string) as cfg:
             command.upgrade(cfg, "head")
+        logger.success("All migrations are complited")
     except Exception as e:
         logger.exception("Error to apply database migrations")
         raise e
