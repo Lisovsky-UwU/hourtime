@@ -1,4 +1,3 @@
-from logging import exception
 from sqlalchemy import exists, select
 
 from src.cache_constants import CacheConst

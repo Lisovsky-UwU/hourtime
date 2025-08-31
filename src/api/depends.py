@@ -1,16 +1,15 @@
-from typing import Any, AsyncGenerator
-
-from aiocache import BaseCache
 from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader
 
-from src.cache import AppCacher
 from src.config import app_config
 from src.models.user import UserModel
+from src.repository.organization import OrganizationRepositoryDB
 from src.repository.user import UserRepositoryDB
 from src.repository.user_token import UserTokenRepositoryDB
+from src.service.organization import OrganizationService
 from src.service.user import UserService
 from src.service.user_auth import UserAuthService
+from src.use_case.organization import OrganizationUseCase
 from src.use_case.user import UserUseCase
 from src.use_case.user_tokens import UserTokenUseCase
 
@@ -18,14 +17,9 @@ app = FastAPI()
 header_scheme = APIKeyHeader(name="User-Token")
 
 
-async def cacher_depends() -> AsyncGenerator[BaseCache, Any]:
-    async with AppCacher.cacher_factory() as cache:
-        yield cache
-
 def service_user_auth_depends(
     user_repository: UserUseCase = Depends(UserRepositoryDB),
     token_repository: UserTokenUseCase = Depends(UserTokenRepositoryDB),
-    cacher: BaseCache = Depends(cacher_depends),
 ) -> UserAuthService:
     return UserAuthService(
         user_repository=user_repository,
@@ -36,6 +30,11 @@ def service_user_auth_depends(
 
 def service_user_depends(user_repository: UserUseCase = Depends(UserRepositoryDB)) -> UserService:
     return UserService(user_repository=user_repository)
+
+def service_organization_depends(
+    organization_repository: OrganizationUseCase = Depends(OrganizationRepositoryDB),
+) -> OrganizationService:
+    return OrganizationService(organization_repository)
 
 async def check_user_token(
     token: str = Depends(header_scheme),

@@ -61,8 +61,8 @@ class DataBaseSession:
     @classmethod
     @asynccontextmanager
     async def get_session(cls, autoflush: bool = False, expire_on_commit: bool = False):
-        logger.trace("Open db session")
         session = cls.session_factory(autoflush=autoflush, expire_on_commit=expire_on_commit)
+        logger.trace("Open db session")
         try:
             yield session
             await session.commit()

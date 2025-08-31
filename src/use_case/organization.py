@@ -5,7 +5,8 @@ from src.dto.organization import (
     CreateOrganizationPayload,
     UpdateOrganizationPayload,
 )
-from src.models.organization import OrganizationModel
+from src.models.common import UserAccess
+from src.models.organization import OrganizationModel, UserOrganizationModel
 
 
 class OrganizationUseCase(abc.ABC):
@@ -19,6 +20,18 @@ class OrganizationUseCase(abc.ABC):
         self,
         payload: AddUserToOrganizationPayload,
     ) -> OrganizationModel:
+        ...
+
+    @abc.abstractmethod
+    async def get_user_organizations(self, user_id: int) -> list[UserOrganizationModel]:
+        ...
+
+    @abc.abstractmethod
+    async def get_user_access_in_organization(
+        self,
+        user_id: int,
+        organization_id: int,
+    ) -> UserAccess | None:
         ...
 
     @abc.abstractmethod

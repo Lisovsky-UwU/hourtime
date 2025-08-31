@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import UUID, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.models.organization import UserAccess
+from src.models.common import UserAccess
 
 from . import Base
 

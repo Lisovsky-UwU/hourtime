@@ -1,20 +1,14 @@
-from enum import StrEnum
-
 from pydantic import BaseModel
 
-
-class UserAccess(StrEnum):
-    OWNER = "Owner"
-    FULL = "Full Access"
-    PARTIAL = "Partial Access"
-
-
-class UserOrganizationSettingsModel(BaseModel):
-    user_id: int
-    access: UserAccess
+from .common import UserAccess
 
 
 class OrganizationModel(BaseModel):
     id: int
     name: str
+
+class UserOrganizationModel(BaseModel):
+    organization_id: int
+    organization_name: str
+    access: UserAccess
 

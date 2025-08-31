@@ -9,7 +9,8 @@ from src.dto.organization import (
     UpdateOrganizationPayload,
 )
 from src.exceptions import NotFoundError
-from src.models.organization import OrganizationModel
+from src.models.common import UserAccess
+from src.models.organization import OrganizationModel, UserOrganizationModel
 from src.use_case.organization import OrganizationUseCase
 
 from .mixin import DatabaseRepositoryMixin
@@ -61,6 +62,49 @@ class OrganizationRepositoryDB(DatabaseRepositoryMixin, OrganizationUseCase):
         await self.session.commit()
         await self.session.refresh(organization_orm)
         return DatabaseModelsConverter.organization_orm_to_model(organization_orm)
+
+    async def get_user_organizations(self, user_id: int) -> list[UserOrganizationModel]:
+        query = (
+            select(OrganizationORM.id, OrganizationORM.name, LinkUserOrganizationORM.access)
+            .join(
+                LinkUserOrganizationORM,
+                LinkUserOrganizationORM.organization_id == OrganizationORM.id,
+            )
+            .filter(OrganizationORM.deleted == False, LinkUserOrganizationORM.user_id == user_id)  # noqa: E712
+        )
+        result = await self.session.execute(query)
+        response: list[UserOrganizationModel] = []
+        for row in result:
+            response.append(
+                UserOrganizationModel(
+                    organization_id=row[0],
+                    organization_name=row[1],
+                    access=row[2],
+                ),
+            )
+
+        return response
+
+    async def get_user_access_in_organization(
+        self,
+        user_id: int,
+        organization_id: int,
+    ) -> UserAccess | None:
+        query = (
+            select(LinkUserOrganizationORM.access)
+            .select_from(OrganizationORM)
+            .join(
+                LinkUserOrganizationORM,
+                LinkUserOrganizationORM.organization_id == OrganizationORM.id,
+            )
+            .filter(
+                OrganizationORM.deleted == False,  # noqa: E712
+                LinkUserOrganizationORM.user_id == user_id,
+                LinkUserOrganizationORM.organization_id == organization_id,
+            )
+        )
+        result = await self.session.execute(query)
+        return result.scalar()
 
     async def update_organization(self, payload: UpdateOrganizationPayload) -> OrganizationModel:
         organization_orm = await self._get_orm_by_id(payload.organization_id)

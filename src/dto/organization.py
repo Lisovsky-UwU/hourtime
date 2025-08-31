@@ -10,7 +10,6 @@ class CreateOrganizationPayload(BaseModel):
 class UpdateOrganizationPayload(BaseModel):
     organization_id: int
     name: str
-    users_to_add: list[int]
 
 
 class AddUserToOrganizationElement(BaseModel):
