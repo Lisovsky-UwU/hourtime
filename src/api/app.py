@@ -3,8 +3,13 @@ from fastapi import FastAPI
 from loguru import logger
 from sqlalchemy.exc import OperationalError
 
-from src.api.handlers import handle_app_exception, handle_database_error, handle_uncatch_exception
-from src.api.routers import api_v1_route, system_route
+from src.api.handlers import (
+    handle_404_error,
+    handle_app_exception,
+    handle_database_error,
+    handle_uncatch_exception,
+)
+from src.api.routers import api_route
 from src.exceptions import BaseHourtimeException
 from version import APP_VERSION
 
@@ -13,15 +18,14 @@ def build_app() -> FastAPI:
     logger.trace("Build API app")
     app = FastAPI(version=APP_VERSION, description="Hourtime app API")
 
-    logger.trace("Registring router api/v1")
-    app.include_router(api_v1_route)
-    logger.trace("Registring router system")
-    app.include_router(system_route)
+    logger.trace("Registring router api")
+    app.include_router(api_route)
 
     logger.trace("Registring exception handlers")
     app.add_exception_handler(Exception, handle_uncatch_exception)
     app.add_exception_handler(OperationalError, handle_database_error) # type: ignore
     app.add_exception_handler(BaseHourtimeException, handle_app_exception) # type: ignore
+    app.add_exception_handler(404, handle_404_error)
 
     return app
 
@@ -34,5 +38,12 @@ def start_api(host: str, port: int, ssl_cert_path: str | None, ssl_key_path: str
         host=host,
         port=port,
     )
-    uvicorn.run(app, host=host, port=port, ssl_certfile=ssl_cert_path, ssl_keyfile=ssl_key_path)
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        ssl_certfile=ssl_cert_path,
+        ssl_keyfile=ssl_key_path,
+        log_level="critical",
+    )
 

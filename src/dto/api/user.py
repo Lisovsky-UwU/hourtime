@@ -1,13 +1,20 @@
 from pydantic import BaseModel
 
+from src.models.user import UserModel
 
-class UserLoginDTO(BaseModel):
+
+class UserLoginRequest(BaseModel):
     username: str
     password: str
 
 
-class UserRegisteringDTO(BaseModel):
+class UserRegisteringRequest(BaseModel):
     username: str
     display_name: str
     password: str
+
+
+class UserAuthentificationResponse(BaseModel):
+    token: str
+    user_data: UserModel
 

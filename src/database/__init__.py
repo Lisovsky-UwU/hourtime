@@ -61,6 +61,7 @@ class DataBaseSession:
     @classmethod
     @asynccontextmanager
     async def get_session(cls, autoflush: bool = False, expire_on_commit: bool = False):
+        logger.trace("Open db session")
         session = cls.session_factory(autoflush=autoflush, expire_on_commit=expire_on_commit)
         try:
             yield session
@@ -71,5 +72,11 @@ class DataBaseSession:
                 logger.exception("Session transaction failed: {}", exc)
             raise
         finally:
+            logger.trace("Close db session")
             await session.close()
+
+    @classmethod
+    async def session_generator_for_depends(cls):
+        async with cls.get_session() as session:
+            yield session
 

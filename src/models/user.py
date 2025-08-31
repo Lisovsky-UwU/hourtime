@@ -1,14 +1,14 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UserModel(BaseModel):
     id: int
     username: str
     display_name: str
-    pass_hash: str
+    pass_hash: str = Field(exclude=True)
 
 
 class UserTokenModel(BaseModel):

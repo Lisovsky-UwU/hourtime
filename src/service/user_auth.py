@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from aiocache import cached
 from aiocache.serializers import PickleSerializer
 
-from src.dto.api.user import UserLoginDTO, UserRegisteringDTO
+from src.dto.api.user import UserLoginRequest, UserRegisteringRequest
 from src.dto.user import CreateUserPayload, CreateUserTokenPayload
 from src.exceptions import AuthentificationError, NotFoundError
 from src.models.user import UserModel, UserTokenModel
@@ -28,8 +28,8 @@ class UserAuthService:
 
     async def generate_token(self, user_id: int) -> UserTokenModel:
         while True:
-            str_token = secrets.token_hex(64)
-            if not self.token_repository.check_token_is_exists(str_token):
+            str_token = secrets.token_hex(32)
+            if not await self.token_repository.check_token_is_exists(str_token):
                 break
         token_model = await self.token_repository.create_token(CreateUserTokenPayload(
             user_id=user_id,
@@ -37,7 +37,7 @@ class UserAuthService:
         ))
         return token_model
 
-    async def registrate_user(self, payload: UserRegisteringDTO) -> UserTokenModel:
+    async def registrate_user(self, payload: UserRegisteringRequest) -> UserTokenModel:
         pass_hash = calculate_hash(payload.password, self.hash_salt)
         user_model = await self.user_repository.create_user(CreateUserPayload(
             username=payload.username,
@@ -46,7 +46,7 @@ class UserAuthService:
         ))
         return await self.generate_token(user_model.id)
 
-    async def login_user(self, payload: UserLoginDTO) -> UserTokenModel:
+    async def login_user(self, payload: UserLoginRequest) -> UserTokenModel:
         try:
             user_model = await self.user_repository.get_by_username(payload.username)
             pass_hash = calculate_hash(payload.password, self.hash_salt)

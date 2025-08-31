@@ -7,7 +7,8 @@ from fastapi.routing import APIRoute
 from loguru import logger
 from sqlalchemy.exc import OperationalError
 
-from src.exceptions import BaseHourtimeException
+from src.dto.api.error import ErrorResponse
+from src.exceptions import BaseHourtimeException, NotFoundError
 
 
 def get_request_string(request: Request, request_op: str = "->") -> str:
@@ -88,46 +89,71 @@ class LoggingRoute(APIRoute):
         return custom_route_handler
 
 def handle_uncatch_exception(request: Request, exc: Exception) -> Response:
-    content = {
-        "type": "UnexpectedException",
-        "detail": "Unknown error inside",
-        "more": str(exc),
-    }
-    logger.info(
-        "{pref}: {body}",
+    content = ErrorResponse(
+        error_type="UnexpectedException",
+        error_code=500,
+        user_message="Unknown error inside",
+        detail=str(exc),
+    ).model_dump_json()
+    logger.error(
+        "{pref} (ERROR): {body}",
         pref=get_request_string(request, request_op="<-"),
-        body=json.dumps(content, ensure_ascii=False),
+        body=content,
     )
-    return JSONResponse(
+    return Response(
         content=content,
+        media_type="application/json",
         status_code=500,
     )
 
 def handle_app_exception(request: Request, exc: BaseHourtimeException) -> Response:
-    content = {
-        "type": exc.__class__.__name__,
-        "detail": str(exc),
-    }
+    content = exc.model.model_dump_json()
     logger.info(
         "{pref} (ERROR): {body}",
         pref=get_request_string(request, request_op="<-"),
-        body=json.dumps(content, ensure_ascii=False),
+        body=content,
     )
-    return exc.to_fastapi_response()
+    return Response(
+        content=content,
+        media_type="application/json",
+        status_code=exc.api_status_code,
+    )
 
 def handle_database_error(request: Request, exc: OperationalError) -> Response:
-    content = {
-        "type": "DataBaseException",
-        "detail": "Error request to the database.",
-        "more": str(exc),
-    }
-    logger.info(
+    content = ErrorResponse(
+        error_type="DataBaseError",
+        error_code=503,
+        user_message="Error request to database",
+        detail=str(exc),
+    ).model_dump_json()
+    logger.error(
         "{pref} (ERROR): {body}",
         pref=get_request_string(request, request_op="<-"),
-        body=json.dumps(content, ensure_ascii=False),
+        body=content,
     )
-    return JSONResponse(
+    return Response(
         content=content,
+        media_type="application/json",
         status_code=503,
+    )
+
+def handle_404_error(request: Request, exc: Exception) -> Response:
+    if isinstance(exc, NotFoundError):
+        return handle_app_exception(request, exc)
+    content = ErrorResponse(
+        error_type="RouteNotFound",
+        error_code=404,
+        user_message="Couldn't find the path",
+        detail=None,
+    ).model_dump_json()
+    logger.error(
+        "{pref} (ERROR): {body}",
+        pref=get_request_string(request, request_op="<-"),
+        body=content,
+    )
+    return Response(
+        content=content,
+        media_type="application/json",
+        status_code=404,
     )
 
