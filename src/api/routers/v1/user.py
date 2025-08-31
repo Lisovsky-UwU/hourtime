@@ -22,7 +22,7 @@ async def get_my_user_info(
     return user_model
 
 
-@user_route.post("/me/update")
+@user_route.put("/me/update")
 async def update_user_data(
     request_body: UpdateUserRequest,
     user_model: UserModel = Depends(check_user_token),
@@ -35,7 +35,7 @@ async def update_user_data(
     return new_user_model
 
 
-@user_route.post("/me/change_password")
+@user_route.put("/me/change_password")
 async def change_user_password(
     request_body: ChangeUserPasswordRequest,
     user_model: UserModel = Depends(check_user_token),
