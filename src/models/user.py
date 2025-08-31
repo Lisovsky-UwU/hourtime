@@ -13,7 +13,7 @@ class UserModel(BaseModel):
 
 class UserTokenModel(BaseModel):
     id: uuid.UUID
-    user: UserModel
+    user_id: int
     token: str
     created_at: datetime
 

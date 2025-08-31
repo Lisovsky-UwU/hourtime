@@ -16,5 +16,14 @@ class UserRegisteringRequest(BaseModel):
 
 class UserAuthentificationResponse(BaseModel):
     token: str
-    user_data: UserModel
+
+
+class UpdateUserRequest(BaseModel):
+    username: str
+    display_name: str
+
+
+class ChangeUserPasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
 

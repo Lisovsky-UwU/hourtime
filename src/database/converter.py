@@ -20,7 +20,7 @@ class DatabaseModelsConverter:
     def user_token_orm_to_model(cls, token_orm: UserTokenORM) -> UserTokenModel:
         return UserTokenModel(
             id=token_orm.id,
-            user=cls.user_orm_to_model(token_orm.user),
+            user_id=token_orm.user_id,
             token=token_orm.token,
             created_at=token_orm.created_at,
         )

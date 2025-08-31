@@ -2,7 +2,7 @@ import json
 
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 from fastapi.routing import APIRoute
 from loguru import logger
 from sqlalchemy.exc import OperationalError

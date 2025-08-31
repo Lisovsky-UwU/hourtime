@@ -1,10 +1,7 @@
 import secrets
 from datetime import datetime, timedelta
 
-from aiocache import cached
-from aiocache.serializers import PickleSerializer
-
-from src.dto.api.user import UserLoginRequest, UserRegisteringRequest
+from src.dto.api.user import ChangeUserPasswordRequest, UserLoginRequest, UserRegisteringRequest
 from src.dto.user import CreateUserPayload, CreateUserTokenPayload
 from src.exceptions import AuthentificationError, NotFoundError
 from src.models.user import UserModel, UserTokenModel
@@ -16,7 +13,8 @@ from src.utils import calculate_hash
 class UserAuthService:
 
     def __init__(
-        self, user_repository: UserUseCase,
+        self,
+        user_repository: UserUseCase,
         token_repository: UserTokenUseCase,
         tokens_expirations_days: int,
         hash_salt: str,
@@ -31,11 +29,10 @@ class UserAuthService:
             str_token = secrets.token_hex(32)
             if not await self.token_repository.check_token_is_exists(str_token):
                 break
-        token_model = await self.token_repository.create_token(CreateUserTokenPayload(
+        return await self.token_repository.create_token(CreateUserTokenPayload(
             user_id=user_id,
             token=str_token,
         ))
-        return token_model
 
     async def registrate_user(self, payload: UserRegisteringRequest) -> UserTokenModel:
         pass_hash = calculate_hash(payload.password, self.hash_salt)
@@ -60,24 +57,37 @@ class UserAuthService:
                 "Username or password is incorrect",
             ) from exc
 
-    @cached(ttl=300, serializer=PickleSerializer())
-    async def check_token(self, token: str) -> UserModel | AuthentificationError:
+    async def check_token(self, token: str) -> UserModel:
         try:
             token_model = await self.token_repository.get_token(token)
-        except NotFoundError:
-            return AuthentificationError(
+            token_expiration_date = token_model.created_at + timedelta(
+                days=self.tokens_expirations_days,
+            )
+            if datetime.now() > token_expiration_date:
+                raise AuthentificationError(
+                    15,
+                    "Invalid token",
+                    "The transferred token was not found or expired.",
+                )
+
+            return await self.user_repository.get_by_id(token_model.user_id)
+
+        except NotFoundError as exc:
+            raise AuthentificationError(
                 15,
                 "Invalid token",
                 "Given token was not found or expired.",
+            ) from exc
+
+    async def change_user_password(self, user_id: int, payload: ChangeUserPasswordRequest) -> None:
+        user_model = await self.user_repository.get_by_id(user_id)
+        old_pass_hash = calculate_hash(payload.old_password, self.hash_salt)
+        if user_model.pass_hash != old_pass_hash:
+            raise AuthentificationError(
+                16,
+                "Invalid old password",
+                "Old password does not match installed one",
             )
-        token_expiration_date = token_model.created_at + timedelta(
-            days=self.tokens_expirations_days,
-        )
-        if datetime.now() > token_expiration_date:
-            return AuthentificationError(
-                15,
-                "Invalid token",
-                "The transferred token was not found or expired.",
-            )
-        return token_model.user
+        new_pass_hash = calculate_hash(payload.new_password, self.hash_salt)
+        await self.user_repository.update_user_pass_hash(user_id, new_pass_hash)
 

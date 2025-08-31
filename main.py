@@ -3,6 +3,7 @@ import asyncio
 from loguru import logger
 
 from src.api import start_api
+from src.cache import AppCacher
 from src.config import APP_CONFIG_FILENAME, DEV_CONFIG_FILENAME, app_config, dev_config
 from src.database import DataBaseSession
 from src.logger import configure_logger, start_log
@@ -25,6 +26,10 @@ def main() -> None:
     DataBaseSession.create_engine()
     logger.success("Connection to the database has been successfully initialized")
 
+    logger.info("Initializing application cache")
+    AppCacher.setup_cache()
+    logger.success("application cache has been successfully initialized")
+
     try:
         start_api(
             host=app_config.api_server.host,
@@ -44,6 +49,11 @@ def main() -> None:
         logger.info("Close connection to the database")
         asyncio.run(DataBaseSession.close_engine())
         logger.info("The database connection has been closed")
+
+        logger.info("Close cache connection")
+        asyncio.run(AppCacher.close_cache())
+        logger.info("Cache connection has been closed")
+
         logger.success(f"{''.ljust(15, '=')} The app has shut down {''.ljust(15, '=')}")
 
 

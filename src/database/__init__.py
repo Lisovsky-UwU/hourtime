@@ -69,14 +69,14 @@ class DataBaseSession:
         except Exception as exc:
             await session.rollback()
             if not isinstance(exc, BaseHourtimeException):
-                logger.exception("Session transaction failed: {}", exc)
+                logger.error("Session transaction failed: {}", exc)
             raise
         finally:
             logger.trace("Close db session")
             await session.close()
 
     @classmethod
-    async def session_generator_for_depends(cls):
+    async def session_depends(cls):
         async with cls.get_session() as session:
             yield session
 

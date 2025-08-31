@@ -15,7 +15,7 @@ class UserTokenORM(Base):
     token: Mapped[str] = mapped_column(VARCHAR(64), unique=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
-    user: Mapped["UserORM"] = relationship(back_populates="tokens", lazy="joined")
+    user: Mapped["UserORM"] = relationship(back_populates="tokens", lazy="selectin")
 
 
 from .user import UserORM

@@ -23,6 +23,10 @@ class UserUseCase(abc.ABC):
         ...
 
     @abc.abstractmethod
+    async def update_user_pass_hash(self, user_id: int, new_pass_hash: str) -> None:
+        ...
+
+    @abc.abstractmethod
     async def delete_user(self, user_id: int) -> None:
         ...
 
