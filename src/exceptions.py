@@ -1,6 +1,4 @@
-from typing import Any
-
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 
 from src.dto.api.error import ErrorResponse
 
@@ -62,17 +60,20 @@ class BaseHourtimeException(Exception):
 
 
 class ConfigurationError(BaseHourtimeException):
-    api_status_code = 500
+    _api_status_code = 500
 
 
 class NotFoundError(BaseHourtimeException):
-    api_status_code = 404
+    _api_status_code = 404
 
 
 class DataUniqueError(BaseHourtimeException):
-    api_status_code = 409
+    _api_status_code = 409
 
 
 class AuthentificationError(BaseHourtimeException):
-    api_status_code = 401
+    _api_status_code = 401
+
+class AccessError(BaseHourtimeException):
+    _api_status_code = 403
 
