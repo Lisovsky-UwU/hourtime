@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
-from src.models.organization import UserAccess
+from src.dto.workspace import WorkspaceSubElement
+from src.models.common import UserAccess
 
 
 class CreateOrganizationPayload(BaseModel):
@@ -20,4 +21,11 @@ class AddUserToOrganizationElement(BaseModel):
 class AddUserToOrganizationPayload(BaseModel):
     organization_id: int
     users: list[AddUserToOrganizationElement]
+
+
+class UserOrganizationWithWorkspaces(BaseModel):
+    organization_id: int
+    name: str
+    access: UserAccess
+    workspaces: list[WorkspaceSubElement]
 

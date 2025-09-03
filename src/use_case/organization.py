@@ -4,9 +4,10 @@ from src.dto.organization import (
     AddUserToOrganizationPayload,
     CreateOrganizationPayload,
     UpdateOrganizationPayload,
+    UserOrganizationWithWorkspaces,
 )
 from src.models.common import UserAccess
-from src.models.organization import OrganizationModel, UserOrganizationModel
+from src.models.organization import OrganizationModel
 
 
 class OrganizationUseCase(abc.ABC):
@@ -23,7 +24,7 @@ class OrganizationUseCase(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def get_user_organizations(self, user_id: int) -> list[UserOrganizationModel]:
+    async def get_user_organizations(self, user_id: int) -> list[UserOrganizationWithWorkspaces]:
         ...
 
     @abc.abstractmethod

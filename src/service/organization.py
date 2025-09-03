@@ -3,10 +3,11 @@ from src.dto.organization import (
     AddUserToOrganizationPayload,
     CreateOrganizationPayload,
     UpdateOrganizationPayload,
+    UserOrganizationWithWorkspaces,
 )
 from src.exceptions import AccessError
 from src.models.common import UserAccess
-from src.models.organization import OrganizationModel, UserOrganizationModel
+from src.models.organization import OrganizationModel
 from src.use_case.organization import OrganizationUseCase
 
 
@@ -34,8 +35,11 @@ class OrganizationService:
         )
         return organization_model
 
-    async def get_user_organizations(self, user_id: int) -> list[UserOrganizationModel]:
+    async def get_user_organizations(self, user_id: int) -> list[UserOrganizationWithWorkspaces]:
         return await self.organization_repository.get_user_organizations(user_id)
+
+    async def update_organization(self, payload: UpdateOrganizationPayload) -> OrganizationModel:
+        return await self.organization_repository.update_organization(payload)
 
     async def update_organization_by_user(
         self,
@@ -53,5 +57,5 @@ class OrganizationService:
                 "You don't have enough rights to access organization.",
             )
 
-        return await self.organization_repository.update_organization(payload)
+        return await self.update_organization(payload)
 

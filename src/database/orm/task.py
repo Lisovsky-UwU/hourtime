@@ -13,6 +13,6 @@ class TaskORM(Base):
     number: Mapped[int]
     name: Mapped[str]
     description: Mapped[str | None]
-    project: Mapped[int] = mapped_column(ForeignKey("projects.id"))
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"))
     deleted: Mapped[bool] = mapped_column(default=False)
 

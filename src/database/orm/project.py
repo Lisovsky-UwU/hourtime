@@ -10,6 +10,6 @@ class ProjectORM(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
     description: Mapped[str | None]
-    workspace: Mapped[int] = mapped_column(ForeignKey("workspaces.id"))
+    workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"))
     deleted: Mapped[bool] = mapped_column(default=False)
 

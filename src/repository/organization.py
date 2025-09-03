@@ -7,10 +7,11 @@ from src.dto.organization import (
     AddUserToOrganizationPayload,
     CreateOrganizationPayload,
     UpdateOrganizationPayload,
+    UserOrganizationWithWorkspaces,
 )
 from src.exceptions import NotFoundError
 from src.models.common import UserAccess
-from src.models.organization import OrganizationModel, UserOrganizationModel
+from src.models.organization import OrganizationModel
 from src.use_case.organization import OrganizationUseCase
 
 from .mixin import DatabaseRepositoryMixin
@@ -63,9 +64,9 @@ class OrganizationRepositoryDB(DatabaseRepositoryMixin, OrganizationUseCase):
         await self.session.refresh(organization_orm)
         return DatabaseModelsConverter.organization_orm_to_model(organization_orm)
 
-    async def get_user_organizations(self, user_id: int) -> list[UserOrganizationModel]:
+    async def get_user_organizations(self, user_id: int) -> list[UserOrganizationWithWorkspaces]:
         query = (
-            select(OrganizationORM.id, OrganizationORM.name, LinkUserOrganizationORM.access)
+            select(OrganizationORM, LinkUserOrganizationORM.access)
             .join(
                 LinkUserOrganizationORM,
                 LinkUserOrganizationORM.organization_id == OrganizationORM.id,
@@ -73,13 +74,15 @@ class OrganizationRepositoryDB(DatabaseRepositoryMixin, OrganizationUseCase):
             .filter(OrganizationORM.deleted == False, LinkUserOrganizationORM.user_id == user_id)  # noqa: E712
         )
         result = await self.session.execute(query)
-        response: list[UserOrganizationModel] = []
+        response: list[UserOrganizationWithWorkspaces] = []
         for row in result:
+            organization_orm: OrganizationORM = row[0]
+            await self.session.refresh(organization_orm, ["workspaces"])
+            access: UserAccess = row[1]
             response.append(
-                UserOrganizationModel(
-                    organization_id=row[0],
-                    organization_name=row[1],
-                    access=row[2],
+                DatabaseModelsConverter.organization_orm_for_user_with_workspace(
+                    organization_orm,
+                    access,
                 ),
             )
 

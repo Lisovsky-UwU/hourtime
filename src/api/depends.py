@@ -6,12 +6,15 @@ from src.models.user import UserModel
 from src.repository.organization import OrganizationRepositoryDB
 from src.repository.user import UserRepositoryDB
 from src.repository.user_token import UserTokenRepositoryDB
+from src.repository.workspace import WorkspaceRepositoryDB
 from src.service.organization import OrganizationService
 from src.service.user import UserService
 from src.service.user_auth import UserAuthService
+from src.service.workspace import WorkspaceService
 from src.use_case.organization import OrganizationUseCase
 from src.use_case.user import UserUseCase
 from src.use_case.user_tokens import UserTokenUseCase
+from src.use_case.workspace import WorkspaceUseCase
 
 app = FastAPI()
 header_scheme = APIKeyHeader(name="User-Token")
@@ -35,6 +38,12 @@ def service_organization_depends(
     organization_repository: OrganizationUseCase = Depends(OrganizationRepositoryDB),
 ) -> OrganizationService:
     return OrganizationService(organization_repository)
+
+def service_workspace_depends(
+    workspace_repository: WorkspaceUseCase = Depends(WorkspaceRepositoryDB),
+    organization_repository: OrganizationUseCase = Depends(OrganizationRepositoryDB),
+) -> WorkspaceService:
+    return WorkspaceService(workspace_repository, organization_repository)
 
 async def check_user_token(
     token: str = Depends(header_scheme),

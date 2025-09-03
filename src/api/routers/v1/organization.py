@@ -1,10 +1,17 @@
 from fastapi import APIRouter, Depends
 
-from src.api.depends import check_user_token, service_organization_depends
+from src.api.depends import (
+    check_user_token,
+    service_organization_depends,
+)
 from src.api.handlers import LoggingRoute
 from src.dto.api.organization import CreateOrganizationByUserRequest, UpdateOrganizationRequest
-from src.dto.organization import CreateOrganizationPayload, UpdateOrganizationPayload
-from src.models.organization import OrganizationModel, UserOrganizationModel
+from src.dto.organization import (
+    CreateOrganizationPayload,
+    UpdateOrganizationPayload,
+    UserOrganizationWithWorkspaces,
+)
+from src.models.organization import OrganizationModel
 from src.models.user import UserModel
 from src.service.organization import OrganizationService
 
@@ -28,7 +35,7 @@ async def create_organization_by_user(
 async def get_my_organizations(
     user_model: UserModel = Depends(check_user_token),
     organization_service: OrganizationService = Depends(service_organization_depends),
-) -> list[UserOrganizationModel]:
+) -> list[UserOrganizationWithWorkspaces]:
     return await organization_service.get_user_organizations(user_model.id)
 
 @organization_router.put("/update")

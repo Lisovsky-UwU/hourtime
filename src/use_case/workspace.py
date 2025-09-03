@@ -10,3 +10,7 @@ class WorkspaceUseCase(abc.ABC):
     async def create_workspace(self, payload: CreateWorkspacePayload) -> WorkspaceModel:
         ...
 
+    @abc.abstractmethod
+    async def get_by_organization(self, organization_id: int) -> list[WorkspaceModel]:
+        ...
+
