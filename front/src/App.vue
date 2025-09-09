@@ -2,8 +2,14 @@
   <router-view />
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import router from './router';
 
-<style>
-@import "tailwindcss";
-</style>
+onMounted(() => {
+  const userToken = localStorage.getItem("userToken")
+  if (userToken === null) {
+    router.push("/login")
+  }
+})
+</script>

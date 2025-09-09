@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  /* Основные цвета */
+  --color-primary: #219EBC;
+  --color-secondary: #FB8500;
+  --color-accent: #FFB703;
+
+  /* Фоновые цвета */
+  --color-background: #191d1e;
+  --color-surface: #252b2d;
+  --color-overlay: rgba(2, 48, 71, 0.7);
+
+  /* Цвета текста */
+  --color-primary-text: #f0f0f0;
+  --color-secondary-text: #8ECAE6;
+  --color-muted: #A8DADC;
+  --color-inverted: #252b2d;
+
+  --color-border-primary: #8ECAE6;
+  --color-border-light: #f0f0f0;
+  --color-border-dark: #0D4C6F;
+
+  /* Цвета состояний */
+  --color-success: #28A745;
+  --color-warning: #FFA726;
+  --color-error: #DC3545;
+  --color-info: #17A2B8;
+
+  /* Цвета для ховеров */
+  --color-primary-hover: #1E88E5;
+  --color-secondary-hover: #F76707;
+  --color-accent-hover: #FFC107;
+
+  /* Цвета для активных состояний */
+  --color-primary-active: #1565C0;
+  --color-secondary-active: #E67E22;
+  --color-accent-active: #FFA726;
+
+  /* Цвета для фокуса */
+  --color-primary-focus: #80BDFF;
+  --color-secondary-focus: #FFB74D;
+  --color-accent-focus: #FFE082;
+
+  /* Дополнительные цвета */
+  --color-disabled: #ADB5BD;
+  --color-placeholder: #8ECAE6;
+  --color-divider: #A8DADC;
+}
+

@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+.card {
+  @apply bg-surface rounded-lg p-2 text-primary-text border border-border-dark
+}
+
