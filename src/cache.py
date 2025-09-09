@@ -20,7 +20,7 @@ class AppCacher:
         if cls._cache_instance is None:
             logger.critical("Cache instance is not initialized")
             raise ConfigurationError(
-                2,
+                3,
                 "Configuration cache error",
                 "Cache instance is not initialized",
             )

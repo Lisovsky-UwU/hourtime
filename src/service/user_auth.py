@@ -67,7 +67,7 @@ class UserAuthService:
                 raise AuthentificationError(
                     15,
                     "Invalid token",
-                    "The transferred token was not found or expired.",
+                    "Given token was not found or expired.",
                 )
 
             return await self.user_repository.get_by_id(token_model.user_id)
