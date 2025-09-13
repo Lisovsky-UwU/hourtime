@@ -26,6 +26,10 @@ const en = {
         title: "API request error",
         text: "An error occurred when requesting the server API.<br>Check your internet connection.",
       },
+      serverParseResponseError: {
+        title: "Response parse error",
+        text: "The server sent a response in an unexpected format."
+      },
 
       apiError: {
         1: {
@@ -57,7 +61,7 @@ const en = {
           text: "The user with the entered username already exists. Please choose a different username.",
         },
         14: {
-          title: "Authentication Error",
+          title: "Login error",
           text: "The username or password is incorrect. Please double-check your credentials and try again.",
         },
         15: {

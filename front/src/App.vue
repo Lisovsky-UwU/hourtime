@@ -3,8 +3,8 @@
     classes="app-notification"
     position="top center"
     dangerously-set-inner-html
-    width="400"
-    :duration="3"
+    width="500"
+    :duration="5000"
   >
     <template v-slot:body="{ item, close }">
       <div :class="`app-notification ${item.type}`">
@@ -22,12 +22,18 @@
       </div>
     </template>
   </notifications>
-  <router-view />
+  <div class="bg-background text-primary-text">
+    <div v-if="loading" class="h-screen w-screen flex justify-center items-center">
+      <Loader/>
+    </div>
+    <component v-else :is="currentLayout">
+      <router-view />
+    </component>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import router from './router'
+import { computed, onMounted, ref } from 'vue'
 // import { notify } from '@kyvg/vue3-notification'
 import SvgIcon from '@jamescoyle/vue-icon'
 import {
@@ -37,6 +43,14 @@ import {
   mdiAlertBox,
   mdiClose,
 } from '@mdi/js'
+import Loader from './components/ui/Loader.vue'
+import { useApiStore } from './stores/api'
+import { useUserData } from './stores/user-data'
+
+import AuthLayout from './layouts/auth.vue'
+import DefaultLayout from './layouts/default.vue'
+
+const loading = ref(true)
 
 const iconByType = {
   success: mdiCheck,
@@ -45,15 +59,25 @@ const iconByType = {
   error: mdiAlertBox,
 }
 
-onMounted(() => {
+const api = useApiStore()
+const userData = useUserData()
+
+const currentLayout = computed(() => api.isLogin ? DefaultLayout : AuthLayout)
+
+onMounted(async () => {
   // notify({
   //   title: "Test title",
   //   text: 'Test message <div class="text-4xl">SUCCESS</div>',
   //   type: "success"
   // })
-  const userToken = localStorage.getItem("userToken")
-  if (userToken === null) {
-    router.push("/login")
+
+  try {
+    api.loadToken()
+    if (api.isLogin) {
+      await userData.loadMyData()
+    }
+  } finally {
+    loading.value = false
   }
 })
 </script>

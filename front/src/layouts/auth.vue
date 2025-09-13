@@ -67,8 +67,10 @@ import { useI18n } from 'vue-i18n'
 import Logo from '@/components/ui/Logo.vue';
 import TextField from '@/components/ui/TextField.vue';
 import Button from '@/components/ui/Button.vue';
+import { useUserData } from '@/stores/user-data';
 
 const { t } = useI18n()
+const userData = useUserData()
 
 const loadingAuth = ref(false)
 
@@ -94,6 +96,11 @@ async function handleSubmit() {
     return
   }
   loadingAuth.value = true
+  try {
+    await userData.login({username: loginData.username, password: loginData.password})
+  } finally {
+    loadingAuth.value = false
+  }
 }
 
 </script>

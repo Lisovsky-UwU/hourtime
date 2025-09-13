@@ -8,12 +8,12 @@ import {
   type LoginResponse,
 } from "./models/user";
 
-const apiStore = useApiStore()
 
 
 export const useUserData = defineStore('userData', {
   state: () => ({
     currentUserData: null as UserData | null,
+    apiStore: useApiStore(),
   }),
 
   getters: {
@@ -31,22 +31,30 @@ export const useUserData = defineStore('userData', {
       this.currentUserData = null
     },
 
+    async loadMyData() {
+      const response: UserData = await this.apiStore.doRequest(
+        ApiEndpoint.UserMyInfo,
+        "GET",
+      )
+      this.set(response)
+    },
+
     async registrate(payload: RegistratePayload) {
-      const response: LoginResponse = await apiStore.doRequest(
+      const response: LoginResponse = await this.apiStore.doRequest(
         ApiEndpoint.AuthRegistrate,
         "POST",
         payload,
       )
-      apiStore.setToken(response.token)
+      this.apiStore.setToken(response.token)
     },
 
     async login(payload: LoginPayload) {
-      const response: LoginResponse = await apiStore.doRequest(
+      const response: LoginResponse = await this.apiStore.doRequest(
         ApiEndpoint.AuthLogin,
         "POST",
         payload,
       )
-      apiStore.setToken(response.token)
+      this.apiStore.setToken(response.token)
     }
   }
 })

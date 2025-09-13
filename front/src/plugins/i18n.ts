@@ -6,10 +6,12 @@ const messages = {
   en,
 };
 
-const i18n = createI18n({
+const instance = createI18n({
   locale: 'en',
   fallbackLocale: 'en',
   messages,
 });
 
-export default i18n;
+export default instance;
+
+export const i18n = instance.global

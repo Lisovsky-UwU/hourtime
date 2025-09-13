@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
-import { notify } from "@kyvg/vue3-notification";
-import { useI18n } from 'vue-i18n'
+import { useNotification } from "@kyvg/vue3-notification";
+import { i18n } from "@/plugins/i18n"
 import { type ErrorResponse, type ApiEndpoint } from "./models/common";
 
-const { t } = useI18n()
+const { notify }  = useNotification()
 
 
 export const useApiStore = defineStore('api', {
@@ -53,8 +53,8 @@ export const useApiStore = defineStore('api', {
         var r = await fetch(`/api/v1${endpoint}`, fetchOptions)
       } catch (e) {
         notify({
-          title: t("message.notification.serverRequestError.title"),
-          text: t("message.notification.serverRequestError.text"),
+          title: i18n.t("message.notification.serverRequestError.title"),
+          text: i18n.t("message.notification.serverRequestError.text"),
           type: "error",
         })
         console.error(e)
@@ -62,13 +62,24 @@ export const useApiStore = defineStore('api', {
       }
 
       if (r.status != 200) {
-        const rJson: ErrorResponse = await r.json()
-        if (rJson.error_code === 15) {
+        let rJson: ErrorResponse
+        try {
+          rJson = await r.json()
+        } catch (e) {
+          notify({
+            title: i18n.t("message.notification.serverParseResponseError.title"),
+            text: i18n.t("message.notification.serverParseResponseError.text"),
+            type: "error",
+          })
+          throw e
+        }
 
+        if (rJson.error_code === 15) {
+          this.clearToken()
         }
         notify({
-          title: t(`message.notification.apiError.${rJson.error_code}.title`),
-          text: t(`message.notification.apiError.${rJson.error_code}.text`),
+          title: i18n.t(`message.notification.apiError.${rJson.error_code}.title`),
+          text: i18n.t(`message.notification.apiError.${rJson.error_code}.text`),
           type: "error",
         })
         console.error(rJson)

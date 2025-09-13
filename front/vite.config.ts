@@ -4,7 +4,6 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import Layouts from 'vite-plugin-vue-layouts-next'
 import VueRouter from 'unplugin-vue-router/vite'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -13,7 +12,6 @@ export default defineConfig({
   plugins: [
     vue(),
     vueDevTools(),
-    Layouts(),
     VueRouter({
       dts: 'src/typed-router.d.ts',
     }),
@@ -26,5 +24,11 @@ export default defineConfig({
   },
   server: {
     port: 5378,
+    proxy: {
+      '/api': {
+        target: "http://127.0.0.1:1060",
+        changeOrigin: true,
+      }
+    }
   }
 })

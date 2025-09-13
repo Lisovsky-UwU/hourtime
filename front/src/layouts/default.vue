@@ -1,9 +1,5 @@
 <template>
-  <div>
-    LAYOUT
-  </div>
-
-  <div>
-    <router-view></router-view>
+  <div class="min-h-screen">
+    <slot />
   </div>
 </template>
