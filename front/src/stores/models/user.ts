@@ -1,5 +1,5 @@
 export interface UserData {
-  id: Number,
+  id: number,
   username: string,
   display_name: string,
 }

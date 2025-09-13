@@ -11,6 +11,7 @@
       :type="type"
       :id="id"
       :placeholder="placeholder"
+      :disabled="loading"
       v-model="model"
       class="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-300"
       :class="error ? 'border-error' : 'border-border-light'"
@@ -49,6 +50,10 @@ defineProps({
   errorsText: {
     type: Array,
     default: [],
+  },
+  loading: {
+    type: Boolean,
+    default: false,
   }
 })
 </script>

@@ -1,14 +1,16 @@
 <template>
   <button
     class="h-10 rounded-lg uppercase flex items-center justify-center
-    disabled:cursor-default"
+    disabled:cursor-default px-4 min-w-[100px]"
     :class="`${currentBgAndBorder} ${block ? 'w-full' : ''} ${loading ? 'cursor-default' : 'cursor-pointer'}`"
     :type="type"
     :disabled="disabled"
     v-on:click="clickOnBtn($event)"
   >
-    <div v-if="loading" class="loader" />
-    <slot v-else/>
+    <div v-if="loading" class="loader absolute" />
+    <div :class="{'opacity-0': loading}">
+      <slot />
+    </div>
   </button>
 </template>
 

@@ -1,12 +1,7 @@
 import { defineStore } from "pinia";
 import { useApiStore } from "./api";
 import { ApiEndpoint } from "./models/common";
-import {
-  type UserData,
-  type RegistratePayload,
-  type LoginPayload,
-  type LoginResponse,
-} from "./models/user";
+import type { UserData, RegistratePayload, LoginPayload, LoginResponse,} from "./models/user";
 
 
 
@@ -55,6 +50,14 @@ export const useUserData = defineStore('userData', {
         payload,
       )
       this.apiStore.setToken(response.token)
+    },
+
+    async logout() {
+      await this.apiStore.doRequest(
+        ApiEndpoint.AuthLogout,
+        "POST",
+      )
+      this.apiStore.clearToken()
     }
   }
 })

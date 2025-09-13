@@ -3,6 +3,8 @@ const en = {
 
     common: {
       appName: "Hourtime",
+      name: "Name",
+      create: "Create",
     },
 
     page: {
@@ -14,7 +16,14 @@ const en = {
         enterPassword: "Enter password",
         login: "Log in",
         registrate: "Registrate",
-      }
+        logout: "Log out",
+      },
+      organization: {
+        createNewOrganization: "Create a new organization",
+        organizationName: "Organization name",
+        enterOrganizationName: "Enter organization name",
+        defaultName: "{userName}'s organization",
+      },
     },
 
     validations: {

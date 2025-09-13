@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { useNotification } from "@kyvg/vue3-notification";
 import { i18n } from "@/plugins/i18n"
-import { type ErrorResponse, type ApiEndpoint } from "./models/common";
+import type { ErrorResponse, ApiEndpoint } from "./models/common";
 
 const { notify }  = useNotification()
 
