@@ -18,3 +18,7 @@ class UserTokenUseCase(abc.ABC):
     async def get_token(self, token: str) -> UserTokenModel:
         ...
 
+    @abc.abstractmethod
+    async def delete_token(self, token: str) -> None:
+        ...
+

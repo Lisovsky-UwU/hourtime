@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 
-from src.api.depends import service_user_auth_depends
+from src.api.depends import service_user_auth_depends, token_header_scheme
 from src.api.handlers import LoggingRoute
+from src.dto.api.common import ResultResponse
 from src.dto.api.user import UserAuthentificationResponse, UserLoginRequest, UserRegisteringRequest
 from src.service.user_auth import UserAuthService
 
@@ -27,4 +28,12 @@ async def login_user(
     return UserAuthentificationResponse(
         token=result.token,
     )
+
+@auth_route.post("/logout")
+async def logout_user(
+    user_auth_service: UserAuthService = Depends(service_user_auth_depends),
+    token: str = Depends(token_header_scheme),
+) -> ResultResponse:
+    await user_auth_service.logout_user(token)
+    return ResultResponse()
 

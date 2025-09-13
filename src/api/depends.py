@@ -17,7 +17,7 @@ from src.use_case.user_tokens import UserTokenUseCase
 from src.use_case.workspace import WorkspaceUseCase
 
 app = FastAPI()
-header_scheme = APIKeyHeader(name="User-Token")
+token_header_scheme = APIKeyHeader(name="User-Token")
 
 
 def service_user_auth_depends(
@@ -36,8 +36,9 @@ def service_user_depends(user_repository: UserUseCase = Depends(UserRepositoryDB
 
 def service_organization_depends(
     organization_repository: OrganizationUseCase = Depends(OrganizationRepositoryDB),
+    workspace_repository: WorkspaceUseCase = Depends(WorkspaceRepositoryDB),
 ) -> OrganizationService:
-    return OrganizationService(organization_repository)
+    return OrganizationService(organization_repository, workspace_repository)
 
 def service_workspace_depends(
     workspace_repository: WorkspaceUseCase = Depends(WorkspaceRepositoryDB),
@@ -46,7 +47,7 @@ def service_workspace_depends(
     return WorkspaceService(workspace_repository, organization_repository)
 
 async def check_user_token(
-    token: str = Depends(header_scheme),
+    token: str = Depends(token_header_scheme),
     auth_user_service: UserAuthService = Depends(service_user_auth_depends),
 ) -> UserModel:
     return await auth_user_service.check_token(token)

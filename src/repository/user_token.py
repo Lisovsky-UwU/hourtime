@@ -1,4 +1,4 @@
-from sqlalchemy import exists, select
+from sqlalchemy import delete, exists, select
 
 from src.cache_constants import CacheConst
 from src.database.converter import DatabaseModelsConverter
@@ -55,4 +55,10 @@ class UserTokenRepositoryDB(DatabaseRepositoryMixin, UserTokenUseCase):
             await self.cacher.set(token_cache_key, token_model, ttl=300)
 
         return token_model
+
+    async def delete_token(self, token: str) -> None:
+        query = delete(UserTokenORM).filter_by(token=token)
+        await self.session.execute(query)
+        await self.session.commit()
+        await self.cacher.delete(CacheConst.User.AuthToken.format(token))
 

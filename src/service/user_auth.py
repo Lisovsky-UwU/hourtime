@@ -57,6 +57,9 @@ class UserAuthService:
                 "Username or password is incorrect",
             ) from exc
 
+    async def logout_user(self, token: str) -> None:
+        await self.token_repository.delete_token(token)
+
     async def check_token(self, token: str) -> UserModel:
         try:
             token_model = await self.token_repository.get_token(token)

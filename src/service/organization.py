@@ -5,16 +5,23 @@ from src.dto.organization import (
     UpdateOrganizationPayload,
     UserOrganizationWithWorkspaces,
 )
+from src.dto.workspace import CreateWorkspacePayload
 from src.exceptions import AccessError
 from src.models.common import UserAccess
 from src.models.organization import OrganizationModel
 from src.use_case.organization import OrganizationUseCase
+from src.use_case.workspace import WorkspaceUseCase
 
 
 class OrganizationService:
 
-    def __init__(self, organization_repository: OrganizationUseCase) -> None:
+    def __init__(
+        self,
+        organization_repository: OrganizationUseCase,
+        workspace_repository: WorkspaceUseCase,
+    ) -> None:
         self.organization_repository = organization_repository
+        self.workspace_repository = workspace_repository
 
     async def create_organization_by_user(
         self,
@@ -31,6 +38,12 @@ class OrganizationService:
                         access=UserAccess.OWNER,
                     ),
                 ],
+            ),
+        )
+        await self.workspace_repository.create_workspace(
+            CreateWorkspacePayload(
+                organization_id=organization_model.id,
+                name="Default",
             ),
         )
         return organization_model
