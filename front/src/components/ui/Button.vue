@@ -63,7 +63,7 @@ const currentBgAndBorder = computed(() => {
   }
   else {
     if (props.second) {
-      return "bg-secondary text-inverted"
+      return "bg-secondary text-primary-text"
     }
     else {
       return "bg-primary text-primary-text"

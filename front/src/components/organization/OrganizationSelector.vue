@@ -29,6 +29,12 @@
             {{ workspace.name }}
           </div>
         </div>
+        <button
+          class="w-full uppercase bg-border-dark cursor-pointer py-1" to="/organizations"
+          @click="router.push('/organizations'); close()"
+        >
+          {{ $t("message.common.manage") }}
+        </button>
       </div>
     </transition>
   </div>
@@ -40,6 +46,7 @@ import { useOrganizations } from '@/stores/organizations';
 import { useWorkspaces } from '@/stores/workspaces';
 import type { OrganizationModel } from '@/stores/models/organization';
 import type { WorkspaceModel } from '@/stores/models/workspace';
+import router from '@/router';
 
 const organizations = useOrganizations()
 const workspaces = useWorkspaces()
@@ -112,7 +119,7 @@ onUnmounted(() => {
 }
 
 .organization {
-  @apply border-b-[2px] border-border-dark;
+  @apply border-t-[2px] border-border-dark;
 }
 
 .organization-name {
@@ -128,7 +135,7 @@ onUnmounted(() => {
   @apply bg-surface;
 }
 
-.organization:last-child {
+.organization:first-child {
   @apply border-none;
 }
 

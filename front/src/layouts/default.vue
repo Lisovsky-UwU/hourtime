@@ -23,7 +23,7 @@
 
   <div v-else class="h-screen">
     <AppBar/>
-    <div class="max-h-full overflow-y-auto">
+    <div class="overflow-y-auto" style="max-height: calc(100vh - 60px)">
       <slot />
     </div>
   </div>

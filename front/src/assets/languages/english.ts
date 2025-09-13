@@ -4,7 +4,10 @@ const en = {
     common: {
       appName: "Hourtime",
       name: "Name",
-      create: "Create",
+      create: "Create new",
+      edit: "Edit",
+      delete: "Delete",
+      manage: "Manage",
     },
 
     page: {
