@@ -1,15 +1,20 @@
 export interface UserData {
   id: Number,
-  username: String,
-  display_name: String,
+  username: string,
+  display_name: string,
 }
 
 export interface RegistratePayload {
-  username: String,
-  display_name: String,
-  password: String,
+  username: string,
+  display_name: string,
+  password: string,
+}
+
+export interface LoginPayload {
+  username: string,
+  password: string,
 }
 
 export interface LoginResponse {
-  token: String
+  token: string
 }

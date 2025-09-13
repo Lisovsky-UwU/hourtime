@@ -1,8 +1,8 @@
 export interface ErrorResponse {
-  error_type: String,
+  error_type: string,
   error_code: Number,
-  user_message: String,
-  detail: String | null,
+  user_message: string,
+  detail: string | null,
 }
 
 export enum ApiEndpoint {

@@ -8,7 +8,7 @@ const { t } = useI18n()
 
 export const useApiStore = defineStore('api', {
   state: () => ({
-    userToken: null as String | null,
+    userToken: null as string | null,
   }),
 
   getters: {
@@ -21,12 +21,21 @@ export const useApiStore = defineStore('api', {
   },
 
   actions: {
+    loadToken() {
+      this.userToken = localStorage.getItem("User-Token")
+    },
+
+    setToken(token: string) {
+      this.userToken = token
+      localStorage.setItem("User-Token", token)
+    },
+
     clearToken() {
       localStorage.removeItem("User-Token")
       this.userToken = null
     },
 
-    async doRequest(endpoint: ApiEndpoint, method: String, data: any | null = null): Promise<any> {
+    async doRequest(endpoint: ApiEndpoint, method: string, data: any | null = null): Promise<any> {
       let fetchOptions = {
         method: method,
         headers: {} as any,

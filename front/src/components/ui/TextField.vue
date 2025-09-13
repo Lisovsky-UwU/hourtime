@@ -3,7 +3,7 @@
     <label
       v-if="label != null"
       :for="id"
-      class="block text-primary-text font-semibold mb-1"
+      class="block text-primary-text font-semibold mb-1 uppercase text-sm"
     >
       {{ label }}
     </label>
@@ -19,7 +19,7 @@
       <label
         v-for="(text, index) of errorsText"
         :key="`$text-field-error-${id}-${index}`"
-        class="block text-error">
+        class="block text-error text-sm mt-1">
         {{ text }}
       </label>
     </div>

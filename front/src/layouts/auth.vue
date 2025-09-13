@@ -20,6 +20,7 @@
             :placeholder="$t('message.page.auth.enterUsername')"
             :error="v$.username.$error"
             :errorsText="v$.username.$errors.map((error) => error.$message)"
+            :loading="loadingAuth"
             v-model="loginData.username"
             @change="v$.username.$validate()"
           />
@@ -30,13 +31,27 @@
             :placeholder="$t('message.page.auth.enterPassword')"
             :error="v$.password.$error"
             :errorsText="v$.password.$errors.map((error) => error.$message)"
+            :loading="loadingAuth"
             v-model="loginData.password"
             @change="v$.password.$validate()"
           />
 
           <div class="space-y-4 mt-auto">
-            <Button block type="submit">{{ $t("message.page.auth.login") }}</Button>
-            <Button block second outlined>{{ $t("message.page.auth.registrate") }}</Button>
+            <Button
+              block
+              type="submit"
+              :loading="loadingAuth"
+            >
+              {{ $t("message.page.auth.login") }}
+            </Button>
+            <Button
+              block
+              second
+              outlined
+              :disabled="loadingAuth"
+            >
+              {{ $t("message.page.auth.registrate") }}
+            </Button>
           </div>
         </form>
       </div>
@@ -45,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { useVuelidate } from '@vuelidate/core'
 import { required, helpers } from '@vuelidate/validators'
 import { useI18n } from 'vue-i18n'
@@ -54,6 +69,8 @@ import TextField from '@/components/ui/TextField.vue';
 import Button from '@/components/ui/Button.vue';
 
 const { t } = useI18n()
+
+const loadingAuth = ref(false)
 
 const loginData = reactive({
   username: "",
@@ -73,6 +90,10 @@ const v$ = useVuelidate(rules, loginData)
 
 async function handleSubmit() {
   await v$.value.$validate()
+  if (v$.value.$error) {
+    return
+  }
+  loadingAuth.value = true
 }
 
 </script>

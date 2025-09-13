@@ -4,7 +4,7 @@
     position="top center"
     dangerously-set-inner-html
     width="400"
-    duration="3"
+    :duration="3"
   >
     <template v-slot:body="{ item, close }">
       <div :class="`app-notification ${item.type}`">
