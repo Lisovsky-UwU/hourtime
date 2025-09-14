@@ -30,12 +30,12 @@
           </div>
         </div>
         <button
-          class="w-full uppercase bg-border-primary cursor-pointer py-1 px-1
+          class="w-full uppercase bg-border-primary cursor-pointer py-2 px-1
           hover:bg-border-primary-hover transition-all relative flex items-center"
           to="/organizations"
           @click="router.push('/organizations'); close()"
         >
-          <svg-icon type="mdi" :path="mdiCogs" />
+          <svg-icon type="mdi" :path="mdiCog" />
           <div class="absolute left-1/2 transform -translate-x-1/2">
           {{ $t("message.common.manage") }}
           </div>
@@ -49,7 +49,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import router from '@/router';
 import SvgIcon from '@jamescoyle/vue-icon'
-import { mdiCogs } from '@mdi/js';
+import { mdiCog } from '@mdi/js';
 import { useOrganizations } from '@/stores/organizations';
 import { useWorkspaces } from '@/stores/workspaces';
 import type { OrganizationModel } from '@/stores/models/organization';

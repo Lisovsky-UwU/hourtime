@@ -17,8 +17,13 @@ const en = {
         enterUsername: "Enter username",
         password: "Password",
         enterPassword: "Enter password",
+        displayName: "Display name",
+        enterDisplayName: "Enter display name",
+        confirmPassword: "Confirm password",
         login: "Log in",
         registrate: "Registrate",
+        goLogin: "Go to login",
+        goRegistrate: "Create account",
       },
       organization: {
         createNewOrganization: "Create a new organization",
@@ -37,6 +42,7 @@ const en = {
 
     validations: {
       fieldIsRequired: "Oops! This field can't be empty.",
+      passwordsDontMatch: "Passwords don't match.",
     },
 
     notification: {

@@ -41,6 +41,7 @@ export const useUserData = defineStore('userData', {
         payload,
       )
       this.apiStore.setToken(response.token)
+      await this.loadMyData()
     },
 
     async login(payload: LoginPayload) {
@@ -50,6 +51,7 @@ export const useUserData = defineStore('userData', {
         payload,
       )
       this.apiStore.setToken(response.token)
+      await this.loadMyData()
     },
 
     async logout() {
