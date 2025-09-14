@@ -1,9 +1,12 @@
 from sqlalchemy import and_, select
 
 from src.database.converter import DatabaseModelsConverter
+from src.database.orm.link_user_organization import LinkUserOrganizationORM
+from src.database.orm.organization import OrganizationORM
 from src.database.orm.workspace import WorkspaceORM
 from src.dto.workspace import CreateWorkspacePayload, UpdateWorkspacePayload
 from src.exceptions import NotFoundError
+from src.models.common import UserAccess
 from src.models.workspace import WorkspaceModel
 from src.repository.mixin import DatabaseRepositoryMixin
 from src.use_case.workspace import WorkspaceUseCase
@@ -54,6 +57,28 @@ class WorkspaceRepositoryDB(DatabaseRepositoryMixin, WorkspaceUseCase):
         return DatabaseModelsConverter.workspace_orm_to_model(
             await self._get_orm_by_id(workspace_id, return_deleted),
         )
+
+    async def get_user_access(self, user_id: int, workspace_id: int) -> UserAccess | None:
+        query = (
+            select(LinkUserOrganizationORM.access)
+            .select_from(WorkspaceORM)
+            .join(
+                OrganizationORM,
+                OrganizationORM.id == WorkspaceORM.organization_id,
+            )
+            .join(
+                LinkUserOrganizationORM,
+                LinkUserOrganizationORM.organization_id == OrganizationORM.id,
+            )
+            .filter(
+                WorkspaceORM.id == workspace_id,
+                WorkspaceORM.deleted == False,  # noqa: E712
+                OrganizationORM.deleted == False,  # noqa: E712
+                LinkUserOrganizationORM.user_id == user_id,
+            )
+        )
+        result = await self.session.execute(query)
+        return result.scalar()
 
     async def update_workspace(self, payload: UpdateWorkspacePayload) -> WorkspaceModel:
         workspace_orm = await self._get_orm_by_id(payload.workspace_id)

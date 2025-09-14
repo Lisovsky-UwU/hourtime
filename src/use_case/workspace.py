@@ -1,6 +1,7 @@
 import abc
 
 from src.dto.workspace import CreateWorkspacePayload, UpdateWorkspacePayload
+from src.models.common import UserAccess
 from src.models.workspace import WorkspaceModel
 
 
@@ -20,6 +21,10 @@ class WorkspaceUseCase(abc.ABC):
         workspace_id: int,
         return_deleted: bool = False,
     ) -> WorkspaceModel:
+        ...
+
+    @abc.abstractmethod
+    async def get_user_access(self, user_id: int, workspace_id: int) -> UserAccess | None:
         ...
 
     @abc.abstractmethod

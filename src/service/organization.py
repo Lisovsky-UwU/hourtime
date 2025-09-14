@@ -6,7 +6,7 @@ from src.dto.organization import (
     UserOrganizationWithWorkspaces,
 )
 from src.dto.workspace import CreateWorkspacePayload
-from src.exceptions import AccessError
+from src.exceptions.defined import ORGANIZATION_ACCESS_ERROR
 from src.models.common import UserAccess
 from src.models.organization import OrganizationModel
 from src.use_case.organization import OrganizationUseCase
@@ -29,11 +29,7 @@ class OrganizationService:
             organization_id,
         )
         if user_access in (None, UserAccess.PARTIAL):
-            raise AccessError(
-                21,
-                "Access denied",
-                "You don't have enough rights to access organization.",
-            )
+            raise ORGANIZATION_ACCESS_ERROR
 
     async def create_organization_by_user(
         self,
