@@ -59,6 +59,10 @@ class BaseHourtimeException(Exception):
         return result
 
 
+class LogicalError(BaseHourtimeException):
+    _api_status_code = 500
+
+
 class ConfigurationError(BaseHourtimeException):
     _api_status_code = 500
 
@@ -73,6 +77,7 @@ class DataUniqueError(BaseHourtimeException):
 
 class AuthentificationError(BaseHourtimeException):
     _api_status_code = 401
+
 
 class AccessError(BaseHourtimeException):
     _api_status_code = 403

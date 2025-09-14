@@ -104,6 +104,10 @@ const en = {
           title: "Access Denied",
           text: "You do not have sufficient rights to access this organization.",
         },
+        30: {
+          title: "Not Found",
+          text: "Workspace not found."
+        },
         500: {
           title: "Unexpected Server Error",
           text: "An unknown error occurred on the server.",

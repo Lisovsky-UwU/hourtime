@@ -54,7 +54,7 @@ class DatabaseModelsConverter:
                     id=workspace.id,
                     name=workspace.name,
                 )
-                for workspace in organization_orm.workspaces
+                for workspace in organization_orm.workspaces if not workspace.deleted
             ],
         )
 

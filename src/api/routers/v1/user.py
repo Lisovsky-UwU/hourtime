@@ -47,3 +47,11 @@ async def change_user_password(
     )
     return ResultResponse()
 
+@user_route.delete("/me/delete")
+async def delete_user_by_himself(
+    user_model: UserModel = Depends(check_user_token),
+    user_service: UserService = Depends(service_user_depends),
+) -> ResultResponse:
+    await user_service.delete_user(user_model.id)
+    return ResultResponse()
+

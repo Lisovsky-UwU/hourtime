@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
 from src.database.converter import DatabaseModelsConverter
 from src.database.orm import OrganizationORM
@@ -24,9 +24,11 @@ class OrganizationRepositoryDB(DatabaseRepositoryMixin, OrganizationUseCase):
         organization_id: int,
         return_deleted: bool = False,
     ) -> OrganizationORM:
-        query = select(OrganizationORM).filter_by(id=organization_id)
+        filter_ = OrganizationORM.id == organization_id
         if not return_deleted:
-            query.filter_by(deleted=False)
+            filter_ = and_(filter_, OrganizationORM.deleted == False)  # noqa: E712
+
+        query = select(OrganizationORM).filter(filter_)
 
         result = await self.session.execute(query)
         user_orm = result.scalar()

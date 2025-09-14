@@ -5,6 +5,7 @@ from src.api.depends import (
     service_organization_depends,
 )
 from src.api.handlers import LoggingRoute
+from src.dto.api.common import ResultResponse
 from src.dto.api.organization import CreateOrganizationByUserRequest, UpdateOrganizationRequest
 from src.dto.organization import (
     CreateOrganizationPayload,
@@ -52,3 +53,14 @@ async def update_my_organization(
         ),
     )
 
+@organization_router.delete("/delete")
+async def delete_my_organization(
+    organization_id: int,
+    user_model: UserModel = Depends(check_user_token),
+    organization_service: OrganizationService = Depends(service_organization_depends),
+) -> ResultResponse:
+    await organization_service.delete_organization_by_user(
+        user_model.id,
+        organization_id,
+    )
+    return ResultResponse()

@@ -6,6 +6,11 @@ class CreateWorkspacePayload(BaseModel):
     name: str
 
 
+class UpdateWorkspacePayload(BaseModel):
+    workspace_id: int
+    name: str
+
+
 class WorkspaceSubElement(BaseModel):
     id: int
     name: str

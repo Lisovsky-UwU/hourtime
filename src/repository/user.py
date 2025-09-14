@@ -1,4 +1,4 @@
-from sqlalchemy import exists, select
+from sqlalchemy import and_, exists, select
 
 from src.cache_constants import CacheConst
 from src.database.converter import DatabaseModelsConverter
@@ -14,9 +14,11 @@ from .mixin import DatabaseRepositoryMixin
 class UserRepositoryDB(DatabaseRepositoryMixin, UserUseCase):
 
     async def _get_orm_by_id(self, user_id: int, return_deleted: bool = False) -> UserORM:
-        query = select(UserORM).filter_by(id=user_id)
+        filter_ = UserORM.id == user_id
         if not return_deleted:
-            query.filter_by(deleted=False)
+            filter_ = and_(filter_, UserORM.deleted == False)  # noqa: E712
+
+        query = select(UserORM).filter(filter_)
 
         result = await self.session.execute(query)
         user_orm = result.scalar()

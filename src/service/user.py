@@ -16,3 +16,6 @@ class UserService:
             display_name=payload.display_name,
         ))
 
+    async def delete_user(self, user_id: int) -> None:
+        await self.user_repository.delete_user(user_id)
+

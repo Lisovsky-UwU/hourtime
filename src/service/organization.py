@@ -23,6 +23,18 @@ class OrganizationService:
         self.organization_repository = organization_repository
         self.workspace_repository = workspace_repository
 
+    async def _check_user_access(self, user_id: int, organization_id: int) -> None:
+        user_access = await self.organization_repository.get_user_access_in_organization(
+            user_id,
+            organization_id,
+        )
+        if user_access in (None, UserAccess.PARTIAL):
+            raise AccessError(
+                21,
+                "Access denied",
+                "You don't have enough rights to access organization.",
+            )
+
     async def create_organization_by_user(
         self,
         user_id: int,
@@ -59,16 +71,14 @@ class OrganizationService:
         user_id: int,
         payload: UpdateOrganizationPayload,
     ) -> OrganizationModel:
-        user_access = await self.organization_repository.get_user_access_in_organization(
-            user_id,
-            payload.organization_id,
-        )
-        if user_access in (None, UserAccess.PARTIAL):
-            raise AccessError(
-                21,
-                "Access denied",
-                "You don't have enough rights to access organization.",
-            )
-
+        await self._check_user_access(user_id, payload.organization_id)
         return await self.update_organization(payload)
+
+    async def delete_organization_by_user(
+        self,
+        user_id: int,
+        organization_id: int,
+    ) -> None:
+        await self._check_user_access(user_id, organization_id)
+        await self.organization_repository.delete_organization(organization_id)
 
