@@ -1,50 +1,53 @@
 @import "tailwindcss";
 
 @theme {
-  /* Основные цвета */
-  --color-primary: #219EBC;
-  --color-secondary: #FB8500;
-  --color-accent: #FFB703;
+  --color-*: initial;
 
-  /* Фоновые цвета */
+  /* Main */
+  --color-primary: #219EBC;
+  --color-secondary: #FFBD27;
+  --color-accent: #FF4027;
+
+
+  /* Background */
   --color-background: #191d1e;
   --color-surface: #252b2d;
+  --color-surface-variant: #829196;
   --color-overlay: rgba(2, 48, 71, 0.7);
 
-  /* Цвета текста */
+
+  /* Text */
   --color-primary-text: #f0f0f0;
-  --color-secondary-text: #8ECAE6;
-  --color-muted: #A8DADC;
-  --color-inverted: #252b2d;
+  --color-inverted-text: #252b2d;
 
-  --color-border-primary: #0D4C6F;
-  --color-border-light: #f0f0f0;
-  --color-border-dark: #2f3639;
 
-  /* Цвета состояний */
+  /* Border */
+  --color-border-primary: #2f3639;
+  --color-border-inverted: #f0f0f0;
+
+
+  /* Notifications */
   --color-success: #28A745;
   --color-warning: #dc9020;
   --color-error: #DC3545;
   --color-info: #17A2B8;
 
-  /* Цвета для ховеров */
-  --color-primary-hover: #1E88E5;
-  --color-secondary-hover: #F76707;
-  --color-accent-hover: #FFC107;
 
-  /* Цвета для активных состояний */
-  --color-primary-active: #1565C0;
-  --color-secondary-active: #E67E22;
-  --color-accent-active: #FFA726;
+  /* Hover */
+  --color-primary-hover: #55C3DE;
+  --color-secondary-hover: #FFCE5D;
+  --color-accent-hover: #FF705D;
 
-  /* Цвета для фокуса */
-  --color-primary-focus: #80BDFF;
-  --color-secondary-focus: #FFB74D;
-  --color-accent-focus: #FFE082;
+  --color-background-hover: #081114;
+  --color-surface-hover: #0C191D;
+  --color-surface-variant-hover: #656E71;
 
-  /* Дополнительные цвета */
-  --color-disabled: #ADB5BD;
-  --color-placeholder: #8ECAE6;
-  --color-divider: #A8DADC;
+  --color-border-primary-hover: #25292B;
+
+
+  /* Focus */
+  --color-primary-focus: #0B657A;
+  --color-secondary-focus: #A6770D;
+  --color-accent-focus: #A61E0D;
 }
 

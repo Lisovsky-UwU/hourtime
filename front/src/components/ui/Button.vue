@@ -1,13 +1,13 @@
 <template>
   <button
     class="h-10 rounded-lg uppercase flex items-center justify-center
-    disabled:cursor-default px-4 min-w-[100px]"
+    disabled:cursor-default px-4 min-w-[100px] transition-all"
     :class="`${currentBgAndBorder} ${block ? 'w-full' : ''} ${loading ? 'cursor-default' : 'cursor-pointer'}`"
     :type="type"
     :disabled="disabled"
     v-on:click="clickOnBtn($event)"
   >
-    <div v-if="loading" class="loader absolute" />
+    <Loader type="dots" v-if="loading" class="absolute" />
     <div :class="{'opacity-0': loading}">
       <slot />
     </div>
@@ -16,6 +16,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import Loader from './Loader.vue';
 
 const props = defineProps({
   outlined: {
@@ -55,35 +56,19 @@ function clickOnBtn(event) {
 const currentBgAndBorder = computed(() => {
   if (props.outlined) {
     if (props.second) {
-      return "border border-secondary text-secondary"
+      return "border border-secondary text-secondary hover:border-secondary-hover hover:text-secondary-hover"
     }
     else {
-      return "border border-primary text-primary"
+      return "border border-primary text-primary hover:border-primary-hover hover:text-primary-hover"
     }
   }
   else {
     if (props.second) {
-      return "bg-secondary text-primary-text"
+      return "bg-secondary text-inverted-text hover:bg-secondary-hover"
     }
     else {
-      return "bg-primary text-primary-text"
+      return "bg-primary text-primary-text hover:bg-primary-hover"
     }
   }
 })
 </script>
-
-<style scoped>
-.loader {
-  width: 4px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  box-shadow: 19px 0 0 7px, 38px 0 0 3px, 57px 0 0 0;
-  transform: translateX(-38px);
-  animation: l21 .5s infinite alternate linear;
-}
-
-@keyframes l21 {
-  50%  {box-shadow: 19px 0 0 3px, 38px 0 0 7px, 57px 0 0 3px}
-  100% {box-shadow: 19px 0 0 0  , 38px 0 0 3px, 57px 0 0 7px}
-}
-</style>

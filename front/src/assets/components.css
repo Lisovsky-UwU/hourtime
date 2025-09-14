@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 .card {
-  @apply bg-surface rounded-lg p-2 text-primary-text border border-border-dark
+  @apply bg-surface rounded-lg p-2 text-primary-text border border-primary
 }
 
 .app-notification {
@@ -27,4 +27,8 @@
   &.error {
     @apply bg-error;
   }
+}
+
+.circle-button {
+  @apply p-2 cursor-pointer rounded-full aspect-square uppercase flex items-center justify-center transition-all;
 }

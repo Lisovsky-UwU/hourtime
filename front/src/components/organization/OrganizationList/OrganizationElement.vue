@@ -1,7 +1,7 @@
 <template>
-  <div class="overflow-hidden border-b border-border-dark">
+  <div class="overflow-hidden border-b border-border-primary">
     <div
-      class="w-full flex flex-row items-center gap-2 text-left hover:bg-surface px-4 py-2"
+      class="w-full flex flex-row items-center gap-2 text-left hover:bg-background-hover px-4 py-2"
     >
       <div class="text-lg font-bold">
         {{ organization.name }}
@@ -12,11 +12,11 @@
 
       <div class="flex-grow" />
 
-      <button class="px-3 py-1 cursor-pointer bg-success rounded-lg uppercase">
-        {{ $t("message.common.edit") }}
+      <button class="circle-button hover-buttons">
+        <svg-icon size="24" type="mdi" :path="mdiPen" />
       </button>
-      <button class="px-3 py-1 cursor-pointer bg-error rounded-lg uppercase">
-        {{ $t("message.common.delete") }}
+      <button class="circle-button hover-buttons">
+        <svg-icon size="24" type="mdi" :path="mdiDelete" />
       </button>
     </div>
 
@@ -27,7 +27,7 @@
     <div>
       <div
         v-for="workspace of organization.workspaces" :key="workspace.id"
-        class="pl-8 py-2 hover:bg-surface flex flex-row gap-2 px-4 items-center"
+        class="pl-8 py-2 hover:bg-background-hover flex flex-row gap-2 px-4 items-center"
       >
         <div>
           {{ workspace.name }}
@@ -35,11 +35,11 @@
 
         <div class="flex-grow" />
 
-        <button class="px-3 py-1 cursor-pointer bg-success rounded-lg uppercase">
-          {{ $t("message.common.edit") }}
+        <button class="circle-button hover-buttons">
+          <svg-icon size="24" type="mdi" :path="mdiPen" />
         </button>
-        <button class="px-3 py-1 cursor-pointer bg-error rounded-lg uppercase">
-          {{ $t("message.common.delete") }}
+        <button class="circle-button hover-buttons">
+          <svg-icon size="24" type="mdi" :path="mdiDelete" />
         </button>
       </div>
     </div>
@@ -48,6 +48,8 @@
 
 <script setup lang="ts">
 import { type PropType } from 'vue';
+import SvgIcon from '@jamescoyle/vue-icon'
+import { mdiPen, mdiDelete } from '@mdi/js'
 import type { OrganizationModel } from '@/stores/models/organization';
 
 const props = defineProps({
@@ -57,3 +59,12 @@ const props = defineProps({
   },
 })
 </script>
+
+<style scoped>
+@import 'tailwindcss';
+@import '@/assets/theme.css';
+
+.hover-buttons {
+  @apply hover:bg-surface;
+}
+</style>

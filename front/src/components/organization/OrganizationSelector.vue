@@ -5,7 +5,7 @@
     :class="{ open: isOpen }"
     @click="toggle"
   >
-    <div class="select-selected">
+    <div class="select-selected" :class="{active: isOpen}">
       {{ organizations.currentOrganization?.name }} &ndash; {{ workspaces.selectedWorkspace?.name }}
     </div>
 
@@ -30,10 +30,15 @@
           </div>
         </div>
         <button
-          class="w-full uppercase bg-border-dark cursor-pointer py-1" to="/organizations"
+          class="w-full uppercase bg-border-primary cursor-pointer py-1 px-1
+          hover:bg-border-primary-hover transition-all relative flex items-center"
+          to="/organizations"
           @click="router.push('/organizations'); close()"
         >
+          <svg-icon type="mdi" :path="mdiCogs" />
+          <div class="absolute left-1/2 transform -translate-x-1/2">
           {{ $t("message.common.manage") }}
+          </div>
         </button>
       </div>
     </transition>
@@ -42,11 +47,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import router from '@/router';
+import SvgIcon from '@jamescoyle/vue-icon'
+import { mdiCogs } from '@mdi/js';
 import { useOrganizations } from '@/stores/organizations';
 import { useWorkspaces } from '@/stores/workspaces';
 import type { OrganizationModel } from '@/stores/models/organization';
 import type { WorkspaceModel } from '@/stores/models/workspace';
-import router from '@/router';
 
 const organizations = useOrganizations()
 const workspaces = useWorkspaces()
@@ -104,22 +111,26 @@ onUnmounted(() => {
 .select-selected {
   @apply w-[300px] py-2 px-6 bg-background rounded-lg items-center select-none cursor-pointer
   border-t-[2px] border-x-[2px] border-background transition-all overflow-hidden whitespace-nowrap
-  text-ellipsis;
+  text-ellipsis transition-all;
+}
+
+.select-selected:hover, .select-selected.active {
+  @apply bg-background-hover;
 }
 
 .custom-select.open .select-selected {
-  @apply rounded-b-none rounded-t-lg border-border-dark;
+  @apply rounded-b-none rounded-t-lg border-border-primary;
 }
 
 .select-items {
   scrollbar-color: var(--color-surface) var(--color-background);
   scrollbar-width: thin;
   @apply bg-background absolute top-full z-50 left-0 right-0 max-h-[350px] overflow-y-auto
-  rounded-b-lg border-x-[2px] border-b-[2px] border-border-dark;
+  rounded-b-lg border-x-[2px] border-b-[2px] border-border-primary;
 }
 
 .organization {
-  @apply border-t-[2px] border-border-dark;
+  @apply border-t-[2px] border-border-primary;
 }
 
 .organization-name {
@@ -130,7 +141,9 @@ onUnmounted(() => {
   @apply px-5 py-2 flex items-center cursor-pointer;
 }
 
-.workspace:hover,
+.workspace:hover {
+  @apply bg-background-hover;
+}
 .workspace.active {
   @apply bg-surface;
 }

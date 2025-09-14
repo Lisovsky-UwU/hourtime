@@ -19,7 +19,6 @@ const en = {
         enterPassword: "Enter password",
         login: "Log in",
         registrate: "Registrate",
-        logout: "Log out",
       },
       organization: {
         createNewOrganization: "Create a new organization",
@@ -27,6 +26,13 @@ const en = {
         enterOrganizationName: "Enter organization name",
         defaultName: "{userName}'s organization",
       },
+    },
+
+    sideBar: {
+      timeTrack: "Time track",
+      projects: "Projects",
+      tasks: "Tasks",
+      logout: "Log out",
     },
 
     validations: {

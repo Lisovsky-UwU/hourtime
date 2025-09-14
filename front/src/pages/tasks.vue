@@ -1,5 +1,5 @@
 <template>
   <div>
-    Time track
+    Tasks
   </div>
 </template>

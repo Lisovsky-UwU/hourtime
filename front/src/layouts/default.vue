@@ -21,10 +21,13 @@
     </div>
   </div>
 
-  <div v-else class="h-screen">
-    <AppBar/>
-    <div class="overflow-y-auto" style="max-height: calc(100vh - 60px)">
-      <slot />
+  <div v-else class="h-screen flex flex-col">
+    <AppBar class="" />
+    <div class="flex flex-row flex-grow">
+      <SideBar />
+      <div class="overflow-y-auto flex-grow" style="max-height: calc(100vh - 60px)">
+        <slot />
+      </div>
     </div>
   </div>
 </template>
@@ -37,6 +40,7 @@ import { useUserData } from '@/stores/user-data';
 import { useI18n } from 'vue-i18n';
 import CreateOrganization from '@/components/organization/CreateOrganization.vue';
 import AppBar from '@/components/AppBar.vue';
+import SideBar from '@/components/SideBar.vue';
 
 const loading = ref(true)
 

@@ -13,7 +13,7 @@
       </Button>
     </div>
 
-    <div class="border-t border-border-dark">
+    <div class="border-t border-border-primary">
       <OrganizationList />
     </div>
   </div>
