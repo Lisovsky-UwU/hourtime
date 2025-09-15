@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from src.models.common import UserAccess
+
 
 class CreateWorkspacePayload(BaseModel):
     organization_id: int
@@ -14,4 +16,9 @@ class UpdateWorkspacePayload(BaseModel):
 class WorkspaceSubElement(BaseModel):
     id: int
     name: str
+
+
+class WorkspaceListWithAccess(BaseModel):
+    access: UserAccess
+    workspaces: list[WorkspaceSubElement]
 

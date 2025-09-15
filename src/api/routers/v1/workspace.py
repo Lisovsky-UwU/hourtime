@@ -4,7 +4,7 @@ from src.api.depends import check_user_token, service_workspace_depends
 from src.api.handlers import LoggingRoute
 from src.dto.api.common import ResultResponse
 from src.dto.api.workspace import CreateWorkspaceByUserRequest, UpdateWorkspaceByUserRequest
-from src.dto.workspace import CreateWorkspacePayload, UpdateWorkspacePayload
+from src.dto.workspace import CreateWorkspacePayload, UpdateWorkspacePayload, WorkspaceListWithAccess
 from src.models.user import UserModel
 from src.models.workspace import WorkspaceModel
 from src.service.workspace import WorkspaceService
@@ -25,6 +25,14 @@ async def create_workspace_from_user(
             organization_id=request_model.organization_id,
         ),
     )
+
+@workspace_route.get("/for_organization")
+async def get_workspaces_for_organization_from_user(
+    organization_id: int,
+    user_model: UserModel = Depends(check_user_token),
+    workspace_service: WorkspaceService = Depends(service_workspace_depends),
+) -> WorkspaceListWithAccess:
+    return await workspace_service.get_by_organization_from_user(user_model.id, organization_id)
 
 @workspace_route.put("/update")
 async def update_workspace_from_user(
