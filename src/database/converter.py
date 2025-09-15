@@ -1,5 +1,6 @@
 from src.database.orm.organization import OrganizationORM
 from src.database.orm.project import ProjectORM
+from src.database.orm.task import TaskORM
 from src.database.orm.user import UserORM
 from src.database.orm.user_token import UserTokenORM
 from src.database.orm.workspace import WorkspaceORM
@@ -8,6 +9,7 @@ from src.dto.workspace import WorkspaceSubElement
 from src.models.common import UserAccess
 from src.models.organization import OrganizationModel
 from src.models.project import ProjectModel
+from src.models.task import TaskModel
 from src.models.user import UserModel, UserTokenModel
 from src.models.workspace import WorkspaceModel
 
@@ -75,5 +77,16 @@ class DatabaseModelsConverter:
             workspace_id=project_orm.workspace_id,
             name=project_orm.name,
             description=project_orm.description,
+        )
+
+    @staticmethod
+    def task_orm_to_model(task_orm: TaskORM) -> TaskModel:
+        return TaskModel(
+            id=task_orm.id,
+            number=task_orm.number,
+            name=task_orm.name,
+            description=task_orm.description,
+            project_id=task_orm.project_id,
+            workspace_id=task_orm.workspace_id,
         )
 

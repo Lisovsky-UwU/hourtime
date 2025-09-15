@@ -8,5 +8,6 @@ class TaskModel(BaseModel):
     number: int
     name: str
     description: str | None
-    project_id: int
+    project_id: int | None
+    workspace_id: int
 

@@ -1,4 +1,9 @@
-from src.dto.workspace import CreateWorkspacePayload, UpdateWorkspacePayload, WorkspaceListWithAccess, WorkspaceSubElement
+from src.dto.workspace import (
+    CreateWorkspacePayload,
+    UpdateWorkspacePayload,
+    WorkspaceListWithAccess,
+    WorkspaceSubElement,
+)
 from src.exceptions import NotFoundError
 from src.exceptions.defined import ORGANIZATION_ACCESS_ERROR
 from src.models.common import UserAccess
@@ -31,24 +36,6 @@ class WorkspaceService:
 
         return user_access
 
-    async def _check_user_access_for_organization(
-        self,
-        user_id: int,
-        organization_id: int,
-    ) -> UserAccess:
-        try:
-            user_access = await self.organization_repository.get_user_access_in_organization(
-                user_id,
-                organization_id,
-            )
-        except NotFoundError as exc:
-            raise ORGANIZATION_ACCESS_ERROR from exc
-
-        if user_access in (None, UserAccess.PARTIAL):
-            raise ORGANIZATION_ACCESS_ERROR
-
-        return user_access
-
     async def create_workspace(self, payload: CreateWorkspacePayload) -> WorkspaceModel:
         return await self.workspace_repository.create_workspace(payload)
 
@@ -57,7 +44,17 @@ class WorkspaceService:
         user_id: int,
         payload: CreateWorkspacePayload,
     ) -> WorkspaceModel:
-        await self._check_user_access_for_organization(user_id, payload.organization_id)
+        try:
+            user_access = await self.organization_repository.get_user_access_in_organization(
+                user_id,
+                payload.organization_id,
+            )
+        except NotFoundError as exc:
+            raise ORGANIZATION_ACCESS_ERROR from exc
+
+        if user_access in (None, UserAccess.PARTIAL):
+            raise ORGANIZATION_ACCESS_ERROR
+
         return await self.create_workspace(payload)
 
     async def get_by_organization_from_user(
@@ -65,7 +62,17 @@ class WorkspaceService:
         user_id: int,
         organization_id: int,
     ) -> WorkspaceListWithAccess:
-        user_access = await self._check_user_access_for_organization(user_id, organization_id)
+        try:
+            user_access = await self.organization_repository.get_user_access_in_organization(
+                user_id,
+                organization_id,
+            )
+        except NotFoundError as exc:
+            raise ORGANIZATION_ACCESS_ERROR from exc
+
+        if user_access is None:
+            raise ORGANIZATION_ACCESS_ERROR
+
         workspaces = await self.workspace_repository.get_by_organization(organization_id)
         return WorkspaceListWithAccess(
             access=user_access,

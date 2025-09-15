@@ -106,7 +106,19 @@ const en = {
         },
         30: {
           title: "Not Found",
-          text: "Workspace not found."
+          text: "Workspace not found.",
+        },
+        40: {
+          title: "Not Found",
+          text: "Project not found.",
+        },
+        50: {
+          title: "Not Found",
+          text: "Project not found.",
+        },
+        51: {
+          title: "Incorrect project",
+          text: "Specified project is not part of the workspace.",
         },
         500: {
           title: "Unexpected Server Error",
