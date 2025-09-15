@@ -47,6 +47,7 @@ class OrganizationRepositoryDB(DatabaseRepositoryMixin, OrganizationUseCase):
         self.session.add(organization_orm)
         await self.session.commit()
         await self.session.refresh(organization_orm)
+        await self._clear_cache_for_organization(organization_orm.id)
         return DatabaseModelsConverter.organization_orm_to_model(organization_orm)
 
     async def add_users_to_organization(
@@ -64,6 +65,7 @@ class OrganizationRepositoryDB(DatabaseRepositoryMixin, OrganizationUseCase):
             self.session.add(link_user_orm)
         await self.session.commit()
         await self.session.refresh(organization_orm)
+        await self._clear_cache_for_organization(organization_orm.id)
         return DatabaseModelsConverter.organization_orm_to_model(organization_orm)
 
     async def get_user_organizations(self, user_id: int) -> list[UserOrganizationWithWorkspaces]:
@@ -122,4 +124,5 @@ class OrganizationRepositoryDB(DatabaseRepositoryMixin, OrganizationUseCase):
         organization_orm = await self._get_orm_by_id(organization_id)
         organization_orm.deleted = True
         await self.session.commit()
+        await self._clear_cache_for_organization(organization_id)
 
