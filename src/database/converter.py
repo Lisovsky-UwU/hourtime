@@ -1,6 +1,7 @@
 from src.database.orm.organization import OrganizationORM
 from src.database.orm.project import ProjectORM
 from src.database.orm.task import TaskORM
+from src.database.orm.time_entry import TimeEntryORM
 from src.database.orm.user import UserORM
 from src.database.orm.user_token import UserTokenORM
 from src.database.orm.workspace import WorkspaceORM
@@ -10,6 +11,7 @@ from src.models.common import UserAccess
 from src.models.organization import OrganizationModel
 from src.models.project import ProjectModel
 from src.models.task import TaskModel
+from src.models.time_entery import TimeEntryModel
 from src.models.user import UserModel, UserTokenModel
 from src.models.workspace import WorkspaceModel
 
@@ -88,5 +90,20 @@ class DatabaseModelsConverter:
             description=task_orm.description,
             project_id=task_orm.project_id,
             workspace_id=task_orm.workspace_id,
+        )
+
+    @staticmethod
+    def time_entry_orm_to_model(time_entry_orm: TimeEntryORM) -> TimeEntryModel:
+        return TimeEntryModel(
+            id=time_entry_orm.id,
+            user_id=time_entry_orm.user_id,
+            comment=time_entry_orm.comment,
+            workspace_id=time_entry_orm.workspace_id,
+            project_id=time_entry_orm.project_id,
+            task_id=time_entry_orm.task_id,
+            start_date=time_entry_orm.start_date,
+            start_time=time_entry_orm.start_time,
+            end_date=time_entry_orm.end_date,
+            end_time=time_entry_orm.end_time,
         )
 

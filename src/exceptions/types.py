@@ -82,6 +82,7 @@ class AuthentificationError(BaseHourtimeException):
 class AccessError(BaseHourtimeException):
     _api_status_code = 403
 
+
 class IncorrectRequestError(BaseHourtimeException):
     _api_status_code = 400
 
