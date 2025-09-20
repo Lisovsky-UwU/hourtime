@@ -1,7 +1,7 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 .card {
-  @apply bg-surface rounded-lg p-2 text-primary-text border border-primary
+  @apply bg-surface rounded-lg p-2 text-primary-text border border-primary;
 }
 
 .app-notification {
