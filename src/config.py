@@ -18,14 +18,15 @@ class PostgreSettings(Fieldset):
     db_name = Field[str]("").label("Database name")
     username = Field[str]("").label("User to access database")
     password = Field[str]("").label("Password for database user")
+    connection_timeout = Field[int](30).label("Connectiion timeout to database in seconds")
 
     @property
     def connection_string(self) -> str:
-        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
+        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}?connect_timeout={self.connection_timeout}"
 
     @property
     def connection_string_psycopg(self) -> str:
-        return f"postgresql+psycopg2://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
+        return f"postgresql+psycopg2://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}?connect_timeout={self.connection_timeout}"
 
 
 class ApiSettings(Fieldset):
