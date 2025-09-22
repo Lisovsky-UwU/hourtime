@@ -14,7 +14,7 @@ from src.repository.mixin import DatabaseRepositoryMixin
 from src.use_case.time_entry import TimeEntryUseCase
 
 
-class UserRepositoryDB(DatabaseRepositoryMixin, TimeEntryUseCase):
+class TimeEntryRepositoryDB(DatabaseRepositoryMixin, TimeEntryUseCase):
 
     async def _get_orm_by_id(
         self,
@@ -143,11 +143,15 @@ class UserRepositoryDB(DatabaseRepositoryMixin, TimeEntryUseCase):
                 TimeEntryORM.start_date.between(range_date_start, range_date_end),
                 TimeEntryORM.end_date.between(range_date_start, range_date_end),
             ),
+            TimeEntryORM.deleted == False,  # noqa: E712
         )
         if workspace_id is not None:
             filter_ = and_(filter_, TimeEntryORM.workspace_id == workspace_id)
 
-        query = select(TimeEntryORM).where(filter_)
+        query = select(TimeEntryORM).where(filter_).order_by(
+            TimeEntryORM.start_date,
+            TimeEntryORM.start_time,
+        )
         result = await self.session.execute(query)
         entry_list: list[TimeEntryForUser] = []
         for row in result.scalars():
@@ -179,8 +183,10 @@ class UserRepositoryDB(DatabaseRepositoryMixin, TimeEntryUseCase):
         entry_orm.comment = payload.comment or None
         entry_orm.project_id = payload.project_id
         entry_orm.task_id = payload.task_id
-        entry_orm.start_date = payload.start_date
-        entry_orm.start_time = payload.start_time
+        if payload.start_date is not None:
+            entry_orm.start_date = payload.start_date
+        if payload.start_time is not None:
+            entry_orm.start_time = payload.start_time
         entry_orm.end_date = payload.end_date if payload.end_time is not None else None
         entry_orm.end_time = payload.end_time if payload.end_date is not None else None
         await self.session.commit()

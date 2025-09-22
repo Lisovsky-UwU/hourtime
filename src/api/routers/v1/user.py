@@ -21,7 +21,6 @@ async def get_my_user_info(
 ) -> UserModel:
     return user_model
 
-
 @user_route.put("/me/update")
 async def update_user_data(
     request_body: UpdateUserRequest,
@@ -33,7 +32,6 @@ async def update_user_data(
         payload=request_body,
     )
     return new_user_model
-
 
 @user_route.put("/me/change_password")
 async def change_user_password(

@@ -4,7 +4,11 @@ from src.api.depends import check_user_token, service_workspace_depends
 from src.api.handlers import LoggingRoute
 from src.dto.api.common import ResultResponse
 from src.dto.api.workspace import CreateWorkspaceByUserRequest, UpdateWorkspaceByUserRequest
-from src.dto.workspace import CreateWorkspacePayload, UpdateWorkspacePayload, WorkspaceListWithAccess
+from src.dto.workspace import (
+    CreateWorkspacePayload,
+    UpdateWorkspacePayload,
+    WorkspaceListWithAccess,
+)
 from src.models.user import UserModel
 from src.models.workspace import WorkspaceModel
 from src.service.workspace import WorkspaceService

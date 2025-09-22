@@ -6,18 +6,21 @@ from src.models.user import UserModel
 from src.repository.organization import OrganizationRepositoryDB
 from src.repository.project import ProjectRepositoryDB
 from src.repository.task import TaskRepositoryDB
+from src.repository.time_entry import TimeEntryRepositoryDB
 from src.repository.user import UserRepositoryDB
 from src.repository.user_token import UserTokenRepositoryDB
 from src.repository.workspace import WorkspaceRepositoryDB
 from src.service.organization import OrganizationService
 from src.service.project import ProjectService
 from src.service.task import TaskService
+from src.service.time_entry import TimeEntryService
 from src.service.user import UserService
 from src.service.user_auth import UserAuthService
 from src.service.workspace import WorkspaceService
 from src.use_case.organization import OrganizationUseCase
 from src.use_case.project import ProjectUseCase
 from src.use_case.task import TaskUseCase
+from src.use_case.time_entry import TimeEntryUseCase
 from src.use_case.user import UserUseCase
 from src.use_case.user_tokens import UserTokenUseCase
 from src.use_case.workspace import WorkspaceUseCase
@@ -63,6 +66,12 @@ def service_task_depends(
     workspace_repository: WorkspaceUseCase = Depends(WorkspaceRepositoryDB),
 ) -> TaskService:
     return TaskService(task_repository, workspace_repository)
+
+def service_time_entry_depends(
+    time_entry_repository: TimeEntryUseCase = Depends(TimeEntryRepositoryDB),
+    workspace_repository: WorkspaceUseCase = Depends(WorkspaceRepositoryDB),
+) -> TimeEntryService:
+    return TimeEntryService(time_entry_repository, workspace_repository)
 
 async def check_user_token(
     token: str = Depends(token_header_scheme),

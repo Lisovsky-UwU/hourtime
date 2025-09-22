@@ -86,3 +86,7 @@ class AccessError(BaseHourtimeException):
 class IncorrectRequestError(BaseHourtimeException):
     _api_status_code = 400
 
+
+class ValidationError(BaseHourtimeException):
+    _api_status_code = 400
+

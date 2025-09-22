@@ -1,7 +1,9 @@
 import uuid
-from datetime import date, time
+from datetime import date
 
 from pydantic import BaseModel
+
+from src.models.helpers import TimeNoMicroseconds
 
 
 class TimeEntryModel(BaseModel):
@@ -12,7 +14,7 @@ class TimeEntryModel(BaseModel):
     project_id: int | None
     task_id: uuid.UUID | None
     start_date: date
-    start_time: time
+    start_time: TimeNoMicroseconds
     end_date: date | None
-    end_time: time | None
+    end_time: TimeNoMicroseconds | None
 

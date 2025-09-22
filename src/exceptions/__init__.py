@@ -7,4 +7,5 @@ from .types import (
     IncorrectRequestError,  # noqua: F401
     LogicalError,  # noqa: F401
     NotFoundError,  # noqa: F401
+    ValidationError,  # noqa: F401
 )
