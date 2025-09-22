@@ -22,7 +22,7 @@ class PostgreSettings(Fieldset):
 
     @property
     def connection_string(self) -> str:
-        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}?connect_timeout={self.connection_timeout}"
+        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.db_name}"
 
     @property
     def connection_string_psycopg(self) -> str:
