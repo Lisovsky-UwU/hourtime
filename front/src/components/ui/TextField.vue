@@ -3,7 +3,7 @@
     <label
       v-if="label != null"
       :for="id"
-      class="block text-primary-text font-semibold mb-1 uppercase text-sm"
+      class="block font-semibold mb-1 uppercase text-sm"
     >
       {{ label }}
     </label>
@@ -13,8 +13,9 @@
       :placeholder="placeholder"
       :disabled="loading"
       v-model="model"
-      class="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-300"
-      :class="error ? 'border-error' : 'border-border-light'"
+      class="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-300
+      "
+      :class="error ? 'border-error' : 'border-border focus:border-highlight'"
     >
     <div v-if="errorsText.length > 0" class="flex flex-col">
       <label

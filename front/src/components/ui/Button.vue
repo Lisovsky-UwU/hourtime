@@ -56,18 +56,22 @@ function clickOnBtn(event) {
 const currentBgAndBorder = computed(() => {
   if (props.outlined) {
     if (props.second) {
-      return "border border-secondary text-secondary hover:border-secondary-hover hover:text-secondary-hover"
+      // return "border border-secondary text-secondary hover:border-secondary-hover hover:text-secondary-hover"
+      return "border border-secondary text-secondary hover:border-secondary-highlight hover:text-secondary-highlight"
     }
     else {
-      return "border border-primary text-primary hover:border-primary-hover hover:text-primary-hover"
+      // return "border border-primary text-primary hover:border-primary-hover hover:text-primary-hover"
+      return "border border-primary text-primary hover:border-primary-highlight hover:text-primary-highlight"
     }
   }
   else {
     if (props.second) {
-      return "bg-secondary text-inverted-text hover:bg-secondary-hover"
+      // return "bg-secondary text-inverted-text hover:bg-secondary-hover"
+      return "bg-secondary text-bg hover:bg-secondary-highlight"
     }
     else {
-      return "bg-primary text-primary-text hover:bg-primary-hover"
+      // return "bg-primary text-primary-text hover:bg-primary-hover"
+      return "bg-primary text-bg hover:bg-primary-highlight"
     }
   }
 })

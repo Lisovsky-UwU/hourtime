@@ -1,11 +1,11 @@
 @import 'tailwindcss';
 
 .card {
-  @apply bg-surface rounded-lg p-2 text-primary-text border border-primary;
+  @apply bg-bg rounded-lg p-2 text-text border border-border;
 }
 
 .app-notification {
-  @apply rounded px-2 py-2 mt-2 text-primary-text;
+  @apply rounded px-2 py-2 mt-2 text-text;
 
   .notification-title {
     @apply text-lg font-medium;

@@ -1,6 +1,7 @@
 <template>
-  <div class="px-4 bg-surface w-full p-2 flex items-center gap-4 h-[60px]">
+  <div class="bg-bg-dark w-full p-5 flex items-center gap-4 h-[60px]">
     <Logo />
+    <div class="flex-grow" />
     <OrganizationSelector />
   </div>
 </template>

@@ -13,7 +13,7 @@
       </Button>
     </div>
 
-    <div class="border-t border-border-primary">
+    <div class="border-t border-border">
       <OrganizationList />
     </div>
   </div>
@@ -22,6 +22,4 @@
 <script setup lang="ts">
 import Button from '@/components/ui/Button.vue';
 import OrganizationList from '@/components/organization/OrganizationList/index.vue'
-
-
 </script>

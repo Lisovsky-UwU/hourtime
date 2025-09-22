@@ -1,34 +1,36 @@
 <template>
-  <notifications
-    classes="app-notification"
-    position="top center"
-    dangerously-set-inner-html
-    width="500"
-    :duration="5000"
-  >
-    <template v-slot:body="{ item, close }">
-      <div :class="`app-notification ${item.type}`">
-        <div class="flex flex-row items-center gap-3">
-          <svg-icon size="30" type="mdi" :path="iconByType[item.type]" />
-          <div class="flex flex-col flex-grow">
-            <div class="notification-title">
-              {{ item.title }}
-            </div>
+  <div id="app">
+    <notifications
+      classes="app-notification"
+      position="top center"
+      dangerously-set-inner-html
+      width="500"
+      :duration="5000"
+    >
+      <template v-slot:body="{ item, close }">
+        <div :class="`app-notification ${item.type}`">
+          <div class="flex flex-row items-center gap-3">
+            <svg-icon size="30" type="mdi" :path="iconByType[item.type]" />
+            <div class="flex flex-col flex-grow">
+              <div class="notification-title">
+                {{ item.title }}
+              </div>
 
-            <div class="notification-content" v-html="item.text" />
+              <div class="notification-content" v-html="item.text" />
+            </div>
+            <svg-icon type="mdi" :path="mdiClose" @click="close" />
           </div>
-          <svg-icon type="mdi" :path="mdiClose" @click="close" />
         </div>
+      </template>
+    </notifications>
+    <div class="bg-bg text-text">
+      <div v-if="loading" class="h-screen w-screen flex justify-center items-center">
+        <Loader/>
       </div>
-    </template>
-  </notifications>
-  <div class="bg-background text-primary-text">
-    <div v-if="loading" class="h-screen w-screen flex justify-center items-center">
-      <Loader/>
+      <component v-else :is="currentLayout">
+        <router-view />
+      </component>
     </div>
-    <component v-else :is="currentLayout">
-      <router-view />
-    </component>
   </div>
 </template>
 
@@ -81,3 +83,12 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style>
+@import 'tailwindcss';
+@import '@/assets/theme.css';
+
+body {
+  @apply bg-bg-dark;
+}
+</style>

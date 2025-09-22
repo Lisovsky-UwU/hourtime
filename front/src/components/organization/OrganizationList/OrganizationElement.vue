@@ -1,12 +1,12 @@
 <template>
-  <div class="overflow-hidden border-b border-border-primary">
+  <div class="overflow-hidden border-b border-border">
     <div
-      class="w-full flex flex-row items-center gap-2 text-left hover:bg-background-hover px-4 py-2"
+      class="w-full flex flex-row items-center gap-2 text-left px-4 py-2 hover:bg-bg-dark"
     >
       <div class="text-lg font-bold">
         {{ organization.name }}
       </div>
-      <div class="bg-surface rounded-lg px-3 border border-background">
+      <div class="bg-bg-light rounded-lg px-3 border border-border">
         {{ organization.access }}
       </div>
 
@@ -27,7 +27,7 @@
     <div>
       <div
         v-for="workspace of organization.workspaces" :key="workspace.id"
-        class="pl-8 py-2 hover:bg-background-hover flex flex-row gap-2 px-4 items-center"
+        class="pl-8 py-2 flex flex-row gap-2 px-4 items-center hover:bg-bg-dark"
       >
         <div>
           {{ workspace.name }}
@@ -65,6 +65,6 @@ const props = defineProps({
 @import '@/assets/theme.css';
 
 .hover-buttons {
-  @apply hover:bg-surface;
+  @apply hover:bg-bg-light;
 }
 </style>

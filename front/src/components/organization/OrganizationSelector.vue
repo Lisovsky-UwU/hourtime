@@ -30,14 +30,14 @@
           </div>
         </div>
         <button
-          class="w-full uppercase bg-border-primary cursor-pointer py-2 px-1
-          hover:bg-border-primary-hover transition-all relative flex items-center"
+          class="w-full uppercase bg-border cursor-pointer py-2 px-1
+          hover:bg-border-muted transition-all relative flex items-center"
           to="/organizations"
           @click="router.push('/organizations'); close()"
         >
           <svg-icon type="mdi" :path="mdiCog" />
           <div class="absolute left-1/2 transform -translate-x-1/2">
-          {{ $t("message.common.manage") }}
+            {{ $t("message.common.manage") }}
           </div>
         </button>
       </div>
@@ -109,28 +109,28 @@ onUnmounted(() => {
 }
 
 .select-selected {
-  @apply w-[300px] py-2 px-6 bg-background rounded-lg items-center select-none cursor-pointer
-  border-t-[2px] border-x-[2px] border-background transition-all overflow-hidden whitespace-nowrap
-  text-ellipsis transition-all;
+  @apply w-[300px] py-2 px-6 bg-bg-dark rounded-lg items-center select-none cursor-pointer
+  border-t-[2px] border-[2px] border-border transition-all overflow-hidden whitespace-nowrap
+  text-ellipsis text-right;
 }
 
 .select-selected:hover, .select-selected.active {
-  @apply bg-background-hover;
+  @apply bg-bg;
 }
 
 .custom-select.open .select-selected {
-  @apply rounded-b-none rounded-t-lg border-border-primary;
+  @apply rounded-b-none rounded-t-lg border-border;
 }
 
 .select-items {
-  scrollbar-color: var(--color-surface) var(--color-background);
+  scrollbar-color: var(--color-bg-light) var(--color-bg-dark);
   scrollbar-width: thin;
-  @apply bg-background absolute top-full z-50 left-0 right-0 max-h-[350px] overflow-y-auto
-  rounded-b-lg border-x-[2px] border-b-[2px] border-border-primary;
+  @apply bg-bg absolute top-full z-50 left-0 right-0 max-h-[350px] overflow-y-auto
+  rounded-b-lg border-x-[2px] border-b-[2px] border-border;
 }
 
 .organization {
-  @apply border-t-[2px] border-border-primary;
+  @apply border-t-[2px] border-border;
 }
 
 .organization-name {
@@ -142,10 +142,10 @@ onUnmounted(() => {
 }
 
 .workspace:hover {
-  @apply bg-background-hover;
+  @apply bg-bg-light;
 }
 .workspace.active {
-  @apply bg-surface;
+  @apply bg-bg-dark;
 }
 
 .organization:first-child {

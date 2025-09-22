@@ -25,7 +25,7 @@
     <AppBar class="" />
     <div class="flex flex-row flex-grow">
       <SideBar />
-      <div class="overflow-y-auto flex-grow" style="max-height: calc(100vh - 60px)">
+      <div class="overflow-y-auto flex-grow bg-bg" style="max-height: calc(100vh - 60px)">
         <slot />
       </div>
     </div>
