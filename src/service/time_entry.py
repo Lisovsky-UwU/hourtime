@@ -1,9 +1,9 @@
 import uuid
+from datetime import date
 
 from src.dto.time_entry import (
     CreateTimeEntryPayload,
     TimeEntryForUser,
-    TimeEntryGetFilterData,
     UpdateTimeEntryPayload,
 )
 from src.exceptions.defined import ORGANIZATION_ACCESS_ERROR
@@ -35,12 +35,36 @@ class TimeEntryService:
         await self._check_access_to_workspace(payload.user_id, payload.workspace_id)
         return await self.time_entry_repository.create_entry(payload)
 
-    async def get_for_user(self, filter_data: TimeEntryGetFilterData) -> list[TimeEntryForUser]:
+    async def get_for_user(
+        self,
+        user_id: int,
+        workspace_id: int | None,
+        page: int,
+        limit: int,
+    ) -> list[TimeEntryForUser]:
+        if workspace_id is not None:
+            await self._check_access_to_workspace(user_id, workspace_id)
         return await self.time_entry_repository.get_for_user(
-            filter_data.user_id,
-            filter_data.workspace_id,
-            filter_data.range_date_start,
-            filter_data.range_date_end,
+            user_id,
+            workspace_id,
+            page,
+            limit,
+        )
+
+    async def get_for_user_by_dates(
+        self,
+        user_id: int,
+        workspace_id: int | None,
+        range_date_start: date,
+        range_date_end: date,
+    ) -> list[TimeEntryForUser]:
+        if workspace_id is not None:
+            await self._check_access_to_workspace(user_id, workspace_id)
+        return await self.time_entry_repository.get_for_user_by_dates(
+            user_id,
+            workspace_id,
+            range_date_start,
+            range_date_end,
         )
 
     async def update_entry_by_user(

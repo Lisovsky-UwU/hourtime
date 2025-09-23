@@ -48,9 +48,3 @@ class TimeEntryForUser(BaseModel):
     end_date: date | None
     end_time: TimeNoMicroseconds | None
 
-class TimeEntryGetFilterData(BaseModel):
-    user_id: int
-    workspace_id: int | None
-    range_date_start: date
-    range_date_end: date
-

@@ -134,6 +134,35 @@ class TimeEntryRepositoryDB(DatabaseRepositoryMixin, TimeEntryUseCase):
         self,
         user_id: int,
         workspace_id: int | None,
+        page: int,
+        limit: int,
+    ) -> list[TimeEntryForUser]:
+        filter_ = and_(
+            TimeEntryORM.user_id == user_id,
+            TimeEntryORM.deleted == False,  # noqa: E712
+        )
+        if workspace_id is not None:
+            filter_ = and_(filter_, TimeEntryORM.workspace_id == workspace_id)
+
+        query = select(TimeEntryORM).where(filter_).order_by(
+            TimeEntryORM.start_date,
+            TimeEntryORM.start_time,
+        ).limit(limit).offset(page - 1)
+
+        result = await self.session.execute(query)
+
+        entry_list: list[TimeEntryForUser] = []
+        for row in result.scalars():
+            entry_list.append(
+                DatabaseModelsConverter.time_entry_orm_to_model_for_user(row),
+            )
+
+        return entry_list
+
+    async def get_for_user_by_dates(
+        self,
+        user_id: int,
+        workspace_id: int | None,
         range_date_start: date,
         range_date_end: date,
     ) -> list[TimeEntryForUser]:
@@ -156,17 +185,7 @@ class TimeEntryRepositoryDB(DatabaseRepositoryMixin, TimeEntryUseCase):
         entry_list: list[TimeEntryForUser] = []
         for row in result.scalars():
             entry_list.append(
-                TimeEntryForUser(
-                    id=row.id,
-                    comment=row.comment,
-                    workspace_id=row.workspace_id,
-                    project_id=row.project_id,
-                    task_id=row.task_id,
-                    start_date=row.start_date,
-                    start_time=row.start_time,
-                    end_date=row.end_date,
-                    end_time=row.end_time,
-                ),
+                DatabaseModelsConverter.time_entry_orm_to_model_for_user(row),
             )
 
         return entry_list

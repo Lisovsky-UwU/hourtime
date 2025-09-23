@@ -14,7 +14,6 @@ from src.dto.api.time_entry import (
 from src.dto.time_entry import (
     CreateTimeEntryPayload,
     TimeEntryForUser,
-    TimeEntryGetFilterData,
     UpdateTimeEntryPayload,
 )
 from src.models.time_entery import TimeEntryModel
@@ -67,18 +66,32 @@ async def create_time_by_user(
 @time_entry_route.get("/get_my")
 async def get_time_entries_by_user(
     workspace_id: int | None = None,
+    page: int = 1,
+    limit: int = 50,
+    user_model: UserModel = Depends(check_user_token),
+    time_entry_service: TimeEntryService = Depends(service_time_entry_depends),
+) -> list[TimeEntryForUser]:
+    return await time_entry_service.get_for_user(
+        user_id=user_model.id,
+        workspace_id=workspace_id,
+        page=page,
+        limit=limit,
+    )
+
+
+@time_entry_route.get("/get_my_for_dates")
+async def get_time_entries_for_dates_by_user(
+    workspace_id: int | None = None,
     date_start: str = Query(description="Format: YYYY-MM-DD"),
     date_end: str = Query(description="Format: YYYY-MM-DD"),
     user_model: UserModel = Depends(check_user_token),
     time_entry_service: TimeEntryService = Depends(service_time_entry_depends),
 ) -> list[TimeEntryForUser]:
-    return await time_entry_service.get_for_user(
-        TimeEntryGetFilterData(
-            user_id=user_model.id,
-            workspace_id=workspace_id,
-            range_date_start=datetime.strptime(date_start, "%Y-%m-%d"),
-            range_date_end=datetime.strptime(date_end, "%Y-%m-%d"),
-        ),
+    return await time_entry_service.get_for_user_by_dates(
+        user_id=user_model.id,
+        workspace_id=workspace_id,
+        range_date_start=datetime.strptime(date_start, "%Y-%m-%d"),
+        range_date_end=datetime.strptime(date_end, "%Y-%m-%d"),
     )
 
 @time_entry_route.put("/update")

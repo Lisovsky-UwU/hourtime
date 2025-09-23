@@ -21,6 +21,16 @@ class TimeEntryUseCase(abc.ABC):
         self,
         user_id: int,
         workspace_id: int | None,
+        page: int,
+        limit: int,
+    ) -> list[TimeEntryForUser]:
+        ...
+
+    @abc.abstractmethod
+    async def get_for_user_by_dates(
+        self,
+        user_id: int,
+        workspace_id: int | None,
         range_date_start: date,
         range_date_end: date,
     ) -> list[TimeEntryForUser]:
