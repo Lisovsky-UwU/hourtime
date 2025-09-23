@@ -36,7 +36,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-// import { notify } from '@kyvg/vue3-notification'
 import SvgIcon from '@jamescoyle/vue-icon'
 import {
   mdiInformation,
@@ -67,12 +66,6 @@ const userData = useUserData()
 const currentLayout = computed(() => api.isLogin ? DefaultLayout : AuthLayout)
 
 onMounted(async () => {
-  // notify({
-  //   title: "Test title",
-  //   text: 'Test message <div class="text-4xl">SUCCESS</div>',
-  //   type: "success"
-  // })
-
   try {
     api.loadToken()
     if (api.isLogin) {
