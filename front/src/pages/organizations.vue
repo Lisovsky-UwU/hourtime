@@ -2,7 +2,7 @@
   <div>
     <div class="flex p-3">
       <div class="text-2xl">
-        Organizations
+        {{ $t("message.page.organization.title") }}
       </div>
       <div class="flex-grow"/>
       <Button

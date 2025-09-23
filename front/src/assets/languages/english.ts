@@ -26,11 +26,16 @@ const en = {
         goRegistrate: "Create account",
       },
       organization: {
+        title: "Organizations",
         createNewOrganization: "Create a new organization",
         organizationName: "Organization name",
         enterOrganizationName: "Enter organization name",
         defaultName: "{userName}'s organization",
       },
+      project: {
+        title: "Projects",
+        noProjects: "There are no projects yet.",
+      }
     },
 
     sideBar: {

@@ -12,10 +12,10 @@
 
       <div class="flex-grow" />
 
-      <button class="circle-button hover-buttons">
+      <button class="circle-button hover-button">
         <svg-icon size="24" type="mdi" :path="mdiPen" />
       </button>
-      <button class="circle-button hover-buttons">
+      <button class="circle-button hover-button">
         <svg-icon size="24" type="mdi" :path="mdiDelete" />
       </button>
     </div>
@@ -35,10 +35,10 @@
 
         <div class="flex-grow" />
 
-        <button class="circle-button hover-buttons">
+        <button class="circle-button hover-button">
           <svg-icon size="24" type="mdi" :path="mdiPen" />
         </button>
-        <button class="circle-button hover-buttons">
+        <button class="circle-button hover-button">
           <svg-icon size="24" type="mdi" :path="mdiDelete" />
         </button>
       </div>
@@ -64,7 +64,7 @@ const props = defineProps({
 @import 'tailwindcss';
 @import '@/assets/theme.css';
 
-.hover-buttons {
+.hover-button {
   @apply hover:bg-bg-light;
 }
 </style>

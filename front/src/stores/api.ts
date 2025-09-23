@@ -35,7 +35,7 @@ export const useApiStore = defineStore('api', {
       this.userToken = null
     },
 
-    async doRequest(endpoint: ApiEndpoint, method: string, data: any | null = null): Promise<any> {
+    async doRequest(endpoint: ApiEndpoint, method: string, data: any | null = null, query: any | null = null): Promise<any> {
       let fetchOptions = {
         method: method,
         headers: {} as any,
@@ -49,8 +49,10 @@ export const useApiStore = defineStore('api', {
         fetchOptions.headers['User-Token'] = this.token
       }
 
+      const queryString = new URLSearchParams(query).toString()
+
       try {
-        var r = await fetch(`/api/v1${endpoint}`, fetchOptions)
+        var r = await fetch(`/api/v1${endpoint}?${queryString}`, fetchOptions)
       } catch (e) {
         notify({
           title: i18n.t("message.notification.serverRequestError.title"),

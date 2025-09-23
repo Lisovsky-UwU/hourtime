@@ -26,19 +26,19 @@ export const useOrganizations = defineStore("organizations", {
   },
 
   actions: {
-    setOrganizations(organizations: OrganizationModel[]) {
+    async setOrganizations(organizations: OrganizationModel[]) {
       this.organizations = organizations
       if (organizations.length > 0) {
-        this.selectOrganization(organizations[0])
+        await this.selectOrganization(organizations[0])
       }
     },
 
-    selectOrganization(organization: OrganizationModel, workspace: WorkspaceModel | null = null) {
+    async selectOrganization(organization: OrganizationModel, workspace: WorkspaceModel | null = null) {
       this.currentOrganization = organization
       if (workspace !== null) {
-        this.workspaces.selectWorkspace(workspace)
+        await this.workspaces.selectWorkspace(workspace)
       } else if (organization.workspaces.length > 0) {
-        this.workspaces.selectWorkspace(organization.workspaces[0])
+        await this.workspaces.selectWorkspace(organization.workspaces[0])
       }
     },
 
@@ -47,7 +47,7 @@ export const useOrganizations = defineStore("organizations", {
         ApiEndpoint.OrganizationMy,
         "GET",
       )
-      this.setOrganizations(response)
+      await this.setOrganizations(response)
     },
 
     async createOrganization(name: string) {

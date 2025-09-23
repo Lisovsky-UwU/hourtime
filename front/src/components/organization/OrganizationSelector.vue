@@ -77,9 +77,9 @@ const close = () => {
   isOpen.value = false
 }
 
-const selectItem = (organization: OrganizationModel, workspace: WorkspaceModel) => {
+const selectItem = async (organization: OrganizationModel, workspace: WorkspaceModel) => {
   if (workspace.id !== workspaces.currentWorkspace?.id) {
-    organizations.selectOrganization(organization, workspace)
+    await organizations.selectOrganization(organization, workspace)
     emit('change')
   }
   close()
