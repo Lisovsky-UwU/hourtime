@@ -2,7 +2,7 @@
   <form
     id="newOrganization"
     novalidate
-    @submit.prevent="createNewOrganization"
+    @submit.prevent="editOrganization"
     class="space-y-4"
   >
     <TextField
@@ -11,15 +11,16 @@
       :error="v$.name.$error"
       :errorsText="v$.name.$errors.map((error) => error.$message)"
       :loading="loading"
-      v-model="newOrganizationName.name"
+      v-model="newData.name"
       @change="v$.name.$validate()"
     />
     <Button
       block
+      color="primary"
       type="submit"
       :loading="loading"
     >
-      {{ $t("message.common.create") }}
+      {{ model.organization_id === null || model.organization_id === undefined ? $t("message.common.create") : $t("message.common.save") }}
     </Button>
   </form>
 </template>
@@ -33,14 +34,12 @@ import TextField from '@/components/ui/TextField.vue';
 import Button from '@/components/ui/Button.vue';
 import { reactive, ref } from 'vue';
 
-const props = defineProps({
-  defaultName: {
-    type: String,
-    default: "",
-  }
-})
+const model = defineModel({default: {
+  organization_id: null as null | number,
+  name: "",
+}})
 
-const emit = defineEmits(["created"])
+const emit = defineEmits(["updated"])
 
 const { t } = useI18n()
 
@@ -48,9 +47,7 @@ const organizations = useOrganizations()
 
 const loading = ref(false)
 
-const newOrganizationName = reactive({
-  name: props.defaultName,
-})
+const newData = reactive(model.value)
 
 const rules = {
   name: {
@@ -58,13 +55,22 @@ const rules = {
   }
 }
 
-const v$ = useVuelidate(rules, newOrganizationName)
+const v$ = useVuelidate(rules, newData)
 
-async function createNewOrganization() {
+async function editOrganization() {
+  await v$.value.$validate()
+  if (v$.value.$error) {
+    return
+  }
   loading.value = true
   try {
-    await organizations.createOrganization(newOrganizationName.name)
-    emit("created")
+    if (model.value.organization_id === null || model.value.organization_id === undefined) {
+      await organizations.createOrganization(model.value.name)
+      model.value.name = ""
+    } else {
+      await organizations.updateOrganization(model.value)
+    }
+    emit("updated")
   } finally {
     loading.value = false
   }

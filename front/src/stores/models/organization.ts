@@ -7,3 +7,8 @@ export interface OrganizationModel {
   access: UserAccess,
   workspaces: WorkspaceModel[],
 }
+
+export interface OrganizationUpdateModel {
+  organization_id: number,
+  name: string,
+}

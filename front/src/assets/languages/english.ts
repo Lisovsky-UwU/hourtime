@@ -8,6 +8,8 @@ const en = {
       edit: "Edit",
       delete: "Delete",
       manage: "Manage",
+      save: "Save",
+      cancel: "Cancel",
     },
 
     page: {
@@ -31,10 +33,24 @@ const en = {
         organizationName: "Organization name",
         enterOrganizationName: "Enter organization name",
         defaultName: "{userName}'s organization",
+        confirmDelete: "Do you really want to delete organization?",
+        workspaces: "Workspaces",
+        edit: "Edit organization",
+        delete: "Delete organization",
+        editWorkspace: "Edit workspace",
+        deleteWorkspace: "Delete workspace",
       },
       project: {
         title: "Projects",
         noProjects: "There are no projects yet.",
+      },
+      task: {
+        title: "Tasks",
+        noTasks: "There are no tasks yet.",
+        colId: "#",
+        colName: "Name",
+        colProject: "Project",
+        colActions: "Actions"
       }
     },
 

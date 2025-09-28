@@ -16,6 +16,16 @@ export const useProjects = defineStore("projects", {
     projects(): ProjectModel[] | null {
       return this.currentProjects
     },
+
+    projectsMap(): {number: ProjectModel} | null {
+      if (this.currentProjects === null) {
+        return null
+      }
+      return this.currentProjects.reduce((acc, element) => {
+        acc[element.id] = element
+        return acc
+      }, {} as {number: ProjectModel})
+    }
   },
 
   actions: {

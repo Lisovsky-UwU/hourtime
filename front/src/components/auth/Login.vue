@@ -30,6 +30,7 @@
     <div class="mt-auto">
       <Button
         block
+        color="primary"
         type="submit"
         :loading="loadingAuth"
       >

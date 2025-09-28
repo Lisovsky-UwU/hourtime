@@ -14,16 +14,24 @@
   </button>
 </template>
 
-<script setup>
-import { computed } from 'vue';
+<script setup lang="ts">
+import { computed, type PropType } from 'vue';
 import Loader from './Loader.vue';
 
+enum Color {
+  LIGHT = "light",
+  DARK = "dark",
+  PRIMARY = "primary",
+  SECOND = "second",
+  DANGER = "danger",
+}
+
 const props = defineProps({
-  outlined: {
-    type: Boolean,
-    default: false,
+  color: {
+    type: String as PropType<Color>,
+    default: "light"
   },
-  second: {
+  outlined: {
     type: Boolean,
     default: false,
   },
@@ -54,25 +62,44 @@ function clickOnBtn(event) {
 }
 
 const currentBgAndBorder = computed(() => {
-  if (props.outlined) {
-    if (props.second) {
-      // return "border border-secondary text-secondary hover:border-secondary-hover hover:text-secondary-hover"
-      return "border border-secondary text-secondary hover:border-secondary-highlight hover:text-secondary-highlight"
-    }
-    else {
-      // return "border border-primary text-primary hover:border-primary-hover hover:text-primary-hover"
-      return "border border-primary text-primary hover:border-primary-highlight hover:text-primary-highlight"
-    }
+  let base, hover, text;
+  switch (props.color) {
+    case Color.LIGHT:
+      base = "bg-light"
+      text = "text"
+      hover = "bg-dark"
+      break;
+    case Color.DARK:
+      base = "bg-dark"
+      text = "text"
+      hover = "bg-light"
+      break;
+    case Color.PRIMARY:
+      base = "primary"
+      text = "bg"
+      hover = "primary-highlight"
+      break;
+    case Color.SECOND:
+      base = "secondary"
+      text = "bg"
+      hover = "secondary-highlight"
+      break;
+    case Color.DANGER:
+      base = "danger"
+      text = "text"
+      hover = "danger"
+      break;
+    default:
+      base = "bg-light"
+      text = "text"
+      hover = "bg-dark"
+      break;
   }
-  else {
-    if (props.second) {
-      // return "bg-secondary text-inverted-text hover:bg-secondary-hover"
-      return "bg-secondary text-bg hover:bg-secondary-highlight"
-    }
-    else {
-      // return "bg-primary text-primary-text hover:bg-primary-hover"
-      return "bg-primary text-bg hover:bg-primary-highlight"
-    }
+
+  if (props.outlined) {
+    return `border border-${base} text-${base} hover:border-${hover} hover:text-${hover}`
+  } else {
+    return `bg-${base} text-${text} hover:bg-${hover}`
   }
 })
 </script>

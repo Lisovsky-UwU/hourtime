@@ -1,3 +1,8 @@
 @import "tailwindcss";
 @import "./theme.css";
 @import "./components.css";
+
+dialog {
+  padding: 0;
+  border: none;
+}

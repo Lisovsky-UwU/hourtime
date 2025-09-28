@@ -15,13 +15,13 @@
       v-model="model"
       class="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-300
       "
-      :class="error ? 'border-error' : 'border-border focus:border-highlight'"
+      :class="error ? 'border-danger' : 'border-border focus:border-highlight'"
     >
     <div v-if="errorsText.length > 0" class="flex flex-col">
       <label
         v-for="(text, index) of errorsText"
         :key="`$text-field-error-${id}-${index}`"
-        class="block text-error text-sm mt-1">
+        class="block text-danger text-sm mt-1">
         {{ text }}
       </label>
     </div>

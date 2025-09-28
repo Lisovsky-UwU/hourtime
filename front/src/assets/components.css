@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 .card {
-  @apply bg-bg rounded-lg p-2 text-text border border-border;
+  @apply bg-bg rounded-lg text-text border border-border;
 }
 
 .app-notification {
@@ -25,7 +25,7 @@
     @apply bg-warning;
   }
   &.error {
-    @apply bg-error;
+    @apply bg-danger;
   }
 }
 

@@ -8,6 +8,8 @@
   --color-bg: hsl(219 59% 5%);
   --color-bg-light: hsl(217 37% 10%);
 
+  --color-bg-overlay: hsl(0 0% 0% / 60%);
+
   /* Text */
   --color-text: hsl(217 100% 98%);
   --color-text-muted: hsl(217 36% 72%);
@@ -19,7 +21,7 @@
   --color-border: hsl(217 28% 30%);
   --color-border-muted: hsl(217 40% 20%);
 
-  /* /* Primary */
+  /* Primary */
   --color-primary: hsl(217 78% 75%);
   --color-primary-highlight: hsl(217 78% 85%);
 
@@ -28,7 +30,7 @@
   --color-secondary-highlight: hsl(38 55% 71%);
 
   /* Status */
-  --color-error: hsl(8 80% 66%);
+  --color-danger: hsl(8 80% 66%);
   --color-warning: hsl(51 71% 48%);
   --color-success: hsl(150 67% 53%);
   --color-info: hsl(217 96% 68%);

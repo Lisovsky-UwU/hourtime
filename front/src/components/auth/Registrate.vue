@@ -52,6 +52,7 @@
       <Button
         block
         type="submit"
+        color="primary"
         :loading="loadingRegistrate"
       >
         {{ $t("message.page.auth.registrate") }}

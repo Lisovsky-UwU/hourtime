@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import type { WorkspaceModel } from "./models/workspace";
 import { useProjects } from "./projects";
 import { useOrganizations } from "./organizations";
+import { useTasks } from "./tasks";
 
 
 export const useWorkspaces = defineStore("workspaces", {
@@ -21,8 +22,18 @@ export const useWorkspaces = defineStore("workspaces", {
       localStorage.setItem("SelectedWorkspace", String(this.currentWorkspace.id))
 
       const projects = useProjects()
+      const tasks = useTasks()
+
+      const promisesForLoad = []
       if (projects.projects !== null) {
-        await projects.loadProjects()
+        promisesForLoad.push(projects.loadProjects())
+      }
+      if (tasks.tasks !== null) {
+        promisesForLoad.push(tasks.loadTasks())
+      }
+
+      if (promisesForLoad.length > 0) {
+        await Promise.all(promisesForLoad)
       }
     },
 

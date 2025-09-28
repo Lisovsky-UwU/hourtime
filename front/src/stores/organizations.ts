@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import type { OrganizationModel } from "./models/organization";
+import type { OrganizationModel, OrganizationUpdateModel } from "./models/organization";
 import { useApiStore } from "./api";
 import { ApiEndpoint } from "./models/common";
 import { useWorkspaces } from "./workspaces";
@@ -86,6 +86,23 @@ export const useOrganizations = defineStore("organizations", {
         ApiEndpoint.OrganizationCreate,
         "POST",
         { name }
+      )
+    },
+
+    async updateOrganization(organization: OrganizationUpdateModel): Promise<OrganizationModel> {
+      return await this.apiStore.doRequest(
+        ApiEndpoint.OrganizationUpdate,
+        "PUT",
+        organization,
+      )
+    },
+
+    async deleteOrganization(organization_id: number) {
+      await this.apiStore.doRequest(
+        ApiEndpoint.OrganizationDelete,
+        "DELETE",
+        null,
+        {organization_id}
       )
     },
   }

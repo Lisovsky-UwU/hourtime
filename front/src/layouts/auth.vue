@@ -1,7 +1,7 @@
 <template>
   <div class="bg-bg-dark h-screen w-full flex items-center justify-center">
     <div class="card">
-      <div class="p-4 min-h-[430px] w-[350px] flex flex-col">
+      <div class="p-6 min-h-[430px] w-[350px] flex flex-col">
         <div class="flex justify-center">
           <Logo/>
         </div>
@@ -13,7 +13,7 @@
 
         <Button
           block
-          second
+          color="second"
           outlined
           class="mt-4"
           @click="selectedMethod === 'login' ? selectedMethod = 'registrate' : selectedMethod = 'login'"

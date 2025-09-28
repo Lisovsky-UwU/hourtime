@@ -11,10 +11,9 @@
           {{ $t("message.page.organization.createNewOrganization") }}
         </div>
         <div>
-          <CreateOrganization
-            :default-name="$t('message.page.organization.defaultName', {userName:
-              userData.currentUserData.display_name})"
-            @created="reloadOrganizations"
+          <EditOrganization
+            v-model="organizationCreateModel"
+            @updated="reloadOrganizations"
           />
         </div>
       </div>
@@ -38,7 +37,7 @@ import { onMounted, ref } from 'vue';
 import Loader from '@/components/ui/Loader.vue';
 import { useUserData } from '@/stores/user-data';
 import { useI18n } from 'vue-i18n';
-import CreateOrganization from '@/components/organization/CreateOrganization.vue';
+import EditOrganization from '@/components/organization/EditOrganization.vue';
 import AppBar from '@/components/AppBar.vue';
 import SideBar from '@/components/SideBar.vue';
 
@@ -47,6 +46,11 @@ const loading = ref(true)
 const { t } = useI18n()
 const organizations = useOrganizations()
 const userData = useUserData()
+
+const organizationCreateModel = {
+  id: null,
+  name: t('message.page.organization.defaultName', {userName: userData.currentUserData.display_name})
+}
 
 async function reloadOrganizations() {
   loading.value = true
