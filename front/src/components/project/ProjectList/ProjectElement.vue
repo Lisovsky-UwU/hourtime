@@ -8,10 +8,10 @@
 
     <div class="flex-grow" />
 
-    <button class="circle-button hover-button">
+    <button class="circle-button hover-button-edit" @click="emit('editProject', project)">
       <svg-icon size="24" type="mdi" :path="mdiPen" />
     </button>
-    <button class="circle-button hover-button">
+    <button class="circle-button hover-button-delete" @click="emit('deleteProject', project)">
       <svg-icon size="24" type="mdi" :path="mdiDelete" />
     </button>
   </div>
@@ -22,6 +22,8 @@ import SvgIcon from '@jamescoyle/vue-icon'
 import { mdiPen, mdiDelete } from '@mdi/js'
 import type { ProjectModel } from '@/stores/models/project';
 import type { PropType } from 'vue';
+
+const emit = defineEmits(["editProject", "deleteProject"])
 
 defineProps({
   project: {
@@ -35,8 +37,12 @@ defineProps({
 @import 'tailwindcss';
 @import '@/assets/theme.css';
 
-.hover-button {
+.hover-button-edit {
   @apply hover:bg-bg-light;
+}
+
+.hover-button-delete {
+  @apply hover:bg-danger;
 }
 </style>
 

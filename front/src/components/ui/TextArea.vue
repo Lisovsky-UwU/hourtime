@@ -7,15 +7,16 @@
     >
       {{ label }}
     </label>
-    <input
+    <textarea
       :type="type"
       :id="id"
       :placeholder="placeholder"
       :disabled="loading"
       v-model="model"
       class="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-300"
+      rows="4"
       :class="error ? 'border-danger' : 'border-border focus:border-highlight'"
-    >
+    />
     <div v-if="errorsText.length > 0" class="flex flex-col">
       <label
         v-for="(text, index) of errorsText"

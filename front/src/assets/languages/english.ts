@@ -51,6 +51,11 @@ const en = {
       project: {
         title: "Projects",
         noProjects: "There are no projects yet.",
+        projectName: "Project name",
+        enterProjectName: "Enter project name",
+        projectDescription: "Project description",
+        enterProjectDescription: "Enter project description",
+        confirmDelete: "Do you really want to delete project?",
       },
       task: {
         title: "Tasks",
