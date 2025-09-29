@@ -11,6 +11,7 @@
         :disabled="loading"
         @click="createTask"
       >
+        <svg-icon type="mdi" :path="mdiPlus" />
         {{ $t("message.common.create") }}
       </Button>
     </div>
@@ -39,6 +40,8 @@ import Button from '@/components/ui/Button.vue';
 import TaskList from '@/components/task/TaskList/index.vue'
 import Loader from '@/components/ui/Loader.vue';
 import { useTasks } from '@/stores/tasks';
+import SvgIcon from '@jamescoyle/vue-icon'
+import { mdiPlus } from '@mdi/js';
 
 const tasks = useTasks()
 const loading = ref(true)

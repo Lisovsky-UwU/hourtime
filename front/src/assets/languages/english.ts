@@ -10,6 +10,7 @@ const en = {
       manage: "Manage",
       save: "Save",
       cancel: "Cancel",
+      add: "Add",
     },
 
     page: {
@@ -37,8 +38,15 @@ const en = {
         workspaces: "Workspaces",
         edit: "Edit organization",
         delete: "Delete organization",
+        addWorkspace: "Add workspace",
         editWorkspace: "Edit workspace",
         deleteWorkspace: "Delete workspace",
+      },
+      workspace: {
+        workspaceName: "Workspace name",
+        enterWorkspaceName: "Enter workspace name",
+        forOrganization: "For organization",
+        confirmDelete: "Do you really want to delete workspace?",
       },
       project: {
         title: "Projects",

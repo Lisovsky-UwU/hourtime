@@ -10,6 +10,7 @@
         class=""
         :disabled="loading"
       >
+        <svg-icon type="mdi" :path="mdiPlus" />
         {{ $t("message.common.create") }}
       </Button>
     </div>
@@ -36,6 +37,8 @@ import { onMounted, ref, watch } from 'vue';
 import Button from '@/components/ui/Button.vue';
 import ProjectList from '@/components/project/ProjectList/index.vue'
 import Loader from '@/components/ui/Loader.vue';
+import SvgIcon from '@jamescoyle/vue-icon'
+import { mdiPlus } from '@mdi/js';
 
 const projects = useProjects()
 const loading = ref(true)

@@ -6,9 +6,9 @@
       </div>
       <div class="flex-grow"/>
       <Button
-        color="second"
         @click="showCreateDialog = true"
       >
+        <svg-icon type="mdi" :path="mdiPlus" />
         {{ $t("message.common.create") }}
       </Button>
     </div>
@@ -26,7 +26,9 @@
       <Button
         block
         @click="showCreateDialog = false"
-      >Cancel</Button>
+      >
+        {{ $t("message.common.cancel") }}
+      </Button>
     </div>
   </Dialog>
 </template>
@@ -34,10 +36,12 @@
 <script setup lang="ts">
 import Button from '@/components/ui/Button.vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import SvgIcon from '@jamescoyle/vue-icon'
 import OrganizationList from '@/components/organization/OrganizationList/index.vue'
 import EditOrganization from '@/components/organization/EditOrganization.vue';
 import { ref } from 'vue';
 import { useOrganizations } from '@/stores/organizations';
+import { mdiPlus } from '@mdi/js';
 
 const showCreateDialog = ref(false)
 

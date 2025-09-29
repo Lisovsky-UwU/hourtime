@@ -1,13 +1,17 @@
 import { defineStore } from "pinia";
-import type { WorkspaceModel } from "./models/workspace";
+import type { WorkspaceModel, WorkspaceUpdateModel } from "./models/workspace";
 import { useProjects } from "./projects";
 import { useOrganizations } from "./organizations";
 import { useTasks } from "./tasks";
+import { useApiStore } from "./api";
+import { ApiEndpoint } from "./models/common";
 
 
 export const useWorkspaces = defineStore("workspaces", {
   state: () => ({
     currentWorkspace: null as WorkspaceModel | null,
+
+    apiStore: useApiStore(),
   }),
 
   getters: {
@@ -57,6 +61,31 @@ export const useWorkspaces = defineStore("workspaces", {
 
       this.currentWorkspace = savedWorkspace
       return true
+    },
+
+    async createWorkspace(name: string, organization_id: number): Promise<WorkspaceModel> {
+      return await this.apiStore.doRequest(
+        ApiEndpoint.WorkspaceCreate,
+        "POST",
+        {name, organization_id}
+      )
+    },
+
+    async updateWorkspace(workspaceData: WorkspaceUpdateModel): Promise<WorkspaceModel> {
+      return await this.apiStore.doRequest(
+        ApiEndpoint.WorkspaceUpdate,
+        "PUT",
+        workspaceData,
+      )
+    },
+
+    async deleteWorkspace(workspaceId: number) {
+      await this.apiStore.doRequest(
+        ApiEndpoint.WorkspaceDelete,
+        "DELETE",
+        null,
+        {workspace_id: workspaceId}
+      )
     },
   }
 })

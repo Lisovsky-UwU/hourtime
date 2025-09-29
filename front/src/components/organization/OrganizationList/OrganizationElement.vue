@@ -13,6 +13,14 @@
       <div class="flex-grow" />
 
       <button
+        class="rounded-lg uppercase py-1 px-3 hover:bg-bg-light transition-all
+        flex flex-row gap-3"
+        @click="emit('addWorkspace', organization)"
+      >
+        <svg-icon type="mdi" :path="mdiPlus" />
+        {{ $t("message.page.organization.addWorkspace") }}
+      </button>
+      <button
         class="circle-button hover-button-edit"
         @click="emit('editOrganization', organization)"
         :title="$t('message.page.organization.edit')"
@@ -28,8 +36,11 @@
       </button>
     </div>
 
-    <div class="pl-4 my-1">
-      {{ $t("message.page.organization.workspaces")}}
+    <div class="pl-4 my-1 flex flex-row">
+      <div>
+        {{ $t("message.page.organization.workspaces")}}
+      </div>
+      <div class="flex-grow" />
     </div>
 
     <div>
@@ -46,12 +57,14 @@
         <button
           class="circle-button hover-button-edit"
           :title="$t('message.page.organization.editWorkspace')"
+          @click="emit('editWorkspace', workspace, organization)"
         >
           <svg-icon size="24" type="mdi" :path="mdiPen" />
         </button>
         <button
           class="circle-button hover-button-delete"
           :title="$t('message.page.organization.deleteWorkspace')"
+          @click="emit('deleteWorkspace', workspace, organization)"
         >
           <svg-icon size="24" type="mdi" :path="mdiDelete" />
         </button>
@@ -65,7 +78,7 @@
 <script setup lang="ts">
 import { type PropType } from 'vue';
 import SvgIcon from '@jamescoyle/vue-icon'
-import { mdiPen, mdiDelete } from '@mdi/js'
+import { mdiPen, mdiDelete, mdiPlus } from '@mdi/js'
 import type { OrganizationModel } from '@/stores/models/organization';
 
 defineProps({
@@ -75,7 +88,13 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['editOrganization', 'deleteOrganization'])
+const emit = defineEmits([
+  "editOrganization",
+  "deleteOrganization",
+  "addWorkspace",
+  "editWorkspace",
+  "deleteWorkspace",
+])
 </script>
 
 <style scoped>

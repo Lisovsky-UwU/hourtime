@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
-import type { OrganizationModel, OrganizationUpdateModel } from "./models/organization";
+import type { OrganizationModel, OrganizationUpdateModel, OrganizationUpdateResponse } from "./models/organization";
 import { useApiStore } from "./api";
 import { ApiEndpoint } from "./models/common";
 import { useWorkspaces } from "./workspaces";
-import type { WorkspaceModel } from "./models/workspace";
+import type { WorkspaceForOrganizationResponse, WorkspaceModel } from "./models/workspace";
 
 
 export const useOrganizations = defineStore("organizations", {
@@ -81,15 +81,35 @@ export const useOrganizations = defineStore("organizations", {
       await this.setOrganizations(response)
     },
 
-    async createOrganization(name: string) {
-      await this.apiStore.doRequest(
+    async refreshWorkspaces(organization_id: number) {
+      if (this.organizations === null) {
+        return
+      }
+      const organization = this.organizations.find((org) => {
+        return org.organization_id === organization_id
+      })
+      if (organization === undefined) {
+        return
+      }
+      const response: WorkspaceForOrganizationResponse = await this.apiStore.doRequest(
+        ApiEndpoint.WorkspaceGetForOrganization,
+        "GET",
+        null,
+        {organization_id}
+      )
+      organization.access = response.access
+      organization.workspaces = response.workspaces
+    },
+
+    async createOrganization(name: string): Promise<OrganizationUpdateResponse> {
+     return await this.apiStore.doRequest(
         ApiEndpoint.OrganizationCreate,
         "POST",
         { name }
       )
     },
 
-    async updateOrganization(organization: OrganizationUpdateModel): Promise<OrganizationModel> {
+    async updateOrganization(organization: OrganizationUpdateModel): Promise<OrganizationUpdateResponse> {
       return await this.apiStore.doRequest(
         ApiEndpoint.OrganizationUpdate,
         "PUT",

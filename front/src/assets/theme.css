@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@source inline("{hover:,}{bg,text,border}-{primary,primary-highlight,secondary,secondary-highlight,bg,bg-dark,bg-light,danger,danger-highlight}");
+@source inline("bg-bg-overlay");
 
 @theme {
   --color-*: initial;
@@ -31,6 +33,7 @@
 
   /* Status */
   --color-danger: hsl(8 80% 66%);
+  --color-danger-highlight: hsl(8 80% 76%);
   --color-warning: hsl(51 71% 48%);
   --color-success: hsl(150 67% 53%);
   --color-info: hsl(217 96% 68%);

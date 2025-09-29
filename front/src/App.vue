@@ -66,14 +66,11 @@ const userData = useUserData()
 const currentLayout = computed(() => api.isLogin ? DefaultLayout : AuthLayout)
 
 onMounted(async () => {
-  try {
-    api.loadToken()
-    if (api.isLogin) {
-      await userData.loadMyData()
-    }
-  } finally {
-    loading.value = false
+  api.loadToken()
+  if (api.isLogin) {
+    await userData.loadMyData()
   }
+  loading.value = false
 })
 </script>
 

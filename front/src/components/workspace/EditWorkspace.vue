@@ -1,13 +1,21 @@
 <template>
   <form
-    id="editOrganization"
+    id="editWorkspace"
     novalidate
     @submit.prevent="editOrganization"
     class="space-y-4"
   >
+    <div class="text-xl flex flex-row gap-2 items-center">
+      <div>
+        {{ $t("message.page.workspace.forOrganization") }}
+      </div>
+      <div class="rounded-lg py-1 px-3 bg-bg-light">
+        {{ organization.name }}
+      </div>
+    </div>
     <TextField
-      :label="$t('message.page.organization.organizationName')"
-      :placeholder="$t('message.page.organization.enterOrganizationName')"
+      :label="$t('message.page.workspace.workspaceName')"
+      :placeholder="$t('message.page.workspace.enterWorkspaceName')"
       :error="v$.name.$error"
       :errorsText="v$.name.$errors.map((error) => error.$message)"
       :loading="loading"
@@ -20,7 +28,7 @@
       type="submit"
       :loading="loading"
     >
-      {{ model.organization_id === null || model.organization_id === undefined ? $t("message.common.create") : $t("message.common.save") }}
+      {{ model.id === null || model.id === undefined ? $t("message.common.create") : $t("message.common.save") }}
     </Button>
   </form>
 </template>
@@ -29,13 +37,21 @@
 import { useI18n } from 'vue-i18n';
 import { helpers, required } from '@vuelidate/validators';
 import useVuelidate from '@vuelidate/core';
-import { useOrganizations } from '@/stores/organizations';
+import { useWorkspaces } from '@/stores/workspaces';
 import TextField from '@/components/ui/TextField.vue';
 import Button from '@/components/ui/Button.vue';
-import { reactive, ref } from 'vue';
+import { reactive, ref, type PropType } from 'vue';
+import type { OrganizationModel } from '@/stores/models/organization';
+
+const props = defineProps({
+  organization: {
+    type: Object as PropType<OrganizationModel>,
+    required: true,
+  }
+})
 
 const model = defineModel({default: {
-  organization_id: null as null | number,
+  id: null as null | number,
   name: "",
 }})
 
@@ -43,7 +59,7 @@ const emit = defineEmits(["updated"])
 
 const { t } = useI18n()
 
-const organizations = useOrganizations()
+const workspaces = useWorkspaces()
 
 const loading = ref(false)
 
@@ -64,13 +80,11 @@ async function editOrganization() {
   }
   loading.value = true
   try {
-    if (model.value.organization_id === null || model.value.organization_id === undefined) {
-      await organizations.createOrganization(model.value.name)
+    if (model.value.id === null || model.value.id === undefined) {
+      await workspaces.createWorkspace(model.value.name, props.organization.organization_id)
       model.value.name = ""
     } else {
-      await organizations.updateOrganization(
-        {organization_id: model.value.organization_id, name: model.value.name},
-      )
+      await workspaces.updateWorkspace({workspace_id: model.value.id, name: model.value.name})
     }
     emit("updated")
   } finally {
@@ -78,3 +92,4 @@ async function editOrganization() {
   }
 }
 </script>
+

@@ -8,6 +8,11 @@ export interface OrganizationModel {
   workspaces: WorkspaceModel[],
 }
 
+export interface OrganizationUpdateResponse  {
+  id: number,
+  name: string,
+}
+
 export interface OrganizationUpdateModel {
   organization_id: number,
   name: string,

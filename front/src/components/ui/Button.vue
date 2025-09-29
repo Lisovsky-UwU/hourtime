@@ -2,20 +2,20 @@
   <button
     class="h-10 rounded-lg uppercase flex items-center justify-center
     disabled:cursor-default px-4 min-w-[100px] transition-all"
-    :class="`${currentBgAndBorder} ${block ? 'w-full' : ''} ${loading ? 'cursor-default' : 'cursor-pointer'}`"
+    :class="`${currentBgAndBorder()} ${block ? 'w-full' : ''} ${loading ? 'cursor-default' : 'cursor-pointer'}`"
     :type="type"
     :disabled="disabled"
     v-on:click="clickOnBtn($event)"
   >
     <Loader type="dots" v-if="loading" class="absolute" />
-    <div :class="{'opacity-0': loading}">
+    <div :class="{'opacity-0': loading}" class="flex flex-row gap-3">
       <slot />
     </div>
   </button>
 </template>
 
 <script setup lang="ts">
-import { computed, type PropType } from 'vue';
+import { type PropType } from 'vue';
 import Loader from './Loader.vue';
 
 enum Color {
@@ -61,7 +61,8 @@ function clickOnBtn(event) {
   }
 }
 
-const currentBgAndBorder = computed(() => {
+// const currentBgAndBorder = computed(() => {
+function currentBgAndBorder() {
   let base, hover, text;
   switch (props.color) {
     case Color.LIGHT:
@@ -87,7 +88,7 @@ const currentBgAndBorder = computed(() => {
     case Color.DANGER:
       base = "danger"
       text = "text"
-      hover = "danger"
+      hover = "danger-highlight"
       break;
     default:
       base = "bg-light"
@@ -101,5 +102,12 @@ const currentBgAndBorder = computed(() => {
   } else {
     return `bg-${base} text-${text} hover:bg-${hover}`
   }
-})
+// })
+}
 </script>
+
+<style scoped>
+@import 'tailwindcss';
+@import '@/assets/theme.css';
+
+</style>
