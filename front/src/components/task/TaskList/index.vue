@@ -20,10 +20,10 @@
         <td>{{ task.project_id !== null ? projects.projectsMap[task.project_id].name : "-" }}</td>
         <td>
           <div class="flex justify-center gap-2">
-            <button class="circle-button hover-button">
+            <button class="circle-button hover-button-edit" @click="emit('editTask', task)">
               <svg-icon size="24" type="mdi" :path="mdiPen" />
             </button>
-            <button class="circle-button hover-button">
+            <button class="circle-button hover-button-delete" @click="emit('deleteTask', task)">
               <svg-icon size="24" type="mdi" :path="mdiDelete" />
             </button>
           </div>
@@ -47,6 +47,8 @@ defineProps({
   }
 })
 
+const emit = defineEmits(["editTask", "deleteTask"])
+
 const projects = useProjects()
 </script>
 
@@ -62,7 +64,11 @@ td {
   @apply py-2 text-lg border-b border-border;
 }
 
-.hover-button {
+.hover-button-edit {
   @apply hover:bg-bg-light;
+}
+
+.hover-button-delete {
+  @apply hover:bg-danger;
 }
 </style>

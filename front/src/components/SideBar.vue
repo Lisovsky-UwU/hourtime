@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-bg-dark p-1 flex flex-col">
+  <div class="bg-bg-dark p-1 flex flex-col shadow-md">
     <button
       :title="$t('message.sideBar.timeTrack')"
       class="circle-button hover-button"

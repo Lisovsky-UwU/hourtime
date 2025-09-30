@@ -63,7 +63,16 @@ const en = {
         colId: "#",
         colName: "Name",
         colProject: "Project",
-        colActions: "Actions"
+        colActions: "Actions",
+        taskName: "Task name",
+        enterTaskName: "Enter task name",
+        taskDescription: "Task description",
+        enterTaskDescription: "Enter task description",
+        taskProject: "Project",
+        noProject: "No project",
+        newTask: "New task",
+        taskNumber: "Task #{taskNumber}",
+        confirmDelete: "Do you really want to delete task?",
       }
     },
 

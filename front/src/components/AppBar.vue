@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-bg-dark w-full p-5 flex items-center gap-4 h-[60px]">
+  <div class="bg-bg-dark w-full p-5 flex items-center gap-4 h-[60px] shadow-md">
     <Logo />
     <div class="flex-grow" />
     <OrganizationSelector />
