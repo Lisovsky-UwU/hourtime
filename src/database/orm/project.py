@@ -11,5 +11,6 @@ class ProjectORM(Base):
     name: Mapped[str]
     description: Mapped[str | None]
     workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"))
+    color: Mapped[str]
     deleted: Mapped[bool] = mapped_column(default=False)
 

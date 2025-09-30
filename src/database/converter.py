@@ -80,6 +80,7 @@ class DatabaseModelsConverter:
             workspace_id=project_orm.workspace_id,
             name=project_orm.name,
             description=project_orm.description,
+            color=project_orm.color,
         )
 
     @staticmethod

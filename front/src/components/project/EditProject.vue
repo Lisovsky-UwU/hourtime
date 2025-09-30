@@ -5,15 +5,19 @@
     @submit.prevent="editProject"
     class="space-y-4"
   >
-    <TextField
-      :label="$t('message.page.project.projectName')"
-      :placeholder="$t('message.page.project.enterProjectName')"
-      :error="v$.name.$error"
-      :errorsText="v$.name.$errors.map((error) => error.$message)"
-      :loading="loading"
-      v-model="newData.name"
-      @change="v$.name.$validate()"
-    />
+    <div class="flex flex-row gap-3 items-center">
+      <ColorPicker v-model="newData.color"/>
+
+      <TextField
+        class="flex-grow"
+        :placeholder="$t('message.page.project.enterProjectName')"
+        :error="v$.name.$error"
+        :errorsText="v$.name.$errors.map((error) => error.$message)"
+        :loading="loading"
+        v-model="newData.name"
+        @change="v$.name.$validate()"
+      />
+    </div>
     <TextArea
       :label="$t('message.page.project.projectDescription')"
       :placeholder="$t('message.page.project.enterProjectDescription')"
@@ -40,12 +44,14 @@ import TextArea from '../ui/TextArea.vue';
 import Button from '@/components/ui/Button.vue';
 import { reactive, ref } from 'vue';
 import { useProjects } from '@/stores/projects';
+import ColorPicker from './ColorPicker.vue';
 
 
 const model = defineModel({default: {
   id: null as null | number,
   name: "",
   description: null as null | string,
+  color: null as null | string,
 }})
 
 const emit = defineEmits(["updated"])
@@ -80,6 +86,7 @@ async function editProject() {
         project_id: model.value.id,
         name: newData.name,
         description: newData.description,
+        color: newData.color,
       })
     }
     emit("updated")

@@ -6,4 +6,5 @@ class ProjectModel(BaseModel):
     workspace_id: int
     name: str
     description: str | None
+    color: str
 

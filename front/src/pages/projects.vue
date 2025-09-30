@@ -124,6 +124,7 @@ function doCreateProject() {
     id: null,
     name: "",
     description: null,
+    color: null,
   }
   showEditDialog.value = true
 }
@@ -134,6 +135,7 @@ function doEditProject(project: ProjectModel) {
     workspace_id: project.workspace_id,
     name: project.name,
     description: project.description,
+    color: project.color,
   }
   showEditDialog.value = true
 }

@@ -1,7 +1,8 @@
-"""init
+"""
+init.
 
 Revision ID: 3437404451da
-Revises: 
+Revises:
 Create Date: 2025-08-30 17:47:06.489211
 
 """

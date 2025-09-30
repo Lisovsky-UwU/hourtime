@@ -75,6 +75,7 @@ export const useProjects = defineStore("projects", {
       if (project !== undefined) {
         project.name = projectNewData.name
         project.description = projectNewData.description
+        project.color = projectNewData.color
       }
     },
 

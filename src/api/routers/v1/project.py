@@ -24,6 +24,7 @@ async def create_project(
             workspace_id=request_model.workspace_id,
             name=request_model.name,
             description=request_model.description,
+            color=request_model.color,
         ),
     )
 
@@ -47,6 +48,7 @@ async def update_project(
             project_id=request_model.project_id,
             name=request_model.name,
             description=request_model.description,
+            color=request_model.color,
         ),
     )
 

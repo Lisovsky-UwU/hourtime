@@ -5,10 +5,12 @@ class CreateProjectRequest(BaseModel):
     workspace_id: int
     name: str
     description: str | None = None
+    color: str
 
 
 class UpdateProjectRequest(BaseModel):
     project_id: int
     name: str
     description: str | None = None
+    color: str
 

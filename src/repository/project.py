@@ -30,6 +30,7 @@ class ProjectRepositoryDB(DatabaseRepositoryMixin, ProjectUseCase):
             workspace_id=payload.workspace_id,
             name=payload.name,
             description=payload.description,
+            color=payload.color,
         )
         self.session.add(project_orm)
         await self.session.commit()
@@ -55,6 +56,7 @@ class ProjectRepositoryDB(DatabaseRepositoryMixin, ProjectUseCase):
         project_orm = await self._get_orm_by_id(payload.project_id)
         project_orm.name = payload.name
         project_orm.description = payload.description
+        project_orm.color = payload.color
         await self.session.commit()
         await self.session.refresh(project_orm)
         return DatabaseModelsConverter.project_orm_to_model(project_orm)

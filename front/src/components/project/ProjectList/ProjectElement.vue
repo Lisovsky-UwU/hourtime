@@ -2,7 +2,7 @@
   <div
     class="w-full flex flex-row items-center gap-2 text-left px-4 py-2 hover:bg-bg-dark"
   >
-    <div class="text-lg font-bold">
+    <div class="text-lg font-bold" :style="{color: project.color}">
       {{ project.name }}
     </div>
 
