@@ -92,13 +92,23 @@ import { useTasks } from '@/stores/tasks';
 import SvgIcon from '@jamescoyle/vue-icon'
 import { mdiPlus } from '@mdi/js';
 import type { TaskModel } from '@/stores/models/task';
+import { useProjects } from '@/stores/projects';
 
 const tasks = useTasks()
+const projects = useProjects()
 const loading = ref(true)
 
 onMounted(async () => {
+  const promiseArr = []
   if (tasks.tasks === null) {
-    await tasks.loadTasks()
+    promiseArr.push(tasks.loadTasks())
+  }
+  if (projects.projects === null) {
+    promiseArr.push(projects.loadProjects())
+  }
+
+  if (promiseArr.length > 0) {
+    await Promise.all(promiseArr)
   }
   loading.value = false
 })

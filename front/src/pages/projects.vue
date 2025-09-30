@@ -56,10 +56,11 @@
         {{ $t("message.page.project.confirmDelete") }}
       </div>
 
-      <div class="p-4 rounded-lg bg-bg-light flex flex-col">
-        <div>
-          {{ currentEditProject.projectData?.name }}
-        </div>
+      <div
+        class="p-4 rounded-lg bg-bg-light font-bold flex flex-col"
+        :style="{color: currentEditProject.projectData?.color}"
+      >
+        {{ currentEditProject.projectData?.name }}
       </div>
 
       <Button

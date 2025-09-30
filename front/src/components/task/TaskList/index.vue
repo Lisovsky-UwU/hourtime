@@ -17,7 +17,16 @@
       >
         <td class="text-center">{{ task.number }}</td>
         <td>{{ task.name }}</td>
-        <td>{{ task.project_id !== null ? projects.projectsMap[task.project_id].name : "-" }}</td>
+        <td v-if="task.project_id === null">-</td>
+        <td v-else-if="projects.projectsMap === null">
+          <Loader type="circle" class="w-[20px] h-[20px]"/>
+        </td>
+        <td v-else :style="{color: projects.projectsMap[task.project_id].color}">
+          {{projects.projectsMap[task.project_id].name}}
+        </td>
+
+
+        <!-- {{ task.project_id !== null && projects.projectsMap !== null ? projects.projectsMap[task.project_id].name : "-" }}</td> -->
         <td>
           <div class="flex justify-center gap-2">
             <button class="circle-button hover-button-edit" @click="emit('editTask', task)">
@@ -39,6 +48,7 @@ import { mdiPen, mdiDelete } from '@mdi/js'
 import type { PropType } from 'vue';
 import type { TaskModel } from '@/stores/models/task';
 import { useProjects } from '@/stores/projects';
+import Loader from '@/components/ui/Loader.vue';
 
 defineProps({
   tasks: {
