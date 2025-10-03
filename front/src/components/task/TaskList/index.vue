@@ -21,12 +21,10 @@
         <td v-else-if="projects.projectsMap === null">
           <Loader type="circle" class="w-[20px] h-[20px]"/>
         </td>
-        <td v-else :style="{color: projects.projectsMap[task.project_id].color}">
+        <td v-else class="font-bold" :style="{color: projects.projectsMap[task.project_id].color}">
           {{projects.projectsMap[task.project_id].name}}
         </td>
 
-
-        <!-- {{ task.project_id !== null && projects.projectsMap !== null ? projects.projectsMap[task.project_id].name : "-" }}</td> -->
         <td>
           <div class="flex justify-center gap-2">
             <button class="circle-button hover-button-edit" @click="emit('editTask', task)">

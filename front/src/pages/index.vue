@@ -1,5 +1,7 @@
 <template>
-  <div>
-    Time track
-  </div>
+  <TimeEntryList />
 </template>
+
+<script setup lang="ts">
+import TimeEntryList from '@/components/time-entry/TimeEntryList.vue';
+</script>

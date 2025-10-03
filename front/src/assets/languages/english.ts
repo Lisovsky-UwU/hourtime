@@ -73,7 +73,12 @@ const en = {
         newTask: "New task",
         taskNumber: "Task #{taskNumber}",
         confirmDelete: "Do you really want to delete task?",
-      }
+      },
+      timeEntry: {
+        emptyComment: "Add comment",
+        startTime: "Start",
+        endTime: "End",
+      },
     },
 
     sideBar: {
