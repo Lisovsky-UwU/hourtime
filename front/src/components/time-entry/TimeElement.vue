@@ -35,7 +35,7 @@
             <time-field
               class="w-full"
               v-model="model.start_datetime"
-              @update:model-value="correlateEndDate"
+              @update:model-value="updateAnyTime"
             />
           </div>
 
@@ -46,11 +46,10 @@
             <time-field
               class="w-full"
               v-model="model.end_datetime"
-              @update:model-value="correlateEndDate"
+              @update:model-value="updateAnyTime"
             />
           </div>
         </div>
-
 
         <vue-date-picker
           inline
@@ -58,7 +57,7 @@
           month-change-on-scroll="inverse"
           v-model="modelForCalendar.date"
           :enable-time-picker="false"
-          @update:model-value="updateDate"
+          @update:model-value="updateStartDate"
         />
       </div>
     </transition>
@@ -67,13 +66,15 @@
 
 <script setup lang="ts">
 import type { TimeEntryModel } from '@/stores/models/time-entry';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import TimeField from '../ui/TimeField.vue';
 
+const emit = defineEmits(["update"])
+
 const model = defineModel<TimeEntryModel>({required: true})
-const modelForCalendar = reactive({date: new Date()})
+const modelForCalendar = reactive({date: null as null | Date})
 
 const showEdit = ref(false)
 
@@ -99,6 +100,10 @@ const handleClickOutside = (event: PointerEvent) => {
 }
 
 function correlateEndDate() {
+  if (model.value.end_datetime === null) {
+    return
+  }
+
   model.value.end_datetime = model.value.end_datetime
     .date(model.value.start_datetime.date())
     .month(model.value.start_datetime.month())
@@ -114,12 +119,26 @@ function correlateEndDate() {
   }
 }
 
-function updateDate(newDate: Date) {
+function updateAnyTime() {
+  correlateEndDate()
+  emit("update", model)
+}
+
+function updateStartDate(newDate: Date) {
+  if (
+    newDate.getDate() === model.value.start_datetime.date() &&
+    newDate.getMonth() === model.value.start_datetime.month() &&
+    newDate.getFullYear() === model.value.start_datetime.year()
+  ) {
+    return
+  }
   model.value.start_datetime = model.value.start_datetime
     .date(newDate.getDate())
     .month(newDate.getMonth())
     .year(newDate.getFullYear())
+
   correlateEndDate()
+  emit("update", model)
 }
 
 watch(
@@ -132,6 +151,10 @@ watch(
     }
   }
 )
+
+onMounted(() => {
+  modelForCalendar.date = model.value.start_datetime.toDate()
+})
 
 watch(
   () => model.value.start_datetime,

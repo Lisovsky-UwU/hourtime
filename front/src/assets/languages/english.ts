@@ -78,6 +78,8 @@ const en = {
         emptyComment: "Add comment",
         startTime: "Start",
         endTime: "End",
+        selectProject: "Select project",
+        noTaskInProject: "There is no tasks in project",
       },
     },
 

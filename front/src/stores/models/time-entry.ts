@@ -7,7 +7,7 @@ export interface TimeEntryModel {
   project_id: number | null,
   task_id: string | null,
   start_datetime: Dayjs,
-  end_datetime: Dayjs,
+  end_datetime: Dayjs | null,
 }
 
 export interface TimeEntryResponse {

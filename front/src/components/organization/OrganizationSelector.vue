@@ -58,8 +58,6 @@ import type { WorkspaceModel } from '@/stores/models/workspace';
 const organizations = useOrganizations()
 const workspaces = useWorkspaces()
 
-const emit = defineEmits(['update:modelValue', 'change'])
-
 const selectRef = ref(null)
 const itemsRef = ref(null)
 const isOpen = ref(false)
@@ -80,7 +78,6 @@ const close = () => {
 const selectItem = async (organization: OrganizationModel, workspace: WorkspaceModel) => {
   if (workspace.id !== workspaces.currentWorkspace?.id) {
     await organizations.selectOrganization(organization, workspace)
-    emit('change')
   }
   close()
 }

@@ -12,11 +12,9 @@
 
 <script setup lang="ts">
 import dayjs, { Dayjs } from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { ref, watch } from 'vue'
 
 const model = defineModel<Dayjs>({required: false})
-dayjs.extend(customParseFormat)
 
 const inputValue = ref("")
 
@@ -33,6 +31,10 @@ function applyNewValue() {
     const newTime = dayjs(inputValue.value, "H:m")
     if (!newTime.isValid()) {
       throw Error()
+    }
+    if (model.value?.hour() === newTime.hour() && model.value?.minute() === newTime.minute() &&
+      model.value?.second() === newTime.second()) {
+      return
     }
     if (model.value !== undefined) {
       model.value = model.value

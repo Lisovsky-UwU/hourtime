@@ -3,6 +3,7 @@ import type { TaskCreateModel, TaskModel, TaskUpdateModel } from "./models/task"
 import { useApiStore } from "./api";
 import { ApiEndpoint } from "./models/common";
 import { useWorkspaces } from "./workspaces";
+import { useProjects } from "./projects";
 
 export const useTasks = defineStore("tasks", {
   state: () => ({
@@ -14,6 +15,41 @@ export const useTasks = defineStore("tasks", {
   getters: {
     tasks(): TaskModel[] | null {
       return this.currentTasks
+    },
+
+    tasksMap(): {number: TaskModel} | null {
+      if (this.tasks === null) {
+        return null
+      }
+
+      return this.tasks.reduce((acc, element) => {
+        acc[element.id] = element
+        return acc
+      }, {} as {number: TaskModel})
+    },
+
+    tasksMapByProjects(): {number: TaskModel[]} | null {
+      if (this.tasks === null) {
+        return null
+      }
+
+      const result = this.tasks.reduce((acc, element) => {
+        const projectId = element.project_id === null ? 0 : element.project_id
+        if (acc[projectId] === undefined) {
+          acc[projectId] = []
+        }
+        acc[projectId].push(element)
+        return acc
+      }, {} as {number: TaskModel[]})
+
+      const projects = useProjects()
+      projects.projects?.forEach((prj) => {
+        if (!(prj.id in result)) {
+          result[prj.id] = []
+        }
+      })
+
+      return result
     }
   },
 

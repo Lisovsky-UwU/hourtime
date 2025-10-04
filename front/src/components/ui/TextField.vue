@@ -15,6 +15,7 @@
       v-model="model"
       class="w-full px-4 py-2 border rounded-lg focus:outline-none transition-all duration-300"
       :class="error ? 'border-danger' : 'border-border focus:border-highlight'"
+      @blur="emit('blur')"
     >
     <div v-if="errorsText.length > 0" class="flex flex-col">
       <label
@@ -56,4 +57,6 @@ defineProps({
     default: false,
   }
 })
+
+const emit = defineEmits(['blur'])
 </script>
