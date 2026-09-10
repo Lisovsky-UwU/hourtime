@@ -1,0 +1,124 @@
+{
+  "app": {
+    "name": "Hourtime",
+    "tagline": "Track where your hours go"
+  },
+  "nav": {
+    "timer": "Timer",
+    "projects": "Projects",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "close": "Close",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "none": "None",
+    "saving": "Saving…",
+    "actions": "Actions"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign in",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account yet?",
+      "createOne": "Create one"
+    },
+    "signUp": {
+      "title": "Create account",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "success": "Account created. Signing you in…"
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least {min} characters"
+    }
+  },
+  "timer": {
+    "descriptionPlaceholder": "What are you working on?",
+    "start": "Start",
+    "stop": "Stop",
+    "noProject": "No project",
+    "selectProject": "Select project",
+    "startedAt": "Started at {time}",
+    "adjustStart": "Adjust start time",
+    "startTime": "Start time",
+    "apply": "Apply",
+    "running": "Running"
+  },
+  "entries": {
+    "title": "Time entries",
+    "empty": "No time tracked yet. Start a timer to see entries here.",
+    "loadMore": "Load more",
+    "showing": "Showing {shown} of {total}",
+    "addManual": "Add entry manually",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "dayTotal": "Total {duration}",
+    "noDescription": "No description",
+    "running": "Running",
+    "edit": {
+      "title": "Edit entry",
+      "createTitle": "New entry",
+      "description": "Comment",
+      "descriptionPlaceholder": "What did you work on?",
+      "project": "Project",
+      "startedAt": "Start",
+      "stoppedAt": "End",
+      "stillRunning": "This entry is still running; leave the end empty to keep it that way.",
+      "duration": "Duration"
+    },
+    "deleteConfirm": "Delete this time entry? This cannot be undone."
+  },
+  "projects": {
+    "title": "Projects",
+    "empty": "No projects yet. Create one to group your time entries.",
+    "new": "New project",
+    "showArchived": "Show archived",
+    "archivedBadge": "Archived",
+    "archive": "Archive",
+    "unarchive": "Restore",
+    "form": {
+      "createTitle": "New project",
+      "editTitle": "Edit project",
+      "name": "Name",
+      "namePlaceholder": "Client, product or activity",
+      "color": "Color",
+      "customColor": "Custom color",
+      "preset": "Preset colors"
+    },
+    "deleteConfirm": "Delete this project? Its time entries are kept, but lose the project."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageHint": "The interface language for this browser.",
+    "account": "Account",
+    "signedInAs": "Signed in as {email}",
+    "sessions": "Sessions",
+    "signOutEverywhere": "Sign out on all devices",
+    "signOutEverywhereHint": "Ends every session, including this one."
+  },
+  "errors": {
+    "invalid_credentials": "Wrong email or password.",
+    "email_already_used": "An account with this email already exists.",
+    "registration_disabled": "Registration is closed on this instance.",
+    "account_disabled": "This account is disabled.",
+    "project_name_taken": "You already have a project with this name.",
+    "timer_already_running": "A timer is already running.",
+    "not_found": "Not found.",
+    "validation_error": "Please check the values and try again.",
+    "invalid_token": "Your session has ended. Please sign in again.",
+    "session_expired": "Your session has expired. Please sign in again.",
+    "network_error": "Cannot reach the server. Check your connection.",
+    "unknown": "Something went wrong."
+  }
+}
