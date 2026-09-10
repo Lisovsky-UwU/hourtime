@@ -20,6 +20,7 @@ from hourtime.infrastructure.db.cache_aware_unit_of_work import CacheAwareUnitOf
 from hourtime.infrastructure.db.repositories.cached_session_repository import (
     CachedSessionRepository,
 )
+from hourtime.infrastructure.db.repositories.cached_user_repository import CachedUserRepository
 from hourtime.infrastructure.db.repositories.project_repository import SqlProjectRepository
 from hourtime.infrastructure.db.repositories.session_repository import SqlSessionRepository
 from hourtime.infrastructure.db.repositories.time_entry_repository import SqlTimeEntryRepository
@@ -28,7 +29,6 @@ from hourtime.infrastructure.security.token_generator import OpaqueTokenGenerato
 from hourtime.interfaces.repositories import (
     ProjectRepository,
     TimeEntryRepository,
-    UserRepository,
 )
 from hourtime.interfaces.services import Clock, PasswordHasher, TokenGenerator, UnitOfWork
 from hourtime.use_cases.auth import (
@@ -115,11 +115,15 @@ DbSessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 # --- repositories ------------------------------------------------------------
 
 
-def get_user_repository(session: DbSessionDep) -> UserRepository:
-    return SqlUserRepository(session)
+def get_user_repository(
+    session: DbSessionDep, cache: CacheDep, settings: SettingsDep
+) -> CachedUserRepository:
+    return CachedUserRepository(
+        SqlUserRepository(session), cache, ttl_seconds=settings.cache_ttl_seconds
+    )
 
 
-UsersDep = Annotated[UserRepository, Depends(get_user_repository)]
+UsersDep = Annotated[CachedUserRepository, Depends(get_user_repository)]
 
 
 def get_project_repository(session: DbSessionDep) -> ProjectRepository:
@@ -146,17 +150,19 @@ def get_session_repository(
         SqlSessionRepository(session),
         cache,
         clock,
-        ttl_seconds=settings.session_cache_ttl_seconds,
+        ttl_seconds=settings.cache_ttl_seconds,
     )
 
 
 SessionsDep = Annotated[CachedSessionRepository, Depends(get_session_repository)]
 
 
-def get_unit_of_work(session: DbSessionDep, sessions: SessionsDep) -> UnitOfWork:
-    # FastAPI caches dependencies per request, so this is the same repository
-    # instance the use cases got — its pending invalidations are the ones flushed.
-    return CacheAwareUnitOfWork(session, sessions)
+def get_unit_of_work(
+    session: DbSessionDep, sessions: SessionsDep, users: UsersDep
+) -> UnitOfWork:
+    # FastAPI caches dependencies per request, so these are the very repository
+    # instances the use cases got — their pending invalidations are the ones flushed.
+    return CacheAwareUnitOfWork(session, sessions.invalidation, users.invalidation)
 
 
 UowDep = Annotated[UnitOfWork, Depends(get_unit_of_work)]
@@ -231,12 +237,12 @@ def build_purge_expired_sessions(
         SqlSessionRepository(session),
         cache,
         clock,
-        ttl_seconds=settings.session_cache_ttl_seconds,
+        ttl_seconds=settings.cache_ttl_seconds,
     )
     return PurgeExpiredSessions(
         sessions,
         clock,
-        CacheAwareUnitOfWork(session, sessions),
+        CacheAwareUnitOfWork(session, sessions.invalidation),
         retention=timedelta(days=settings.session_retention_days),
     )
 

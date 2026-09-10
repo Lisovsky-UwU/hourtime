@@ -13,6 +13,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from hourtime.domain.entities import Session
 from hourtime.infrastructure.cache.base import CacheClient
+from hourtime.infrastructure.cache.invalidation import DeferredInvalidation
 from hourtime.infrastructure.db.repositories.session_repository import SqlSessionRepository
 from hourtime.interfaces.repositories import SessionRepository
 from hourtime.interfaces.services import Clock
@@ -39,9 +40,7 @@ class CachedSessionRepository(SessionRepository):
         self._cache = cache
         self._clock = clock
         self._ttl_seconds = ttl_seconds
-        # Keys whose backing rows changed in the current transaction. They are
-        # dropped again once the transaction commits — see `invalidate_pending`.
-        self._pending: set[str] = set()
+        self.invalidation = DeferredInvalidation(cache)
 
     # --- reads ---------------------------------------------------------------
 
@@ -73,38 +72,19 @@ class CachedSessionRepository(SessionRepository):
 
     async def update(self, session: Session) -> Session:
         stored = await self._inner.update(session)
-        await self._invalidate(access_key(stored.access_token_hash))
+        await self.invalidation.invalidate(access_key(stored.access_token_hash))
         return stored
 
     async def revoke_all_for_user(self, user_id: UUID, at: datetime) -> int:
         hashes = await self._inner.active_access_hashes(user_id)
         revoked = await self._inner.revoke_all_for_user(user_id, at)
-        if hashes:
-            await self._invalidate(*(access_key(token_hash) for token_hash in hashes))
+        await self.invalidation.invalidate(*(access_key(digest) for digest in hashes))
         return revoked
 
     async def delete_expired_before(self, cutoff: datetime) -> int:
         # Cached copies of these are already past `access_expires_at`, so the
         # authentication use case rejects them regardless of the cache.
         return await self._inner.delete_expired_before(cutoff)
-
-    # --- invalidation --------------------------------------------------------
-
-    async def invalidate_pending(self) -> None:
-        """Re-drop keys touched by the transaction that just committed.
-
-        Dropping them before the commit is not enough on its own: a concurrent
-        reader can repopulate the key from the pre-commit row. Repeating the
-        delete afterwards closes that window.
-        """
-        if not self._pending:
-            return
-        keys, self._pending = self._pending, set()
-        await self._cache.delete(*keys)
-
-    async def _invalidate(self, *keys: str) -> None:
-        self._pending.update(keys)
-        await self._cache.delete(*keys)
 
     # --- helpers -------------------------------------------------------------
 

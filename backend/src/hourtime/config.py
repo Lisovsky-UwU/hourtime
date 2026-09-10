@@ -20,7 +20,10 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
     cache_backend: Literal["redis", "memory"] = "redis"
-    session_cache_ttl_seconds: int = 300
+    # How long an authenticated request may work from cached session/user rows.
+    # Changes made through the app invalidate on commit; this bounds only the
+    # staleness of edits made straight in the database.
+    cache_ttl_seconds: int = 300
 
     # Leave off once your own account exists: the instance faces the open internet.
     allow_registration: bool = True

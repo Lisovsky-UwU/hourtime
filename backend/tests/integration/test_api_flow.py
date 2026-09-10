@@ -301,12 +301,18 @@ class TestSessionCache:
     async def test_repeated_requests_hit_the_database_once(
         self, client: httpx.AsyncClient, tokens: dict[str, str], sql_statements: list[str]
     ) -> None:
+        """Authenticating costs one session read and one user read, warm or not.
+
+        Caching only the session would still leave a `FROM users` on every
+        request, which is the whole cost this cache exists to remove.
+        """
         sql_statements.clear()
         for _ in range(3):
             assert (await client.get("/auth/me")).status_code == 200
 
-        lookups = [item for item in sql_statements if "FROM sessions" in item]
-        assert len(lookups) == 1
+        for table in ("sessions", "users"):
+            lookups = [item for item in sql_statements if f"FROM {table}" in item]
+            assert len(lookups) == 1, f"{table} was read {len(lookups)} times"
 
     async def test_revocation_beats_the_cache(
         self, client: httpx.AsyncClient, tokens: dict[str, str], sql_statements: list[str]

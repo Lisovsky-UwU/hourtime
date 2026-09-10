@@ -98,11 +98,16 @@ backend/src/hourtime/
 
 Two consequences worth knowing:
 
-- **Caching is invisible to the business logic.** `CachedSessionRepository`
-  wraps the SQL one behind the plain `SessionRepository` interface, so bearer
-  tokens resolve from Redis without a single use case knowing Redis exists. A
-  revoked session drops out of the cache immediately — `/auth/logout` takes
-  effect on the next request, not when a TTL runs out.
+- **Caching is invisible to the business logic.** `CachedSessionRepository` and
+  `CachedUserRepository` wrap the SQL ones behind the plain repository
+  interfaces, so an authenticated request resolves its bearer token entirely
+  from Redis without a single use case knowing Redis exists. Only these two are
+  cached: they are what *every* request reads, whereas projects and entries are
+  read once per user action and would buy little for the invalidation they cost.
+  A revoked session drops out of the cache immediately — `/auth/logout` takes
+  effect on the next request, not when a TTL runs out. Rows edited straight in
+  Postgres, on the other hand, stay stale until `HOURTIME_CACHE_TTL_SECONDS`
+  elapses.
 - **The database enforces the rules too.** A partial unique index on
   `time_entries (user_id) WHERE stopped_at IS NULL` is what actually guarantees
   one running timer per user; the use case only makes the hand-off graceful.
