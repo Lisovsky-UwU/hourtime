@@ -1,0 +1,340 @@
+"""End-to-end tests over the real stack: FastAPI, SQLAlchemy, Postgres."""
+
+from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
+
+import httpx
+import pytest
+import sqlalchemy as sa
+from fastapi import FastAPI
+from sqlalchemy import event as sa_event
+
+EMAIL = "owner@example.com"
+PASSWORD = "correct-horse-battery"
+
+
+async def register_and_login(client: httpx.AsyncClient) -> dict[str, str]:
+    await client.post("/auth/register", json={"email": EMAIL, "password": PASSWORD})
+    response = await client.post("/auth/login", json={"email": EMAIL, "password": PASSWORD})
+    assert response.status_code == 200
+    tokens = response.json()["tokens"]
+    client.headers["Authorization"] = f"Bearer {tokens['access_token']}"
+    return dict(tokens)
+
+
+@pytest.fixture
+async def tokens(client: httpx.AsyncClient) -> dict[str, str]:
+    return await register_and_login(client)
+
+
+class TestAuthEndpoints:
+    async def test_register_login_and_me(self, client: httpx.AsyncClient) -> None:
+        created = await client.post("/auth/register", json={"email": EMAIL, "password": PASSWORD})
+        assert created.status_code == 201
+        assert created.json()["email"] == EMAIL
+
+        await register_and_login(client)
+        me = await client.get("/auth/me")
+        assert me.status_code == 200
+        assert me.json()["email"] == EMAIL
+
+    async def test_duplicate_registration_conflicts(self, client: httpx.AsyncClient) -> None:
+        await client.post("/auth/register", json={"email": EMAIL, "password": PASSWORD})
+        again = await client.post("/auth/register", json={"email": EMAIL, "password": PASSWORD})
+        assert again.status_code == 409
+        assert again.json()["error"]["code"] == "email_already_used"
+
+    async def test_short_password_is_rejected(self, client: httpx.AsyncClient) -> None:
+        response = await client.post("/auth/register", json={"email": EMAIL, "password": "short"})
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "validation_error"
+
+    async def test_protected_routes_need_a_token(self, client: httpx.AsyncClient) -> None:
+        response = await client.get("/projects")
+        assert response.status_code == 401
+        assert response.headers["www-authenticate"] == "Bearer"
+
+    async def test_refresh_rotates_and_retires_the_old_pair(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        rotated = await client.post(
+            "/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+        )
+        assert rotated.status_code == 200
+        fresh = rotated.json()["tokens"]
+        assert fresh["access_token"] != tokens["access_token"]
+
+        stale = await client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {tokens['access_token']}"}
+        )
+        assert stale.status_code == 401
+
+        alive = await client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {fresh['access_token']}"}
+        )
+        assert alive.status_code == 200
+
+    async def test_logout_invalidates_immediately(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        """The session cache must not keep a revoked token alive."""
+        assert (await client.get("/auth/me")).status_code == 200
+
+        assert (await client.post("/auth/logout")).status_code == 204
+
+        after = await client.get("/auth/me")
+        assert after.status_code == 401
+        assert after.json()["error"]["code"] == "invalid_token"
+
+    async def test_registration_switch_closes_the_door(
+        self, app: FastAPI, client: httpx.AsyncClient
+    ) -> None:
+        app.state.settings = app.state.settings.model_copy(update={"allow_registration": False})
+        response = await client.post("/auth/register", json={"email": EMAIL, "password": PASSWORD})
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "registration_disabled"
+
+
+class TestProjectEndpoints:
+    async def test_crud_round_trip(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
+        created = await client.post("/projects", json={"name": "Website", "color": "#A1B2C3"})
+        assert created.status_code == 201
+        project = created.json()
+        assert project["color"] == "#a1b2c3"
+
+        listed = await client.get("/projects")
+        assert [item["name"] for item in listed.json()] == ["Website"]
+
+        renamed = await client.patch(f"/projects/{project['id']}", json={"name": "Landing"})
+        assert renamed.json()["name"] == "Landing"
+
+        archived = await client.patch(f"/projects/{project['id']}", json={"archived": True})
+        assert archived.json()["archived"] is True
+        assert await (await client.get("/projects")).aread() == b"[]"
+
+        with_archived = await client.get("/projects", params={"include_archived": True})
+        assert len(with_archived.json()) == 1
+
+        assert (await client.delete(f"/projects/{project['id']}")).status_code == 204
+        assert (await client.get("/projects", params={"include_archived": True})).json() == []
+
+    async def test_duplicate_name_conflicts(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        await client.post("/projects", json={"name": "Website"})
+        again = await client.post("/projects", json={"name": "website"})
+        assert again.status_code == 409
+        assert again.json()["error"]["code"] == "project_name_taken"
+
+    async def test_invalid_colour_is_rejected(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        response = await client.post("/projects", json={"name": "Website", "color": "teal"})
+        assert response.status_code == 400
+
+
+class TestTimerEndpoints:
+    async def test_start_stop_and_list(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        project = (await client.post("/projects", json={"name": "Website"})).json()
+
+        started = await client.post(
+            "/time-entries/start",
+            json={"project_id": project["id"], "description": "Landing page"},
+        )
+        assert started.status_code == 201
+        entry = started.json()
+        assert entry["stopped_at"] is None
+        assert entry["duration_seconds"] is None
+
+        current = await client.get("/time-entries/current")
+        assert current.json()["id"] == entry["id"]
+
+        stopped = await client.post(f"/time-entries/{entry['id']}/stop", json={})
+        assert stopped.status_code == 200
+        assert stopped.json()["duration_seconds"] >= 0
+
+        assert (await client.get("/time-entries/current")).json() is None
+
+        page = await client.get("/time-entries")
+        assert page.json()["total"] == 1
+
+    async def test_survives_a_reload(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        """The running timer lives on the server, so a fresh client still sees it."""
+        started = (await client.post("/time-entries/start", json={})).json()
+
+        second_device = await client.post(
+            "/auth/login", json={"email": EMAIL, "password": PASSWORD}
+        )
+        other_token = second_device.json()["tokens"]["access_token"]
+        seen = await client.get(
+            "/time-entries/current", headers={"Authorization": f"Bearer {other_token}"}
+        )
+        assert seen.json()["id"] == started["id"]
+
+    async def test_starting_again_closes_the_previous_entry(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        first = (await client.post("/time-entries/start", json={})).json()
+        second = (await client.post("/time-entries/start", json={})).json()
+
+        page = (await client.get("/time-entries")).json()
+        assert page["total"] == 2
+        closed = next(item for item in page["items"] if item["id"] == first["id"])
+        assert closed["stopped_at"] is not None
+        assert (await client.get("/time-entries/current")).json()["id"] == second["id"]
+
+    async def test_backdated_start(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
+        earlier = datetime.now(UTC) - timedelta(hours=2)
+        entry = (
+            await client.post("/time-entries/start", json={"started_at": earlier.isoformat()})
+        ).json()
+        assert datetime.fromisoformat(entry["started_at"]) == earlier
+
+    async def test_future_start_is_rejected(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        later = datetime.now(UTC) + timedelta(hours=1)
+        response = await client.post(
+            "/time-entries/start", json={"started_at": later.isoformat()}
+        )
+        assert response.status_code == 400
+
+    async def test_naive_timestamps_are_rejected(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        response = await client.post(
+            "/time-entries/start", json={"started_at": "2026-03-01T12:00:00"}
+        )
+        assert response.status_code == 400
+
+    async def test_edit_and_delete_an_entry(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        project = (await client.post("/projects", json={"name": "Website"})).json()
+        started = datetime.now(UTC) - timedelta(hours=3)
+        stopped = datetime.now(UTC) - timedelta(hours=1)
+        entry = (
+            await client.post(
+                "/time-entries",
+                json={"started_at": started.isoformat(), "stopped_at": stopped.isoformat()},
+            )
+        ).json()
+        assert entry["duration_seconds"] == pytest.approx(7200, abs=2)
+
+        edited = await client.patch(
+            f"/time-entries/{entry['id']}",
+            json={"project_id": project["id"], "description": "Report"},
+        )
+        assert edited.json()["project_id"] == project["id"]
+        assert edited.json()["description"] == "Report"
+
+        detached = await client.patch(f"/time-entries/{entry['id']}", json={"project_id": None})
+        assert detached.json()["project_id"] is None
+
+        assert (await client.delete(f"/time-entries/{entry['id']}")).status_code == 204
+        assert (await client.get("/time-entries")).json()["total"] == 0
+
+    async def test_deleting_a_project_keeps_the_entry(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        project = (await client.post("/projects", json={"name": "Website"})).json()
+        entry = (
+            await client.post("/time-entries/start", json={"project_id": project["id"]})
+        ).json()
+
+        await client.delete(f"/projects/{project['id']}")
+
+        page = (await client.get("/time-entries")).json()
+        assert page["total"] == 1
+        assert page["items"][0]["id"] == entry["id"]
+        assert page["items"][0]["project_id"] is None
+
+
+class TestIsolationBetweenUsers:
+    async def test_another_users_project_looks_missing(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        mine = (await client.post("/projects", json={"name": "Website"})).json()
+
+        await client.post(
+            "/auth/register", json={"email": "other@example.com", "password": PASSWORD}
+        )
+        other_login = await client.post(
+            "/auth/login", json={"email": "other@example.com", "password": PASSWORD}
+        )
+        other_headers = {
+            "Authorization": f"Bearer {other_login.json()['tokens']['access_token']}"
+        }
+
+        assert (await client.get("/projects", headers=other_headers)).json() == []
+        peek = await client.patch(
+            f"/projects/{mine['id']}", json={"name": "Stolen"}, headers=other_headers
+        )
+        assert peek.status_code == 404
+
+
+class TestSessionCache:
+    @pytest.fixture
+    def sql_statements(self, app: FastAPI) -> Iterator[list[str]]:
+        """Every statement the API sends, so a test can count them."""
+        recorded: list[str] = []
+
+        def record(
+            conn: object,
+            cursor: object,
+            statement: str,
+            parameters: object,
+            context: object,
+            executemany: bool,
+        ) -> None:
+            recorded.append(statement)
+
+        engine = app.state.engine.sync_engine
+        sa_event.listen(engine, "before_cursor_execute", record)
+        yield recorded
+        sa_event.remove(engine, "before_cursor_execute", record)
+
+    async def test_repeated_requests_hit_the_database_once(
+        self, client: httpx.AsyncClient, tokens: dict[str, str], sql_statements: list[str]
+    ) -> None:
+        sql_statements.clear()
+        for _ in range(3):
+            assert (await client.get("/auth/me")).status_code == 200
+
+        lookups = [item for item in sql_statements if "FROM sessions" in item]
+        assert len(lookups) == 1
+
+    async def test_revocation_beats_the_cache(
+        self, client: httpx.AsyncClient, tokens: dict[str, str], sql_statements: list[str]
+    ) -> None:
+        await client.get("/auth/me")
+        await client.post("/auth/logout")
+
+        sql_statements.clear()
+        assert (await client.get("/auth/me")).status_code == 401
+        # The cached entry was dropped, so this request had to ask Postgres.
+        assert any("FROM sessions" in item for item in sql_statements)
+
+
+class TestDatabaseGuarantees:
+    async def test_only_one_entry_can_be_running(
+        self, app: FastAPI, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        """The partial unique index, not just the use case, enforces this."""
+        for _ in range(3):
+            await client.post("/time-entries/start", json={})
+
+        async with app.state.sessionmaker() as session:
+            running = await session.execute(
+                sa.text("SELECT count(*) FROM time_entries WHERE stopped_at IS NULL")
+            )
+            assert running.scalar_one() == 1
+
+    async def test_responses_carry_the_server_clock(self, client: httpx.AsyncClient) -> None:
+        response = await client.get("/health")
+        stamped = datetime.fromisoformat(response.headers["x-server-time"])
+        assert abs((datetime.now(UTC) - stamped).total_seconds()) < 5
