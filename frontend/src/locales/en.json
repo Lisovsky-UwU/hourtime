@@ -14,13 +14,9 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
-    "create": "Create",
     "close": "Close",
     "loading": "Loading…",
-    "retry": "Try again",
-    "none": "None",
-    "saving": "Saving…",
-    "actions": "Actions"
+    "saving": "Saving…"
   },
   "auth": {
     "signIn": {
@@ -33,8 +29,7 @@
       "title": "Create account",
       "submit": "Create account",
       "haveAccount": "Already have an account?",
-      "signIn": "Sign in",
-      "success": "Account created. Signing you in…"
+      "signIn": "Sign in"
     },
     "fields": {
       "email": "Email",
@@ -44,39 +39,31 @@
   },
   "timer": {
     "descriptionPlaceholder": "What are you working on?",
-    "start": "Start",
-    "stop": "Stop",
+    "start": "Start timer",
+    "stop": "Stop timer",
     "noProject": "No project",
     "selectProject": "Select project",
-    "startedAt": "Started at {time}",
-    "adjustStart": "Adjust start time",
-    "startTime": "Start time",
-    "apply": "Apply",
-    "running": "Running"
+    "startTime": "from"
   },
   "entries": {
     "title": "Time entries",
     "empty": "No time tracked yet. Start a timer to see entries here.",
     "loadMore": "Load more",
     "showing": "Showing {count} entry | Showing {count} entries",
-    "addManual": "Add entry manually",
+    "addManual": "Add entry",
     "today": "Today",
     "yesterday": "Yesterday",
     "dayTotal": "Total {duration}",
-    "noDescription": "No description",
     "running": "Running",
     "edit": {
-      "title": "Edit entry",
-      "createTitle": "New entry",
       "description": "Comment",
       "descriptionPlaceholder": "What did you work on?",
       "project": "Project",
+      "date": "Date",
       "startedAt": "Start",
-      "stoppedAt": "End",
-      "stillRunning": "This entry is still running; leave the end empty to keep it that way.",
-      "duration": "Duration"
+      "stoppedAt": "End"
     },
-    "deleteConfirm": "Delete this time entry? This cannot be undone."
+    "deleteConfirm": "Click again to delete"
   },
   "projects": {
     "title": "Projects",
@@ -101,6 +88,12 @@
     "title": "Settings",
     "language": "Language",
     "languageHint": "The interface language for this browser.",
+    "timeFormat": "Time format",
+    "timeFormatHint": "How times are shown and typed. Both formats are accepted on input.",
+    "hourCycle": {
+      "12": "12-hour (2:05 PM)",
+      "24": "24-hour (14:05)"
+    },
     "account": "Account",
     "signedInAs": "Signed in as {email}",
     "sessions": "Sessions",

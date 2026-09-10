@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AppIcon from '@/components/AppIcon.vue'
+import AutoTextarea from '@/components/AutoTextarea.vue'
 import ProjectPicker from '@/components/ProjectPicker.vue'
+import TimeField from '@/components/TimeField.vue'
 import { useAsyncAction } from '@/composables/useApiError'
 import { useEntriesStore } from '@/stores/entries'
 import { useTimerStore } from '@/stores/timer'
-import { DATETIME_STEP, fromLocalInput, toLocalInput } from '@/utils/datetime'
 import { formatClock } from '@/utils/duration'
-import { serverNowIso } from '@/utils/serverTime'
+import { serverNow, serverNowIso } from '@/utils/serverTime'
+import type { TimeOfDay } from '@/utils/timeOfDay'
+import { combine, toDateInput, toTimeOfDay } from '@/utils/timeOfDay'
 
-const { t, d } = useI18n()
+const { t } = useI18n()
 const timer = useTimerStore()
 // Every timer write returns the saved entry, so the list is folded in directly
 // rather than refetched.
@@ -19,20 +23,38 @@ const { busy, error, run } = useAsyncAction()
 
 const description = ref('')
 const projectId = ref<string | null>(null)
-const startInput = ref('')
-const editingStart = ref(false)
+const startTime = ref<TimeOfDay>(toTimeOfDay(serverNowIso()))
+/** True once the user has typed a start time, which stops it tracking the clock. */
+const startPinned = ref(false)
 
-// The server is the source of truth: whenever the running entry is replaced
-// (start, stop, or a resync from another device), mirror it into the form.
+// While idle and untouched the field follows the clock, so hitting play always
+// means "now" no matter how long the page has been open.
+const clock = window.setInterval(() => {
+  if (!timer.isRunning && !startPinned.value) startTime.value = toTimeOfDay(serverNowIso())
+}, 1000)
+onUnmounted(() => window.clearInterval(clock))
+
+// The server owns the running entry: whenever it is replaced — start, stop, or
+// a resync from another device — mirror it into the fields.
 watch(
   () => timer.entry,
   (entry) => {
     description.value = entry?.description ?? ''
     projectId.value = entry?.project_id ?? null
-    startInput.value = entry ? toLocalInput(entry.started_at) : ''
+    startTime.value = toTimeOfDay(entry?.started_at ?? serverNowIso())
+    startPinned.value = false
   },
   { immediate: true },
 )
+
+/** The instant a fresh timer should start from, given only a time of day. */
+function resolveStart(): string | null {
+  const iso = combine(toDateInput(serverNowIso()), startTime.value)
+  if (!iso) return null
+  // A time later than now means yesterday — you cannot start in the future.
+  const at = Date.parse(iso)
+  return at > serverNow() ? new Date(at - 24 * 60 * 60 * 1000).toISOString() : iso
+}
 
 async function toggle() {
   if (timer.isRunning) {
@@ -43,7 +65,7 @@ async function toggle() {
     return
   }
 
-  const startedAt = startInput.value ? fromLocalInput(startInput.value) : null
+  const startedAt = resolveStart()
   await run(async () => {
     const started = await timer.start({
       description: description.value,
@@ -51,7 +73,6 @@ async function toggle() {
       ...(startedAt ? { started_at: startedAt } : {}),
     })
     entries.upsert(started)
-    editingStart.value = false
   })
 }
 
@@ -62,49 +83,50 @@ async function amend(patch: Parameters<typeof timer.amend>[0]) {
   })
 }
 
-async function commitDescription() {
+function commitDescription() {
   if (!timer.entry || timer.entry.description === description.value) return
-  await amend({ description: description.value })
+  void amend({ description: description.value })
 }
 
-watch(projectId, async (value) => {
+watch(projectId, (value) => {
   if (!timer.entry || timer.entry.project_id === value) return
-  await amend({ project_id: value })
+  void amend({ project_id: value })
 })
 
-async function applyStart() {
-  const iso = fromLocalInput(startInput.value)
-  if (!iso) return
-  if (timer.entry) await amend({ started_at: iso })
-  editingStart.value = false
-}
-
-function openStartEditor() {
-  // Default the picker to now so an unstarted timer has something sensible.
-  if (!startInput.value) startInput.value = toLocalInput(serverNowIso())
-  editingStart.value = true
-}
-
-function clearStartOverride() {
-  startInput.value = ''
-  editingStart.value = false
+function commitStart() {
+  const running = timer.entry
+  if (!running) {
+    // Nothing to save yet; the value is simply where the next timer begins.
+    startPinned.value = true
+    return
+  }
+  const startedAt = combine(toDateInput(running.started_at), startTime.value)
+  if (!startedAt || Date.parse(startedAt) === Date.parse(running.started_at)) return
+  void amend({ started_at: startedAt })
 }
 </script>
 
 <template>
   <section class="card timer">
     <div class="timer-main">
-      <input
+      <AutoTextarea
         v-model="description"
-        type="text"
         class="description"
         :placeholder="t('timer.descriptionPlaceholder')"
         :aria-label="t('timer.descriptionPlaceholder')"
         @blur="commitDescription"
-        @keyup.enter="commitDescription"
       />
 
       <ProjectPicker v-model="projectId" :aria-label="t('timer.selectProject')" />
+
+      <span class="start">
+        <span class="muted small">{{ t('timer.startTime') }}</span>
+        <TimeField
+          v-model="startTime"
+          :aria-label="t('timer.startTime')"
+          @commit="commitStart"
+        />
+      </span>
 
       <span class="elapsed mono" :class="{ live: timer.isRunning }">
         {{ formatClock(timer.elapsed) }}
@@ -112,50 +134,15 @@ function clearStartOverride() {
 
       <button
         type="button"
-        class="btn-primary action"
-        :class="{ stopping: timer.isRunning }"
+        class="action"
+        :class="timer.isRunning ? 'stopping' : 'starting'"
         :disabled="busy"
+        :title="timer.isRunning ? t('timer.stop') : t('timer.start')"
+        :aria-label="timer.isRunning ? t('timer.stop') : t('timer.start')"
         @click="toggle"
       >
-        {{ timer.isRunning ? t('timer.stop') : t('timer.start') }}
+        <AppIcon :name="timer.isRunning ? 'stop' : 'play'" :size="20" />
       </button>
-    </div>
-
-    <div class="timer-meta small">
-      <template v-if="editingStart">
-        <label class="inline-label" for="start-at">{{ t('timer.startTime') }}</label>
-        <input
-          id="start-at"
-          v-model="startInput"
-          type="datetime-local"
-          :step="DATETIME_STEP"
-          class="start-input"
-        />
-        <button type="button" class="btn-link" :disabled="busy" @click="applyStart">
-          {{ t('timer.apply') }}
-        </button>
-        <button type="button" class="btn-link muted" @click="clearStartOverride">
-          {{ t('common.cancel') }}
-        </button>
-      </template>
-
-      <template v-else-if="timer.entry">
-        <span class="muted">
-          {{ t('timer.startedAt', { time: d(new Date(timer.entry.started_at), 'time') }) }}
-        </span>
-        <button type="button" class="btn-link" @click="openStartEditor">
-          {{ t('timer.adjustStart') }}
-        </button>
-      </template>
-
-      <template v-else>
-        <button type="button" class="btn-link" @click="openStartEditor">
-          {{ t('timer.adjustStart') }}
-        </button>
-        <span v-if="startInput" class="badge">
-          {{ d(new Date(startInput), 'time') }}
-        </span>
-      </template>
     </div>
 
     <p v-if="error" class="banner">{{ error }}</p>
@@ -164,7 +151,7 @@ function clearStartOverride() {
 
 <style scoped>
 .timer {
-  padding: 14px 16px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -182,12 +169,20 @@ function clearStartOverride() {
   border-color: transparent;
   background: transparent;
   font-size: 1rem;
-  padding-left: 0;
+  padding: 6px 8px;
 }
 
-.description:hover {
+.description:hover,
+.description:focus {
   border-color: var(--border);
-  padding-left: 11px;
+  background: var(--surface);
+}
+
+.start {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .elapsed {
@@ -195,6 +190,8 @@ function clearStartOverride() {
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text-muted);
+  min-width: 8ch;
+  text-align: right;
 }
 
 .elapsed.live {
@@ -202,7 +199,19 @@ function clearStartOverride() {
 }
 
 .action {
-  min-width: 84px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.action.starting {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
 }
 
 .action.stopping {
@@ -211,25 +220,11 @@ function clearStartOverride() {
   color: #fff;
 }
 
-.timer-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  min-height: 24px;
+.action:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
-.inline-label {
-  margin: 0;
-}
-
-.start-input {
-  width: auto;
-  padding: 4px 8px;
-  font-size: 0.85rem;
-}
-
-@media (width <= 640px) {
+@media (width <= 720px) {
   .timer-main {
     flex-wrap: wrap;
   }

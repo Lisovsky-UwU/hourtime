@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import EntryDialog from '@/components/EntryDialog.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import EntryRow from '@/components/EntryRow.vue'
 import TimerBar from '@/components/TimerBar.vue'
 import { useAsyncAction } from '@/composables/useApiError'
@@ -13,16 +12,15 @@ import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
 import { localDayKey, startOfLocalDay } from '@/utils/datetime'
 import { formatCompact } from '@/utils/duration'
+import { serverNow } from '@/utils/serverTime'
+
+const HOUR_MS = 60 * 60 * 1000
 
 const { t, d } = useI18n()
 const timer = useTimerStore()
 const entries = useEntriesStore()
 const projects = useProjectsStore()
-const { busy: deleting, error: deleteError, run } = useAsyncAction()
-
-const editing = ref<TimeEntry | null>(null)
-const dialogOpen = ref(false)
-const pendingDelete = ref<TimeEntry | null>(null)
+const { busy, error, run } = useAsyncAction()
 
 const todayKey = localDayKey(startOfLocalDay().toISOString())
 const yesterdayKey = localDayKey(startOfLocalDay(-1).toISOString())
@@ -58,18 +56,26 @@ function labelFor(key: string, sample: TimeEntry | undefined): string {
   return sample ? d(new Date(sample.started_at), 'weekday') : key
 }
 
-function openEditor(entry: TimeEntry | null) {
-  editing.value = entry
-  dialogOpen.value = true
+/**
+ * Adds a finished entry covering the last hour, ready to be adjusted in place.
+ * There is no form to fill in first — the row itself is the form.
+ */
+async function addEntry() {
+  const now = serverNow()
+  await run(() =>
+    entries.create({
+      started_at: new Date(now - HOUR_MS).toISOString(),
+      stopped_at: new Date(now).toISOString(),
+      description: '',
+      project_id: null,
+    }),
+  )
 }
 
-async function confirmDelete() {
-  const entry = pendingDelete.value
-  if (!entry) return
+async function removeEntry(entry: TimeEntry) {
   await run(async () => {
     await entries.remove(entry.id)
-    if (timer.entry?.id === entry.id) await timer.sync()
-    pendingDelete.value = null
+    if (timer.entry?.id === entry.id) timer.reset()
   })
 }
 
@@ -112,10 +118,13 @@ onUnmounted(() => {
     <section class="stack" style="gap: 8px">
       <div class="row-between">
         <h1>{{ t('entries.title') }}</h1>
-        <button type="button" @click="openEditor(null)">{{ t('entries.addManual') }}</button>
+        <button type="button" class="row add" :disabled="busy" @click="addEntry">
+          <AppIcon name="plus" :size="16" />
+          {{ t('entries.addManual') }}
+        </button>
       </div>
 
-      <p v-if="deleteError" class="banner">{{ deleteError }}</p>
+      <p v-if="error" class="banner">{{ error }}</p>
 
       <p v-if="!entries.items.length && !entries.loading" class="card empty">
         {{ t('entries.empty') }}
@@ -134,8 +143,7 @@ onUnmounted(() => {
             v-for="entry in group.items"
             :key="entry.id"
             :entry="entry"
-            @edit="openEditor"
-            @remove="pendingDelete = $event"
+            @remove="removeEntry"
           />
         </ul>
       </div>
@@ -152,18 +160,6 @@ onUnmounted(() => {
         </button>
       </div>
     </section>
-
-    <!-- The store folds the saved entry into the list itself; no reload here. -->
-    <EntryDialog :open="dialogOpen" :entry="editing" @close="dialogOpen = false" />
-
-    <ConfirmDialog
-      :open="pendingDelete !== null"
-      :title="t('common.delete')"
-      :message="t('entries.deleteConfirm')"
-      :busy="deleting"
-      @close="pendingDelete = null"
-      @confirm="confirmDelete"
-    />
   </div>
 </template>
 
@@ -190,6 +186,10 @@ onUnmounted(() => {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.add {
+  gap: 6px;
 }
 
 .footer {

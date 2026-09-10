@@ -8,14 +8,19 @@ import { currentLocale, setLocale, SUPPORTED_LOCALES } from '@/i18n'
 import type { Locale } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useEntriesStore } from '@/stores/entries'
+import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
 import { useTimerStore } from '@/stores/timer'
+import type { HourCycle } from '@/utils/timeOfDay'
 
 /** Language names stay in their own language — those are never translated. */
 const LOCALE_NAMES: Record<Locale, string> = { en: 'English' }
 
+const HOUR_CYCLES: HourCycle[] = ['24', '12']
+
 const { t } = useI18n()
 const auth = useAuthStore()
+const preferences = usePreferencesStore()
 const timer = useTimerStore()
 const projects = useProjectsStore()
 const entries = useEntriesStore()
@@ -55,6 +60,18 @@ async function signOutEverywhere() {
       <select :value="locale" :aria-label="t('settings.language')" @change="changeLocale">
         <option v-for="code in SUPPORTED_LOCALES" :key="code" :value="code">
           {{ LOCALE_NAMES[code] }}
+        </option>
+      </select>
+    </section>
+
+    <section class="card section stack">
+      <div>
+        <h2>{{ t('settings.timeFormat') }}</h2>
+        <p class="muted small">{{ t('settings.timeFormatHint') }}</p>
+      </div>
+      <select v-model="preferences.hourCycle" :aria-label="t('settings.timeFormat')">
+        <option v-for="cycle in HOUR_CYCLES" :key="cycle" :value="cycle">
+          {{ t(`settings.hourCycle.${cycle}`) }}
         </option>
       </select>
     </section>

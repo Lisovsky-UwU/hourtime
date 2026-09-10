@@ -30,7 +30,8 @@ function onChange(event: Event) {
 
 <template>
   <div class="picker">
-    <span class="dot" :style="{ background: selected?.color ?? 'transparent' }" />
+    <!-- No dot without a project: an empty ring reads as a rendering glitch. -->
+    <span v-if="selected" class="dot" :style="{ background: selected.color }" />
     <select
       :value="model ?? ''"
       :aria-label="props.ariaLabel || t('timer.selectProject')"
