@@ -12,7 +12,7 @@ const DEFAULT_COLOR = '#4285f4'
 
 /** `project: null` opens the dialog in "create" mode. */
 const props = defineProps<{ open: boolean; project: Project | null }>()
-const emit = defineEmits<{ close: []; saved: [] }>()
+const emit = defineEmits<{ close: [] }>()
 
 const { t } = useI18n()
 const projects = useProjectsStore()
@@ -43,7 +43,6 @@ async function save() {
     } else {
       await projects.create(name.value.trim(), color.value)
     }
-    emit('saved')
     emit('close')
   })
 }

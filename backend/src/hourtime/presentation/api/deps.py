@@ -5,6 +5,7 @@ Everything above it asks for a use case and gets one fully wired.
 """
 
 from collections.abc import AsyncIterator
+from contextlib import suppress
 from datetime import timedelta
 from typing import Annotated
 
@@ -104,8 +105,11 @@ async def get_db_session(request: Request) -> AsyncIterator[AsyncSession]:
             yield session
         except Exception:
             # A failed flush leaves the transaction unusable; drop it so the
-            # connection returns to the pool clean.
-            await session.rollback()
+            # connection returns to the pool clean. If the connection itself
+            # died, the rollback fails too — swallow that so the original error
+            # is what the client hears about.
+            with suppress(Exception):
+                await session.rollback()
             raise
 
 

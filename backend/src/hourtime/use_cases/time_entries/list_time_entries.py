@@ -6,6 +6,13 @@ MAX_LIMIT = 200
 
 
 class ListTimeEntries:
+    """One query per page.
+
+    Asking for `limit + 1` rows and dropping the extra tells us whether another
+    page exists — a `count(*)` would double the cost of the most-loaded endpoint
+    in the app just to render a number nobody acts on.
+    """
+
     def __init__(self, entries: TimeEntryRepository) -> None:
         self._entries = entries
 
@@ -21,18 +28,19 @@ class ListTimeEntries:
         ):
             raise ValidationError("started_from must not be later than started_to")
 
-        items = await self._entries.list_for_user(
+        found = await self._entries.list_for_user(
             data.user_id,
             started_from=data.started_from,
             started_to=data.started_to,
             project_id=data.project_id,
+            limit=data.limit + 1,
+            offset=data.offset,
+        )
+
+        has_more = len(found) > data.limit
+        return TimeEntryPage(
+            items=found[: data.limit],
+            has_more=has_more,
             limit=data.limit,
             offset=data.offset,
         )
-        total = await self._entries.count_for_user(
-            data.user_id,
-            started_from=data.started_from,
-            started_to=data.started_to,
-            project_id=data.project_id,
-        )
-        return TimeEntryPage(items=items, total=total, limit=data.limit, offset=data.offset)

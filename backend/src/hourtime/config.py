@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://hourtime:hourtime@localhost:5432/hourtime"
     sql_echo: bool = False
 
+    # Recycle connections older than this so idle timeouts never surface.
+    db_pool_recycle_seconds: int = 1800
+    # Ping a pooled connection before reuse only once it has been idle this
+    # long. 0 pings always (equivalent to pool_pre_ping), -1 never.
+    db_ping_after_idle_seconds: int = 30
+
     redis_url: str = "redis://localhost:6379/0"
     cache_backend: Literal["redis", "memory"] = "redis"
     # How long an authenticated request may work from cached session/user rows.

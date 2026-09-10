@@ -72,10 +72,24 @@ export const useTimerStore = defineStore('timer', () => {
   }
 
   /** Re-point the running entry at a different project or comment. */
-  async function amend(patch: entriesApi.EntryPatch): Promise<void> {
+  async function amend(patch: entriesApi.EntryPatch): Promise<TimeEntry | null> {
     const running = entry.value
-    if (!running) return
-    adopt(await entriesApi.update(running.id, patch))
+    if (!running) return null
+    const updated = await entriesApi.update(running.id, patch)
+    adopt(updated)
+    return updated
+  }
+
+  /**
+   * Take in an entry that was just saved elsewhere in the UI.
+   *
+   * Only the running entry concerns this store, and giving it an end time is
+   * how the edit dialog stops a timer — so a saved entry with `stopped_at`
+   * clears the bar rather than keeping it ticking.
+   */
+  function applySaved(saved: TimeEntry): void {
+    if (entry.value?.id !== saved.id) return
+    adopt(saved.stopped_at === null ? saved : null)
   }
 
   /**
@@ -94,5 +108,17 @@ export const useTimerStore = defineStore('timer', () => {
     adopt(null)
   }
 
-  return { entry, elapsed, syncing, isRunning, secondsOf, sync, start, stop, amend, reset }
+  return {
+    entry,
+    elapsed,
+    syncing,
+    isRunning,
+    secondsOf,
+    applySaved,
+    sync,
+    start,
+    stop,
+    amend,
+    reset,
+  }
 })

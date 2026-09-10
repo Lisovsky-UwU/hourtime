@@ -15,7 +15,7 @@ import { serverNowIso } from '@/utils/serverTime'
 
 /** `entry: null` means "add an entry by hand" rather than "edit this one". */
 const props = defineProps<{ open: boolean; entry: TimeEntry | null }>()
-const emit = defineEmits<{ close: []; saved: [] }>()
+const emit = defineEmits<{ close: [] }>()
 
 const { t } = useI18n()
 const entries = useEntriesStore()
@@ -71,12 +71,11 @@ async function save() {
         started_at: startedIso,
       }
       if (stoppedIso) patch.stopped_at = stoppedIso
-      await entries.update(props.entry.id, patch)
+      const updated = await entries.update(props.entry.id, patch)
       // Editing the entry that is currently running changes what the timer bar
-      // shows, so pull the fresh copy.
-      if (timer.entry?.id === props.entry.id) await timer.sync()
+      // shows — and giving it an end time stops it.
+      timer.applySaved(updated)
     }
-    emit('saved')
     emit('close')
   })
 }

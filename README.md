@@ -107,7 +107,15 @@ Two consequences worth knowing:
   A revoked session drops out of the cache immediately — `/auth/logout` takes
   effect on the next request, not when a TTL runs out. Rows edited straight in
   Postgres, on the other hand, stay stale until `HOURTIME_CACHE_TTL_SECONDS`
-  elapses.
+  elapses. Every cache key is minted by `CacheKey`, so the reader that builds
+  one and the writer that drops it cannot drift apart.
+- **Latency was measured, not guessed.** On a local Postgres a round trip costs
+  ~0.5 ms while the work inside it costs ~0.05 ms, so the cheapest win is fewer
+  round trips rather than faster ones. Hence: the entry list pages by asking for
+  one row more than it needs instead of running a second `count(*)`, and pooled
+  connections are validated only after they have been idle
+  (`HOURTIME_DB_PING_AFTER_IDLE_SECONDS`) rather than on every checkout, which
+  `pool_pre_ping` would do at 0.57 ms a request.
 - **The database enforces the rules too.** A partial unique index on
   `time_entries (user_id) WHERE stopped_at IS NULL` is what actually guarantees
   one running timer per user; the use case only makes the hand-off graceful.
@@ -137,6 +145,8 @@ setting deliberately before exposing the instance:
 | `HOURTIME_CORS_ORIGINS`         | The origin the frontend is actually served from |
 | `HOURTIME_PASSWORD_MIN_LENGTH`  | Defaults to 10                                  |
 | `HOURTIME_SESSION_RETENTION_DAYS` | How long dead sessions stay auditable         |
+| `HOURTIME_CACHE_TTL_SECONDS`    | Staleness bound for edits made outside the app  |
+| `HOURTIME_DB_PING_AFTER_IDLE_SECONDS` | Raise it on a flaky link, lower it to 0 to validate every checkout |
 
 ## Deploying
 

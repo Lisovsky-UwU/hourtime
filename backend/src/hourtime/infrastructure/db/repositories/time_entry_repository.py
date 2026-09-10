@@ -76,21 +76,6 @@ class SqlTimeEntryRepository(TimeEntryRepository):
         models = (await self._session.execute(statement)).scalars().all()
         return [to_domain(model) for model in models]
 
-    async def count_for_user(
-        self,
-        user_id: UUID,
-        *,
-        started_from: datetime | None = None,
-        started_to: datetime | None = None,
-        project_id: UUID | None = None,
-    ) -> int:
-        statement = (
-            sa.select(sa.func.count())
-            .select_from(TimeEntryModel)
-            .where(*self._filters(user_id, started_from, started_to, project_id))
-        )
-        return (await self._session.execute(statement)).scalar_one()
-
     async def add(self, entry: TimeEntry) -> TimeEntry:
         model = TimeEntryModel(**entry.model_dump())
         self._session.add(model)

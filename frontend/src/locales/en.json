@@ -58,7 +58,7 @@
     "title": "Time entries",
     "empty": "No time tracked yet. Start a timer to see entries here.",
     "loadMore": "Load more",
-    "showing": "Showing {shown} of {total}",
+    "showing": "Showing {count} entry | Showing {count} entries",
     "addManual": "Add entry manually",
     "today": "Today",
     "yesterday": "Yesterday",

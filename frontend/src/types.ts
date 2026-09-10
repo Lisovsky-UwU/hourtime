@@ -43,7 +43,8 @@ export interface TimeEntry {
 
 export interface TimeEntryPage {
   items: TimeEntry[]
-  total: number
+  /** Whether another page exists. The API reports no total on purpose. */
+  has_more: boolean
   limit: number
   offset: number
 }

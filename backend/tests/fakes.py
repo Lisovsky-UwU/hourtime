@@ -207,16 +207,6 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
         found = self._matching(user_id, started_from, started_to, project_id)
         return found[offset : offset + limit]
 
-    async def count_for_user(
-        self,
-        user_id: UUID,
-        *,
-        started_from: datetime | None = None,
-        started_to: datetime | None = None,
-        project_id: UUID | None = None,
-    ) -> int:
-        return len(self._matching(user_id, started_from, started_to, project_id))
-
     async def add(self, entry: TimeEntry) -> TimeEntry:
         self._check_single_running(entry)
         self.items[entry.id] = entry

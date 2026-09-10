@@ -129,6 +129,8 @@ class ListTimeEntriesInput(BaseModel):
 
 class TimeEntryPage(BaseModel):
     items: list[TimeEntry]
-    total: int
+    # No total: knowing it costs a second query on every page load, and the list
+    # only needs to know whether a "load more" button belongs on screen.
+    has_more: bool
     limit: int
     offset: int

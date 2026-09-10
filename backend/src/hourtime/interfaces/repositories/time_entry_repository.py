@@ -24,17 +24,12 @@ class TimeEntryRepository(ABC):
         limit: int = 50,
         offset: int = 0,
     ) -> list[TimeEntry]:
-        """Newest first, ordered by `started_at` descending."""
+        """Newest first, ordered by `started_at` descending.
 
-    @abstractmethod
-    async def count_for_user(
-        self,
-        user_id: UUID,
-        *,
-        started_from: datetime | None = None,
-        started_to: datetime | None = None,
-        project_id: UUID | None = None,
-    ) -> int: ...
+        There is deliberately no `count`: paging asks for one row more than it
+        needs and infers "there is more" from that, which keeps the list to a
+        single query.
+        """
 
     @abstractmethod
     async def add(self, entry: TimeEntry) -> TimeEntry: ...

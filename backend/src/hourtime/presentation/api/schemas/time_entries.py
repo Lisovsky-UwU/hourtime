@@ -41,7 +41,9 @@ class TimeEntryResponse(BaseModel):
 
 class TimeEntryPageResponse(BaseModel):
     items: list[TimeEntryResponse]
-    total: int
+    # True when another page exists. There is no total on purpose — see
+    # `ListTimeEntries`.
+    has_more: bool
     limit: int
     offset: int
 
@@ -49,7 +51,7 @@ class TimeEntryPageResponse(BaseModel):
     def of(cls, page: TimeEntryPage) -> "TimeEntryPageResponse":
         return cls(
             items=[TimeEntryResponse.of(entry) for entry in page.items],
-            total=page.total,
+            has_more=page.has_more,
             limit=page.limit,
             offset=page.offset,
         )

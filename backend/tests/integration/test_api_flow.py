@@ -158,7 +158,7 @@ class TestTimerEndpoints:
         assert (await client.get("/time-entries/current")).json() is None
 
         page = await client.get("/time-entries")
-        assert page.json()["total"] == 1
+        assert len(page.json()["items"]) == 1
 
     async def test_survives_a_reload(
         self, client: httpx.AsyncClient, tokens: dict[str, str]
@@ -182,7 +182,7 @@ class TestTimerEndpoints:
         second = (await client.post("/time-entries/start", json={})).json()
 
         page = (await client.get("/time-entries")).json()
-        assert page["total"] == 2
+        assert len(page["items"]) == 2
         closed = next(item for item in page["items"] if item["id"] == first["id"])
         assert closed["stopped_at"] is not None
         assert (await client.get("/time-entries/current")).json()["id"] == second["id"]
@@ -236,7 +236,7 @@ class TestTimerEndpoints:
         assert detached.json()["project_id"] is None
 
         assert (await client.delete(f"/time-entries/{entry['id']}")).status_code == 204
-        assert (await client.get("/time-entries")).json()["total"] == 0
+        assert (await client.get("/time-entries")).json()["items"] == []
 
     async def test_deleting_a_project_keeps_the_entry(
         self, client: httpx.AsyncClient, tokens: dict[str, str]
@@ -249,7 +249,7 @@ class TestTimerEndpoints:
         await client.delete(f"/projects/{project['id']}")
 
         page = (await client.get("/time-entries")).json()
-        assert page["total"] == 1
+        assert len(page["items"]) == 1
         assert page["items"][0]["id"] == entry["id"]
         assert page["items"][0]["project_id"] is None
 

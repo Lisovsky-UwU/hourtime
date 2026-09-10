@@ -4,15 +4,17 @@ import { useI18n } from 'vue-i18n'
 
 import ProjectPicker from '@/components/ProjectPicker.vue'
 import { useAsyncAction } from '@/composables/useApiError'
+import { useEntriesStore } from '@/stores/entries'
 import { useTimerStore } from '@/stores/timer'
 import { DATETIME_STEP, fromLocalInput, toLocalInput } from '@/utils/datetime'
 import { formatClock } from '@/utils/duration'
 import { serverNowIso } from '@/utils/serverTime'
 
-const emit = defineEmits<{ changed: [] }>()
-
 const { t, d } = useI18n()
 const timer = useTimerStore()
+// Every timer write returns the saved entry, so the list is folded in directly
+// rather than refetched.
+const entries = useEntriesStore()
 const { busy, error, run } = useAsyncAction()
 
 const description = ref('')
@@ -35,49 +37,45 @@ watch(
 async function toggle() {
   if (timer.isRunning) {
     await run(async () => {
-      await timer.stop()
-      emit('changed')
+      const stopped = await timer.stop()
+      if (stopped) entries.upsert(stopped)
     })
     return
   }
 
   const startedAt = startInput.value ? fromLocalInput(startInput.value) : null
   await run(async () => {
-    await timer.start({
+    const started = await timer.start({
       description: description.value,
       project_id: projectId.value,
       ...(startedAt ? { started_at: startedAt } : {}),
     })
+    entries.upsert(started)
     editingStart.value = false
-    emit('changed')
+  })
+}
+
+async function amend(patch: Parameters<typeof timer.amend>[0]) {
+  await run(async () => {
+    const updated = await timer.amend(patch)
+    if (updated) entries.upsert(updated)
   })
 }
 
 async function commitDescription() {
   if (!timer.entry || timer.entry.description === description.value) return
-  await run(async () => {
-    await timer.amend({ description: description.value })
-    emit('changed')
-  })
+  await amend({ description: description.value })
 }
 
 watch(projectId, async (value) => {
   if (!timer.entry || timer.entry.project_id === value) return
-  await run(async () => {
-    await timer.amend({ project_id: value })
-    emit('changed')
-  })
+  await amend({ project_id: value })
 })
 
 async function applyStart() {
   const iso = fromLocalInput(startInput.value)
   if (!iso) return
-  if (timer.entry) {
-    await run(async () => {
-      await timer.amend({ started_at: iso })
-      emit('changed')
-    })
-  }
+  if (timer.entry) await amend({ started_at: iso })
   editingStart.value = false
 }
 

@@ -13,16 +13,11 @@ from pydantic import ValidationError as PydanticValidationError
 from hourtime.domain.entities import User
 from hourtime.infrastructure.cache.base import CacheClient
 from hourtime.infrastructure.cache.invalidation import DeferredInvalidation
+from hourtime.infrastructure.cache.keys import CacheKey
 from hourtime.infrastructure.db.repositories.user_repository import SqlUserRepository
 from hourtime.interfaces.repositories import UserRepository
 
 logger = logging.getLogger(__name__)
-
-USER_KEY_PREFIX = "user:"
-
-
-def user_key(user_id: UUID) -> str:
-    return f"{USER_KEY_PREFIX}{user_id}"
 
 
 class CachedUserRepository(UserRepository):
@@ -38,7 +33,7 @@ class CachedUserRepository(UserRepository):
         self.invalidation = DeferredInvalidation(cache)
 
     async def get_by_id(self, user_id: UUID) -> User | None:
-        key = user_key(user_id)
+        key = CacheKey.user(user_id)
 
         cached = await self._cache.get(key)
         if cached is not None:
@@ -61,7 +56,7 @@ class CachedUserRepository(UserRepository):
 
     async def update(self, user: User) -> User:
         stored = await self._inner.update(user)
-        await self.invalidation.invalidate(user_key(stored.id))
+        await self.invalidation.invalidate(CacheKey.user(stored.id))
         return stored
 
     def _deserialise(self, raw: str) -> User | None:

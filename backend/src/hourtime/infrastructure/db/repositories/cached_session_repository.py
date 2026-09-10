@@ -14,17 +14,12 @@ from pydantic import ValidationError as PydanticValidationError
 from hourtime.domain.entities import Session
 from hourtime.infrastructure.cache.base import CacheClient
 from hourtime.infrastructure.cache.invalidation import DeferredInvalidation
+from hourtime.infrastructure.cache.keys import CacheKey
 from hourtime.infrastructure.db.repositories.session_repository import SqlSessionRepository
 from hourtime.interfaces.repositories import SessionRepository
 from hourtime.interfaces.services import Clock
 
 logger = logging.getLogger(__name__)
-
-ACCESS_KEY_PREFIX = "session:access:"
-
-
-def access_key(token_hash: str) -> str:
-    return f"{ACCESS_KEY_PREFIX}{token_hash}"
 
 
 class CachedSessionRepository(SessionRepository):
@@ -45,7 +40,7 @@ class CachedSessionRepository(SessionRepository):
     # --- reads ---------------------------------------------------------------
 
     async def get_by_access_token_hash(self, token_hash: str) -> Session | None:
-        key = access_key(token_hash)
+        key = CacheKey.session_by_access_token(token_hash)
 
         cached = await self._cache.get(key)
         if cached is not None:
@@ -72,13 +67,17 @@ class CachedSessionRepository(SessionRepository):
 
     async def update(self, session: Session) -> Session:
         stored = await self._inner.update(session)
-        await self.invalidation.invalidate(access_key(stored.access_token_hash))
+        await self.invalidation.invalidate(
+            CacheKey.session_by_access_token(stored.access_token_hash)
+        )
         return stored
 
     async def revoke_all_for_user(self, user_id: UUID, at: datetime) -> int:
         hashes = await self._inner.active_access_hashes(user_id)
         revoked = await self._inner.revoke_all_for_user(user_id, at)
-        await self.invalidation.invalidate(*(access_key(digest) for digest in hashes))
+        await self.invalidation.invalidate(
+            *(CacheKey.session_by_access_token(digest) for digest in hashes)
+        )
         return revoked
 
     async def delete_expired_before(self, cutoff: datetime) -> int:

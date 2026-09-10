@@ -73,10 +73,22 @@ async function confirmDelete() {
   })
 }
 
-/** Another device may have started or stopped the timer while this tab idled. */
-async function resync() {
-  if (document.visibilityState !== 'visible') return
-  await Promise.all([timer.sync(), entries.load()])
+/**
+ * Another device may have started or stopped the timer while this tab idled.
+ *
+ * Returning to a tab fires `focus` and `visibilitychange` together, so the two
+ * are collapsed into a single round instead of two identical pairs of requests.
+ */
+let pendingResync: number | null = null
+
+function resync() {
+  if (document.visibilityState !== 'visible' || pendingResync !== null) return
+  pendingResync = window.setTimeout(() => {
+    pendingResync = null
+    void Promise.all([timer.sync(), entries.load()]).catch(() => {
+      // A transient failure just leaves the last known state on screen.
+    })
+  }, 100)
 }
 
 onMounted(async () => {
@@ -87,6 +99,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (pendingResync !== null) window.clearTimeout(pendingResync)
   document.removeEventListener('visibilitychange', resync)
   window.removeEventListener('focus', resync)
 })
@@ -94,7 +107,7 @@ onUnmounted(() => {
 
 <template>
   <div class="page stack">
-    <TimerBar @changed="entries.load()" />
+    <TimerBar />
 
     <section class="stack" style="gap: 8px">
       <div class="row-between">
@@ -128,7 +141,7 @@ onUnmounted(() => {
       </div>
 
       <div v-if="entries.items.length" class="row-between footer small muted">
-        <span>{{ t('entries.showing', { shown: entries.items.length, total: entries.total }) }}</span>
+        <span>{{ t('entries.showing', entries.items.length) }}</span>
         <button
           v-if="entries.hasMore"
           type="button"
@@ -140,12 +153,8 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <EntryDialog
-      :open="dialogOpen"
-      :entry="editing"
-      @close="dialogOpen = false"
-      @saved="entries.load()"
-    />
+    <!-- The store folds the saved entry into the list itself; no reload here. -->
+    <EntryDialog :open="dialogOpen" :entry="editing" @close="dialogOpen = false" />
 
     <ConfirmDialog
       :open="pendingDelete !== null"

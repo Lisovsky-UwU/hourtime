@@ -306,9 +306,28 @@ class TestListing:
             ListTimeEntriesInput(user_id=world.user.id, limit=2, offset=0)
         )
 
-        assert page.total == 5
         assert len(page.items) == 2
+        assert page.has_more
         assert page.items[0].started_at > page.items[1].started_at
+
+    async def test_last_page_reports_no_more(self, world: TimerWorld) -> None:
+        base = world.clock.now() - timedelta(days=1)
+        for index in range(3):
+            await world.entries.add(
+                make_entry(
+                    world.user.id,
+                    started_at=base + timedelta(hours=index),
+                    stopped_at=base + timedelta(hours=index, minutes=30),
+                )
+            )
+
+        page = await world.listing.execute(
+            ListTimeEntriesInput(user_id=world.user.id, limit=3, offset=0)
+        )
+
+        # Exactly a full page and nothing beyond it.
+        assert len(page.items) == 3
+        assert not page.has_more
 
     async def test_filters_by_project_and_range(self, world: TimerWorld) -> None:
         project = await world.projects.add(make_project(world.user.id))
@@ -329,13 +348,14 @@ class TestListing:
             ListTimeEntriesInput(user_id=world.user.id, project_id=project.id)
         )
 
-        assert page.total == 1
+        assert len(page.items) == 1
         assert page.items[0].project_id == project.id
 
     async def test_never_shows_another_users_entries(self, world: TimerWorld) -> None:
         await world.entries.add(make_entry(world.other_user.id))
         page = await world.listing.execute(ListTimeEntriesInput(user_id=world.user.id))
-        assert page.total == 0
+        assert page.items == []
+        assert not page.has_more
 
     async def test_rejects_an_oversized_page(self, world: TimerWorld) -> None:
         with pytest.raises(ValidationError):
