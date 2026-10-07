@@ -6,6 +6,7 @@ import AppIcon from '@/components/AppIcon.vue'
 import AutoTextarea from '@/components/AutoTextarea.vue'
 import ProjectPicker from '@/components/ProjectPicker.vue'
 import TimeField from '@/components/TimeField.vue'
+import { toast } from '@/components/ui/toast'
 import { useAsyncAction } from '@/composables/useApiError'
 import { useEntriesStore } from '@/stores/entries'
 import { useTimerStore } from '@/stores/timer'
@@ -20,6 +21,12 @@ const timer = useTimerStore()
 // rather than refetched.
 const entries = useEntriesStore()
 const { busy, error, run } = useAsyncAction()
+
+// The bar is sticky and sits on top of the list; a banner inside it would push
+// the list around, so failures go to a toast.
+watch(error, (message) => {
+  if (message) toast.error(message)
+})
 
 const description = ref('')
 const projectId = ref<string | null>(null)
@@ -107,94 +114,105 @@ function commitStart() {
 </script>
 
 <template>
-  <section class="card timer">
-    <div class="timer-main">
-      <AutoTextarea
-        v-model="description"
-        class="description"
-        :placeholder="t('timer.descriptionPlaceholder')"
-        :aria-label="t('timer.descriptionPlaceholder')"
-        @blur="commitDescription"
-      />
+  <section class="timer-bar" :data-running="timer.isRunning ? '' : undefined">
+    <AutoTextarea
+      v-model="description"
+      class="description"
+      :placeholder="t('timer.descriptionPlaceholder')"
+      :aria-label="t('timer.descriptionPlaceholder')"
+      @blur="commitDescription"
+    />
 
-      <ProjectPicker v-model="projectId" :aria-label="t('timer.selectProject')" />
+    <div class="controls">
+      <span class="project"><ProjectPicker v-model="projectId" /></span>
 
       <span class="start">
-        <span class="muted small">{{ t('timer.startTime') }}</span>
-        <TimeField
-          v-model="startTime"
-          :aria-label="t('timer.startTime')"
-          @commit="commitStart"
-        />
+        <span class="start-label">{{ t('timer.startTime') }}</span>
+        <TimeField v-model="startTime" :aria-label="t('timer.startTime')" @commit="commitStart" />
       </span>
 
-      <span class="elapsed mono" :class="{ live: timer.isRunning }">
+      <span class="clock num" role="timer">
         {{ formatClock(timer.elapsed) }}
       </span>
 
       <button
         type="button"
         class="action"
-        :class="timer.isRunning ? 'stopping' : 'starting'"
         :disabled="busy"
-        :title="timer.isRunning ? t('timer.stop') : t('timer.start')"
         :aria-label="timer.isRunning ? t('timer.stop') : t('timer.start')"
         @click="toggle"
       >
         <AppIcon :name="timer.isRunning ? 'stop' : 'play'" :size="20" />
       </button>
     </div>
-
-    <p v-if="error" class="banner">{{ error }}</p>
   </section>
 </template>
 
 <style scoped>
-.timer {
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.timer-main {
+.timer-bar {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sheet);
+  background: var(--surface);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.timer-bar[data-running] {
+  border-color: color-mix(in srgb, var(--live) 45%, var(--border));
 }
 
 .description {
-  flex: 1 1 auto;
+  /* Basis 0: the textarea is width 100%, and an auto basis would squeeze the
+     controls instead of taking what is left after them. */
+  flex: 1 1 0;
   min-width: 0;
-  border-color: transparent;
-  background: transparent;
-  font-size: 1rem;
-  padding: 6px 8px;
+  font-size: var(--text-md);
 }
 
-.description:hover,
-.description:focus {
-  border-color: var(--border);
-  background: var(--surface);
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* Gives way first when space runs out; the name ends in an ellipsis. */
+.project {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
 }
 
 .start {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
-.elapsed {
-  font-size: 1.35rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--text-muted);
-  min-width: 8ch;
-  text-align: right;
+.start-label {
+  font-size: var(--text-xs);
 }
 
-.elapsed.live {
+.clock {
+  min-width: 5.2ch;
+  padding: 0 6px;
+  font-size: var(--text-clock);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-align: right;
+  color: var(--text-muted);
+  transition: color var(--dur) var(--ease);
+}
+
+.timer-bar[data-running] .clock {
   color: var(--text);
 }
 
@@ -202,35 +220,88 @@ function commitStart() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
   flex: 0 0 auto;
-}
-
-.action.starting {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
   background: var(--accent);
-  border-color: var(--accent);
   color: var(--accent-contrast);
-}
-
-.action.stopping {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease),
+    scale var(--dur) var(--ease);
 }
 
 .action:hover:not(:disabled) {
-  filter: brightness(1.08);
+  background: var(--accent-hover);
 }
 
-@media (width <= 720px) {
-  .timer-main {
+.action:active:not(:disabled) {
+  scale: 0.95;
+}
+
+.timer-bar[data-running] .action {
+  background: var(--live);
+  color: var(--live-contrast);
+}
+
+.timer-bar[data-running] .action:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--live) 88%, var(--text));
+}
+
+.action:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+@media (width < 900px) {
+  .timer-bar {
     flex-wrap: wrap;
+    padding: 8px 8px 8px 10px;
   }
 
   .description {
     flex-basis: 100%;
+  }
+
+  .controls {
+    flex: 1 1 100%;
+  }
+
+  .project {
+    margin-right: auto;
+  }
+
+  .clock {
+    font-size: var(--text-xl);
+  }
+
+  .action {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (width < 480px) {
+  .start-label {
+    display: none;
+  }
+
+  .controls {
+    gap: 4px;
+  }
+
+  .clock {
+    min-width: 0;
+    padding: 0 2px;
+    font-size: 1.25rem;
+  }
+
+  /* An idle 0:00:00 says nothing; the room goes to the project name. */
+  .timer-bar:not([data-running]) .clock {
+    display: none;
   }
 }
 </style>

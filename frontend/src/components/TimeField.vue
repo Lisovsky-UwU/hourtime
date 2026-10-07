@@ -67,9 +67,9 @@ function onKeydown(event: KeyboardEvent) {
     type="text"
     inputmode="numeric"
     autocomplete="off"
-    class="time mono"
+    class="time num"
     :class="{ invalid }"
-    :style="{ width: `${Math.max(6, text.length + 1)}ch` }"
+    :style="{ width: `calc(${Math.max(5, text.length)}ch + 14px)` }"
     @blur="commit"
     @keydown="onKeydown"
   />
@@ -77,16 +77,34 @@ function onKeydown(event: KeyboardEvent) {
 
 <style scoped>
 .time {
-  padding: 4px 6px;
-  text-align: center;
-  border-color: transparent;
+  height: var(--control-h-sm);
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   background: transparent;
+  color: inherit;
+  /* `font` resets the numeric settings of .num, so they are repeated here. */
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: 'SHRP' 100;
+  text-align: center;
+  transition:
+    background-color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
 }
 
-.time:hover:not(:disabled),
-.time:focus {
+.time:hover:not(:disabled) {
   border-color: var(--border);
+}
+
+.time:focus {
+  border-color: var(--border-strong);
   background: var(--surface);
+}
+
+.time:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
 }
 
 .time.invalid {
@@ -95,7 +113,12 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 .time:disabled {
-  opacity: 1;
   color: var(--text-muted);
+}
+
+@media (width < 768px) {
+  .time {
+    font-size: max(1em, var(--text-md));
+  }
 }
 </style>

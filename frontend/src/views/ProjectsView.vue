@@ -93,6 +93,7 @@ onMounted(() => projects.load())
       :open="pendingDelete !== null"
       :title="t('common.delete')"
       :message="t('projects.deleteConfirm')"
+      :confirm-label="t('projects.deleteAction')"
       :busy="busy"
       @close="pendingDelete = null"
       @confirm="confirmDelete"

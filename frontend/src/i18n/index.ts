@@ -22,6 +22,8 @@ const datetimeFormats = {
     time: { hour: '2-digit', minute: '2-digit' },
     date: { year: 'numeric', month: 'short', day: 'numeric' },
     weekday: { weekday: 'long', month: 'short', day: 'numeric' },
+    weekdayYear: { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' },
+    dayShort: { weekday: 'short', month: 'short', day: 'numeric' },
   },
 } as const
 

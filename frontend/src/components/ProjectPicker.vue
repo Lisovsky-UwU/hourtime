@@ -2,10 +2,22 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { ComboboxItem } from '@/components/ui/UiCombobox.vue'
+import UiCombobox from '@/components/ui/UiCombobox.vue'
+import { toast } from '@/components/ui/toast'
+import { messageFor } from '@/composables/useApiError'
 import { useProjectsStore } from '@/stores/projects'
+import { nextProjectColor } from '@/utils/projectColors'
 
+/**
+ * Project choice with search, and creating a project without leaving the
+ * timer: type a name that does not exist yet and pick "Create".
+ */
 const model = defineModel<string | null>({ required: true })
-const props = withDefaults(defineProps<{ ariaLabel?: string }>(), { ariaLabel: '' })
+withDefaults(defineProps<{ compact?: boolean; disabled?: boolean }>(), {
+  compact: false,
+  disabled: false,
+})
 
 const { t } = useI18n()
 const projects = useProjectsStore()
@@ -14,50 +26,37 @@ const projects = useProjectsStore()
  * Archived projects stay selectable only while an entry already points at one,
  * so editing an old entry does not silently drop its project.
  */
-const options = computed(() => {
-  const visible = projects.items.filter((project) => !project.archived)
+const items = computed<ComboboxItem[]>(() => {
+  const visible = projects.active
   const current = projects.find(model.value)
-  return current && current.archived ? [current, ...visible] : visible
+  const list = current && current.archived ? [current, ...visible] : visible
+  return [...list]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((project) => ({ value: project.id, label: project.name, color: project.color }))
 })
 
-const selected = computed(() => projects.find(model.value))
-
-function onChange(event: Event) {
-  const value = (event.target as HTMLSelectElement).value
-  model.value = value === '' ? null : value
+async function create(name: string) {
+  try {
+    const color = nextProjectColor(projects.active.map((project) => project.color))
+    const project = await projects.create(name, color)
+    model.value = project.id
+  } catch (cause) {
+    // The picker is already closed; a toast is the only place left to say why.
+    toast.error(t('projects.createFailed'), messageFor(cause))
+  }
 }
 </script>
 
 <template>
-  <div class="picker">
-    <!-- No dot without a project: an empty ring reads as a rendering glitch. -->
-    <span v-if="selected" class="dot" :style="{ background: selected.color }" />
-    <select
-      :value="model ?? ''"
-      :aria-label="props.ariaLabel || t('timer.selectProject')"
-      @change="onChange"
-    >
-      <option value="">{{ t('timer.noProject') }}</option>
-      <option v-for="project in options" :key="project.id" :value="project.id">
-        {{ project.name }}
-      </option>
-    </select>
-  </div>
+  <UiCombobox
+    v-model="model"
+    :items="items"
+    :label="t('timer.selectProject')"
+    :placeholder="t('timer.project')"
+    :none-label="t('timer.noProject')"
+    :compact="compact"
+    :disabled="disabled"
+    creatable
+    @create="create"
+  />
 </template>
-
-<style scoped>
-.picker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.picker select {
-  /* Wide enough that real project names are readable, not just their first word. */
-  min-width: 160px;
-}
-
-.dot {
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
-}
-</style>

@@ -3,25 +3,34 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    guestOnly?: boolean
+    /** Chrome around the page; App.vue picks it. Without one the page is bare. */
+    layout?: 'app'
+  }
+}
+
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: { name: 'timer' } },
   {
     path: '/timer',
     name: 'timer',
     component: () => import('@/views/TimerView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, layout: 'app' },
   },
   {
     path: '/projects',
     name: 'projects',
     component: () => import('@/views/ProjectsView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, layout: 'app' },
   },
   {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/SettingsView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, layout: 'app' },
   },
   {
     path: '/login',

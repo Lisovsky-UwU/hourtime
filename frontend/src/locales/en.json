@@ -7,7 +7,12 @@
     "timer": "Timer",
     "projects": "Projects",
     "settings": "Settings",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "main": "Main",
+    "openMenu": "Open menu",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "skipToContent": "Skip to content"
   },
   "common": {
     "save": "Save",
@@ -16,7 +21,9 @@
     "edit": "Edit",
     "close": "Close",
     "loading": "Loading…",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "retry": "Retry"
   },
   "ui": {
     "search": "Search",
@@ -30,13 +37,15 @@
       "title": "Sign in",
       "submit": "Sign in",
       "noAccount": "Don't have an account yet?",
-      "createOne": "Create one"
+      "createOne": "Create an account",
+      "busy": "Signing in…"
     },
     "signUp": {
       "title": "Create account",
       "submit": "Create account",
       "haveAccount": "Already have an account?",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "busy": "Creating account…"
     },
     "fields": {
       "email": "Email",
@@ -50,11 +59,14 @@
     "stop": "Stop timer",
     "noProject": "No project",
     "selectProject": "Select project",
-    "startTime": "from"
+    "startTime": "from",
+    "project": "Project",
+    "noDescription": "No description",
+    "running": "Timer running"
   },
   "entries": {
     "title": "Time entries",
-    "empty": "No time tracked yet. Start a timer to see entries here.",
+    "empty": "Start the timer above, or add an entry for time you already spent.",
     "loadMore": "Load more",
     "showing": "Showing {count} entry | Showing {count} entries",
     "addManual": "Add entry",
@@ -63,18 +75,26 @@
     "dayTotal": "Total {duration}",
     "running": "Running",
     "edit": {
-      "description": "Comment",
+      "description": "Description",
       "descriptionPlaceholder": "What did you work on?",
       "project": "Project",
       "date": "Date",
       "startedAt": "Start",
       "stoppedAt": "End"
     },
-    "deleteConfirm": "Click again to delete"
+    "deleteConfirm": "The entry and its time are removed for good.",
+    "thisWeek": "This week",
+    "emptyTitle": "Nothing tracked yet",
+    "changeDate": "Change date",
+    "deleteTitle": "Delete entry?",
+    "deleteAction": "Delete entry",
+    "loadFailed": "Could not load the entries.",
+    "weekPartial": "Only loaded entries are counted; load more to see the full week.",
+    "actionsFor": "Actions for \"{name}\""
   },
   "projects": {
     "title": "Projects",
-    "empty": "No projects yet. Create one to group your time entries.",
+    "empty": "Projects group your time entries. You can also create one right from the timer.",
     "new": "New project",
     "showArchived": "Show archived",
     "archivedBadge": "Archived",
@@ -89,7 +109,36 @@
       "customColor": "Custom color",
       "preset": "Preset colors"
     },
-    "deleteConfirm": "Delete this project? Its time entries are kept, but lose the project."
+    "deleteConfirm": "Its time entries are kept, but lose the project.",
+    "create": "Create project",
+    "emptyTitle": "No projects yet",
+    "emptyArchived": "No archived projects.",
+    "filter": {
+      "label": "Show projects",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "actionsFor": "Actions for {name}",
+    "archived": "Project archived",
+    "restored": "Project restored",
+    "createFailed": "Could not create the project",
+    "deleteTitle": "Delete \"{name}\"?",
+    "deleteAction": "Delete project",
+    "loadFailed": "Could not load the projects.",
+    "colors": {
+      "blue": "Blue",
+      "cyan": "Cyan",
+      "teal": "Teal",
+      "green": "Green",
+      "ochre": "Ochre",
+      "orange": "Orange",
+      "rust": "Rust",
+      "raspberry": "Raspberry",
+      "violet": "Violet",
+      "indigo": "Indigo",
+      "brown": "Brown",
+      "slate": "Slate"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -105,7 +154,17 @@
     "signedInAs": "Signed in as {email}",
     "sessions": "Sessions",
     "signOutEverywhere": "Sign out on all devices",
-    "signOutEverywhereHint": "Ends every session, including this one."
+    "signOutEverywhereHint": "Ends every session, including this one.",
+    "appearance": "Appearance",
+    "themeLabel": "Theme",
+    "themeHint": "Auto follows the system setting of this device.",
+    "theme": {
+      "auto": "Auto",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "email": "Email",
+    "signOutEverywhereTitle": "Sign out on all devices?"
   },
   "errors": {
     "invalid_credentials": "Wrong email or password.",
@@ -115,10 +174,10 @@
     "project_name_taken": "You already have a project with this name.",
     "timer_already_running": "A timer is already running.",
     "not_found": "Not found.",
-    "validation_error": "Please check the values and try again.",
+    "validation_error": "Check the values and try again.",
     "invalid_token": "Your session has ended. Please sign in again.",
     "session_expired": "Your session has expired. Please sign in again.",
     "network_error": "Cannot reach the server. Check your connection.",
-    "unknown": "Something went wrong."
+    "unknown": "Something went wrong. Try again."
   }
 }

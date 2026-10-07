@@ -47,3 +47,14 @@ export function startOfLocalDay(offsetDays = 0): Date {
   date.setDate(date.getDate() + offsetDays)
   return date
 }
+
+/**
+ * Monday 00:00 of the current week, local time. Always Monday until the week
+ * start becomes a profile setting (stage 5 of the plan).
+ */
+export function startOfLocalWeek(): Date {
+  const date = startOfLocalDay()
+  const sinceMonday = (date.getDay() + 6) % 7
+  date.setDate(date.getDate() - sinceMonday)
+  return date
+}
