@@ -1,0 +1,73 @@
+/*
+ * Design tokens. See docs/design.md for the reasoning behind each value.
+ *
+ * Every color is light-dark(light, dark): the theme is picked by
+ * `color-scheme` alone, so dark values are not repeated in a second block.
+ * Without data-theme the system preference decides ("auto").
+ */
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#dde5d9, #1d2523);
+  --surface: light-dark(#f6f8f3, #252f2c);
+  --surface-muted: light-dark(#e8eee4, #2c3734);
+  --border: light-dark(#c6d0c2, #37443f);
+  --border-strong: light-dark(#a6b3a1, #4d5c55);
+  /* Outline of fields and toggles: at least 3:1 against the sheet (WCAG 1.4.11). */
+  --control-border: light-dark(#7f8c7a, #6b7b74);
+  --text: light-dark(#1c2421, #e1e8e0);
+  --text-muted: light-dark(#59655f, #98a49d);
+
+  --accent: light-dark(#1e6a4e, #74c29c);
+  --accent-hover: light-dark(#175a41, #8ad1ad);
+  --accent-contrast: light-dark(#ffffff, #14201b);
+  --accent-soft: light-dark(rgb(30 106 78 / 12%), rgb(116 194 156 / 16%));
+
+  --live: light-dark(#c23a2c, #f07462);
+  --live-contrast: light-dark(#ffffff, #2a0f0b);
+  --danger: light-dark(#a8301f, #f4877a);
+  --danger-contrast: light-dark(#ffffff, #2a0f0b);
+  --danger-soft: light-dark(rgb(168 48 31 / 10%), rgb(244 135 122 / 10%));
+  --success: light-dark(#1e6a4e, #74c29c);
+
+  --focus: var(--accent);
+  --overlay: light-dark(rgb(28 36 33 / 40%), rgb(0 0 0 / 55%));
+  --shadow-color: light-dark(rgb(28 36 33 / 14%), rgb(0 0 0 / 45%));
+  --shadow-float: 0 1px 2px var(--shadow-color), 0 8px 24px var(--shadow-color);
+
+  --radius-sheet: 12px;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-full: 999px;
+
+  --font: 'Geologica Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-clock: 2.25rem;
+
+  --control-h: 36px;
+  --control-h-sm: 30px;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur: 140ms;
+}
+
+/* Fingers need bigger targets than a mouse pointer. */
+@media (pointer: coarse) {
+  :root {
+    --control-h: 44px;
+    --control-h-sm: 36px;
+  }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}

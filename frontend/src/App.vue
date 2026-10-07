@@ -2,7 +2,9 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { TooltipProvider } from 'reka-ui'
 
+import UiToastHost from '@/components/ui/UiToastHost.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEntriesStore } from '@/stores/entries'
 import { useProjectsStore } from '@/stores/projects'
@@ -27,26 +29,30 @@ async function signOut() {
 </script>
 
 <template>
-  <header v-if="showChrome" class="topbar">
-    <div class="topbar-inner">
-      <RouterLink :to="{ name: 'timer' }" class="brand">{{ t('app.name') }}</RouterLink>
+  <TooltipProvider :delay-duration="400">
+    <header v-if="showChrome" class="topbar">
+      <div class="topbar-inner">
+        <RouterLink :to="{ name: 'timer' }" class="brand">{{ t('app.name') }}</RouterLink>
 
-      <nav class="nav">
-        <RouterLink :to="{ name: 'timer' }">{{ t('nav.timer') }}</RouterLink>
-        <RouterLink :to="{ name: 'projects' }">{{ t('nav.projects') }}</RouterLink>
-        <RouterLink :to="{ name: 'settings' }">{{ t('nav.settings') }}</RouterLink>
-      </nav>
+        <nav class="nav">
+          <RouterLink :to="{ name: 'timer' }">{{ t('nav.timer') }}</RouterLink>
+          <RouterLink :to="{ name: 'projects' }">{{ t('nav.projects') }}</RouterLink>
+          <RouterLink :to="{ name: 'settings' }">{{ t('nav.settings') }}</RouterLink>
+        </nav>
 
-      <span class="spacer" />
+        <span class="spacer" />
 
-      <span class="muted small hide-narrow">{{ auth.user?.email }}</span>
-      <button type="button" class="btn-ghost" @click="signOut">{{ t('nav.signOut') }}</button>
-    </div>
-  </header>
+        <span class="muted small hide-narrow">{{ auth.user?.email }}</span>
+        <button type="button" class="btn-ghost" @click="signOut">{{ t('nav.signOut') }}</button>
+      </div>
+    </header>
 
-  <main>
-    <RouterView />
-  </main>
+    <main>
+      <RouterView />
+    </main>
+  </TooltipProvider>
+
+  <UiToastHost />
 </template>
 
 <style scoped>

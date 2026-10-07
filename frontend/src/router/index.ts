@@ -38,6 +38,16 @@ const routes: RouteRecordRaw[] = [
   { path: '/:pathMatch(.*)*', redirect: { name: 'timer' } },
 ]
 
+// Component showcase for working on the UI kit. The branch is dropped from
+// production builds together with the lazy chunk.
+if (import.meta.env.DEV) {
+  routes.unshift({
+    path: '/dev/ui',
+    name: 'dev-ui',
+    component: () => import('@/views/DevUiView.vue'),
+  })
+}
+
 export const router = createRouter({
   history: createWebHistory(),
   routes,

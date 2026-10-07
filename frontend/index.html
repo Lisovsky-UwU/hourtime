@@ -4,7 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#dde5d9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1d2523" media="(prefers-color-scheme: dark)" />
     <title>Hourtime</title>
+    <script>
+      // Applied before the bundle loads, so a dark-theme user never sees a
+      // flash of the light one. Kept in sync with stores/preferences.ts.
+      try {
+        var theme = localStorage.getItem('hourtime.theme')
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

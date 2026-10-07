@@ -18,6 +18,13 @@
     "loading": "Loading…",
     "saving": "Saving…"
   },
+  "ui": {
+    "search": "Search",
+    "noResults": "Nothing found",
+    "create": "Create \"{name}\"",
+    "notification": "Notification",
+    "more": "More actions"
+  },
   "auth": {
     "signIn": {
       "title": "Sign in",

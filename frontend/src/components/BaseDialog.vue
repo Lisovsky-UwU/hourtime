@@ -51,7 +51,7 @@ dialog {
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-float);
   width: min(460px, calc(100vw - 32px));
 }
 

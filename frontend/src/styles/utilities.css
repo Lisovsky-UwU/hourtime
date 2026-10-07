@@ -1,0 +1,116 @@
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.small {
+  font-size: var(--text-xs);
+}
+
+/* Every time value: sharp "printed" digits of equal width, so ticking clocks
+   do not jitter and totals line up in a column. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: 'SHRP' 100;
+  white-space: nowrap;
+}
+
+/* A sheet of the time card: a surface lying flat on the page. */
+.sheet {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sheet);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* An error that belongs to the whole screen. Errors of one control sit next
+   to it; background failures go to a toast. */
+.alert {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--danger);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  /* Ink, not red: red text on the pink wash falls short of 4.5:1. */
+  color: var(--text);
+}
+
+/* Nothing here yet: says what would be here and offers the action. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sheet);
+  text-align: center;
+}
+
+.empty-state > .empty-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.empty-state > .muted {
+  max-width: 44ch;
+  margin-bottom: 8px;
+}
+
+.skeleton {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--surface-muted);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

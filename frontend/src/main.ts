@@ -5,7 +5,12 @@ import App from '@/App.vue'
 import { onTokensChanged } from '@/api/client'
 import { applyInitialLocale, i18n } from '@/i18n'
 import { router } from '@/router'
-import '@/styles/main.css'
+import '@fontsource-variable/geologica/shrp.css'
+import '@/styles/tokens.css'
+import '@/styles/base.css'
+import '@/styles/utilities.css'
+import '@/styles/floating.css'
+import '@/styles/legacy.css'
 
 applyInitialLocale()
 

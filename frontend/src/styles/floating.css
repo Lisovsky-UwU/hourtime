@@ -1,0 +1,107 @@
+/*
+ * Layers that float above the page: popovers, menus, the combobox list,
+ * dialogs, tooltips, toasts. Global rather than scoped, because reka-ui renders
+ * them in a portal under <body>. Only these layers carry a shadow.
+ */
+
+.ui-floating {
+  z-index: 50;
+  min-width: 180px;
+  max-height: var(--reka-popper-available-height);
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-float);
+  transform-origin: var(--reka-popper-transform-origin);
+}
+
+.ui-floating[data-state='open'] {
+  animation: ui-float-in var(--dur) var(--ease);
+}
+
+.ui-floating[data-state='closed'] {
+  animation: ui-float-out 100ms var(--ease);
+}
+
+@keyframes ui-float-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes ui-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-float-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* One row in a menu or a list; menus and the combobox share the look. */
+.ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.ui-menu-item[data-highlighted] {
+  background: var(--surface-muted);
+}
+
+.ui-menu-item[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-menu-item[data-variant='danger'] {
+  color: var(--danger);
+}
+
+.ui-menu-item[data-variant='danger'][data-highlighted] {
+  background: var(--danger-soft);
+}
+
+.ui-menu-item > svg {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+.ui-menu-item[data-variant='danger'] > svg {
+  color: inherit;
+}
+
+.ui-menu-separator {
+  height: 1px;
+  margin: 4px -4px;
+  background: var(--border);
+}
+
+.ui-tooltip {
+  z-index: 60;
+  max-width: 260px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  box-shadow: var(--shadow-float);
+  transform-origin: var(--reka-tooltip-content-transform-origin);
+  animation: ui-float-in var(--dur) var(--ease);
+}
