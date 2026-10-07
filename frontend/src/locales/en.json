@@ -15,14 +15,13 @@
     "skipToContent": "Skip to content"
   },
   "common": {
-    "save": "Save",
+    "saveChanges": "Save changes",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
     "close": "Close",
     "loading": "Loading…",
     "saving": "Saving…",
-    "saveChanges": "Save changes",
     "retry": "Retry"
   },
   "ui": {
@@ -66,27 +65,25 @@
   },
   "entries": {
     "title": "Time entries",
+    "thisWeek": "This week",
+    "emptyTitle": "Nothing tracked yet",
     "empty": "Start the timer above, or add an entry for time you already spent.",
     "loadMore": "Load more",
     "showing": "Showing {count} entry | Showing {count} entries",
     "addManual": "Add entry",
     "today": "Today",
     "yesterday": "Yesterday",
-    "dayTotal": "Total {duration}",
     "running": "Running",
+    "changeDate": "Change date",
     "edit": {
       "description": "Description",
       "descriptionPlaceholder": "What did you work on?",
-      "project": "Project",
       "date": "Date",
       "startedAt": "Start",
       "stoppedAt": "End"
     },
-    "deleteConfirm": "The entry and its time are removed for good.",
-    "thisWeek": "This week",
-    "emptyTitle": "Nothing tracked yet",
-    "changeDate": "Change date",
     "deleteTitle": "Delete entry?",
+    "deleteConfirm": "The entry and its time are removed for good.",
     "deleteAction": "Delete entry",
     "loadFailed": "Could not load the entries.",
     "weekPartial": "Only loaded entries are counted; load more to see the full week.",
@@ -94,12 +91,21 @@
   },
   "projects": {
     "title": "Projects",
+    "create": "Create project",
+    "emptyTitle": "No projects yet",
     "empty": "Projects group your time entries. You can also create one right from the timer.",
-    "new": "New project",
-    "showArchived": "Show archived",
-    "archivedBadge": "Archived",
+    "emptyArchived": "No archived projects.",
+    "filter": {
+      "label": "Show projects",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "actionsFor": "Actions for {name}",
     "archive": "Archive",
     "unarchive": "Restore",
+    "archived": "Project archived",
+    "restored": "Project restored",
+    "createFailed": "Could not create the project",
     "form": {
       "createTitle": "New project",
       "editTitle": "Edit project",
@@ -109,20 +115,8 @@
       "customColor": "Custom color",
       "preset": "Preset colors"
     },
-    "deleteConfirm": "Its time entries are kept, but lose the project.",
-    "create": "Create project",
-    "emptyTitle": "No projects yet",
-    "emptyArchived": "No archived projects.",
-    "filter": {
-      "label": "Show projects",
-      "active": "Active",
-      "archived": "Archived"
-    },
-    "actionsFor": "Actions for {name}",
-    "archived": "Project archived",
-    "restored": "Project restored",
-    "createFailed": "Could not create the project",
     "deleteTitle": "Delete \"{name}\"?",
+    "deleteConfirm": "Its time entries are kept, but lose the project.",
     "deleteAction": "Delete project",
     "loadFailed": "Could not load the projects.",
     "colors": {
@@ -142,6 +136,14 @@
   },
   "settings": {
     "title": "Settings",
+    "appearance": "Appearance",
+    "themeLabel": "Theme",
+    "themeHint": "Auto follows the system setting of this device.",
+    "theme": {
+      "auto": "Auto",
+      "light": "Light",
+      "dark": "Dark"
+    },
     "language": "Language",
     "languageHint": "The interface language for this browser.",
     "timeFormat": "Time format",
@@ -151,19 +153,10 @@
       "24": "24-hour (14:05)"
     },
     "account": "Account",
-    "signedInAs": "Signed in as {email}",
+    "email": "Email",
     "sessions": "Sessions",
     "signOutEverywhere": "Sign out on all devices",
     "signOutEverywhereHint": "Ends every session, including this one.",
-    "appearance": "Appearance",
-    "themeLabel": "Theme",
-    "themeHint": "Auto follows the system setting of this device.",
-    "theme": {
-      "auto": "Auto",
-      "light": "Light",
-      "dark": "Dark"
-    },
-    "email": "Email",
     "signOutEverywhereTitle": "Sign out on all devices?"
   },
   "errors": {

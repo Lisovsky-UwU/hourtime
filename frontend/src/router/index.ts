@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
+import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -8,7 +9,9 @@ declare module 'vue-router' {
     requiresAuth?: boolean
     guestOnly?: boolean
     /** Chrome around the page; App.vue picks it. Without one the page is bare. */
-    layout?: 'app'
+    layout?: 'app' | 'auth'
+    /** Locale key of the page name shown in the browser tab. */
+    titleKey?: string
   }
 }
 
@@ -18,31 +21,31 @@ const routes: RouteRecordRaw[] = [
     path: '/timer',
     name: 'timer',
     component: () => import('@/views/TimerView.vue'),
-    meta: { requiresAuth: true, layout: 'app' },
+    meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.timer' },
   },
   {
     path: '/projects',
     name: 'projects',
     component: () => import('@/views/ProjectsView.vue'),
-    meta: { requiresAuth: true, layout: 'app' },
+    meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.projects' },
   },
   {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/SettingsView.vue'),
-    meta: { requiresAuth: true, layout: 'app' },
+    meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.settings' },
   },
   {
     path: '/login',
     name: 'login',
     component: () => import('@/views/LoginView.vue'),
-    meta: { guestOnly: true },
+    meta: { guestOnly: true, layout: 'auth', titleKey: 'auth.signIn.title' },
   },
   {
     path: '/register',
     name: 'register',
     component: () => import('@/views/RegisterView.vue'),
-    meta: { guestOnly: true },
+    meta: { guestOnly: true, layout: 'auth', titleKey: 'auth.signUp.title' },
   },
   { path: '/:pathMatch(.*)*', redirect: { name: 'timer' } },
 ]
@@ -74,4 +77,9 @@ router.beforeEach(async (to) => {
     return { name: 'timer' }
   }
   return true
+})
+
+router.afterEach((to) => {
+  const name = i18n.global.t('app.name')
+  document.title = to.meta.titleKey ? `${i18n.global.t(to.meta.titleKey)} - ${name}` : name
 })

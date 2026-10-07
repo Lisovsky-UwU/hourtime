@@ -1,107 +1,113 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 
-/** A palette of ready-made colours plus a native picker for anything else. */
-const PRESETS = [
-  '#4285f4',
-  '#2f6df6',
-  '#0b8043',
-  '#1f9d55',
-  '#8bc34a',
-  '#c0ca33',
-  '#f4b400',
-  '#f57c00',
-  '#e8710a',
-  '#db4437',
-  '#c2185b',
-  '#e91e63',
-  '#9c27b0',
-  '#673ab7',
-  '#3f51b5',
-  '#00acc1',
-  '#0097a7',
-  '#00897b',
-  '#795548',
-  '#607d8b',
-  '#455a64',
-  '#9e9e9e',
-  '#546e7a',
-  '#212121',
-]
+import { PROJECT_COLORS } from '@/utils/projectColors'
 
+/**
+ * The ready-made palette plus a native picker for anything else. The palette
+ * is one radio group: Tab enters it once, arrows move between colors.
+ */
 const model = defineModel<string>({ required: true })
 const { t } = useI18n()
 
-const isCustom = computed(() => !PRESETS.includes(model.value.toLowerCase()))
-
-function pick(color: string) {
-  model.value = color
-}
+const normalized = computed(() => model.value.toLowerCase())
+const isPreset = computed(() => PROJECT_COLORS.some((color) => color.value === normalized.value))
 </script>
 
 <template>
-  <div class="stack" style="gap: 10px">
-    <div>
-      <label>{{ t('projects.form.preset') }}</label>
-      <div class="swatches">
-        <button
-          v-for="color in PRESETS"
-          :key="color"
-          type="button"
-          class="swatch"
-          :class="{ selected: color === model.toLowerCase() }"
-          :style="{ background: color }"
-          :aria-label="color"
-          :aria-pressed="color === model.toLowerCase()"
-          @click="pick(color)"
-        />
-      </div>
-    </div>
+  <div class="color-picker">
+    <RadioGroupRoot
+      :model-value="isPreset ? normalized : undefined"
+      class="swatches"
+      orientation="horizontal"
+      loop
+      :aria-label="t('projects.form.preset')"
+      @update:model-value="(value) => (model = String(value))"
+    >
+      <RadioGroupItem
+        v-for="color in PROJECT_COLORS"
+        :key="color.value"
+        :value="color.value"
+        class="swatch"
+        :style="{ background: color.value }"
+        :aria-label="t(`projects.colors.${color.name}`)"
+      />
+    </RadioGroupRoot>
 
-    <div class="row">
-      <label class="custom-label" for="custom-color">{{ t('projects.form.customColor') }}</label>
-      <input id="custom-color" v-model="model" type="color" class="custom-input" />
-      <span class="mono small muted">{{ model }}</span>
-      <span v-if="isCustom" class="badge">{{ t('projects.form.customColor') }}</span>
-    </div>
+    <label class="custom">
+      <span
+        class="swatch custom-swatch"
+        :data-state="isPreset ? undefined : 'checked'"
+        :style="{ background: model }"
+      >
+        <input v-model="model" type="color" class="custom-input" />
+      </span>
+      <span>{{ t('projects.form.customColor') }}</span>
+      <span class="num muted">{{ normalized }}</span>
+    </label>
   </div>
 </template>
 
 <style scoped>
+.color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .swatches {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(6, 28px);
+  gap: 8px;
 }
 
 .swatch {
-  aspect-ratio: 1;
+  position: relative;
+  width: 28px;
+  height: 28px;
   padding: 0;
+  border: 0;
   border-radius: 50%;
-  border: 2px solid transparent;
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+  cursor: pointer;
 }
 
-.swatch:hover {
-  transform: scale(1.08);
+/* The ring sits outside the dot, so the chosen color itself stays visible. */
+.swatch[data-state='checked']::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--text);
+  border-radius: 50%;
 }
 
-.swatch.selected {
-  border-color: var(--text);
-}
-
-.custom-label {
+.custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
-  white-space: nowrap;
+  color: var(--text);
+  cursor: pointer;
 }
 
+.custom-swatch {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+/* The native control stays clickable but invisible; the swatch is its face. */
 .custom-input {
-  width: 44px;
-  height: 32px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.custom-swatch:has(.custom-input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 </style>

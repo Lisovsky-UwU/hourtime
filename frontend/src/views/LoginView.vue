@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
+import UiButton from '@/components/ui/UiButton.vue'
+import UiField from '@/components/ui/UiField.vue'
+import UiInput from '@/components/ui/UiInput.vue'
 import { useAsyncAction } from '@/composables/useApiError'
 import { useAuthStore } from '@/stores/auth'
 
@@ -11,6 +14,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const { busy, error, run } = useAsyncAction()
+const errorId = useId()
 
 const email = ref('')
 const password = ref('')
@@ -27,60 +31,64 @@ async function submit() {
 </script>
 
 <template>
-  <div class="auth-page">
-    <form class="card auth-card stack" @submit.prevent="submit">
-      <div>
-        <h1>{{ t('app.name') }}</h1>
-        <p class="muted small">{{ t('app.tagline') }}</p>
-      </div>
+  <form class="auth-form" @submit.prevent="submit">
+    <h1>{{ t('auth.signIn.title') }}</h1>
 
-      <h2>{{ t('auth.signIn.title') }}</h2>
+    <UiField :label="t('auth.fields.email')">
+      <UiInput
+        v-model="email"
+        type="email"
+        autocomplete="username"
+        required
+        :invalid="!!error"
+        :aria-describedby="error ? errorId : undefined"
+      />
+    </UiField>
 
-      <div class="field">
-        <label for="email">{{ t('auth.fields.email') }}</label>
-        <input id="email" v-model="email" type="email" autocomplete="username" required />
-      </div>
+    <UiField :label="t('auth.fields.password')">
+      <UiInput
+        v-model="password"
+        type="password"
+        autocomplete="current-password"
+        required
+        :invalid="!!error"
+        :aria-describedby="error ? errorId : undefined"
+      />
+    </UiField>
 
-      <div class="field">
-        <label for="password">{{ t('auth.fields.password') }}</label>
-        <input
-          id="password"
-          v-model="password"
-          type="password"
-          autocomplete="current-password"
-          required
-        />
-      </div>
+    <p v-if="error" :id="errorId" class="form-error" role="alert">{{ error }}</p>
 
-      <p v-if="error" class="banner">{{ error }}</p>
+    <UiButton type="submit" variant="primary" class="submit" :disabled="busy">
+      {{ busy ? t('auth.signIn.busy') : t('auth.signIn.submit') }}
+    </UiButton>
 
-      <button type="submit" class="btn-primary" :disabled="busy">
-        {{ busy ? t('common.loading') : t('auth.signIn.submit') }}
-      </button>
-
-      <p class="muted small centered">
-        {{ t('auth.signIn.noAccount') }}
-        <RouterLink :to="{ name: 'register' }">{{ t('auth.signIn.createOne') }}</RouterLink>
-      </p>
-    </form>
-  </div>
+    <p class="switch muted">
+      {{ t('auth.signIn.noAccount') }}
+      <RouterLink :to="{ name: 'register' }">{{ t('auth.signIn.createOne') }}</RouterLink>
+    </p>
+  </form>
 </template>
 
 <style scoped>
-.auth-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px 16px;
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.auth-card {
-  width: min(400px, 100%);
-  padding: 24px;
+.auth-form h1 {
+  font-size: var(--text-lg);
 }
 
-.centered {
+.form-error {
+  color: var(--danger);
+}
+
+.submit {
+  width: 100%;
+}
+
+.switch {
   text-align: center;
-  margin: 0;
 }
 </style>

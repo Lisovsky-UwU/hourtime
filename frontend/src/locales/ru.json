@@ -1,0 +1,176 @@
+{
+  "app": {
+    "name": "Hourtime",
+    "tagline": "Учет времени, которое вы потратили"
+  },
+  "nav": {
+    "timer": "Таймер",
+    "projects": "Проекты",
+    "settings": "Настройки",
+    "signOut": "Выйти",
+    "main": "Основное",
+    "openMenu": "Открыть меню",
+    "collapse": "Свернуть меню",
+    "expand": "Развернуть меню",
+    "skipToContent": "Перейти к содержимому"
+  },
+  "common": {
+    "saveChanges": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "close": "Закрыть",
+    "loading": "Загрузка…",
+    "saving": "Сохранение…",
+    "retry": "Повторить"
+  },
+  "ui": {
+    "search": "Поиск",
+    "noResults": "Ничего не найдено",
+    "create": "Создать \"{name}\"",
+    "notification": "Уведомление",
+    "more": "Действия"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Вход",
+      "submit": "Войти",
+      "noAccount": "Еще нет аккаунта?",
+      "createOne": "Зарегистрироваться",
+      "busy": "Входим…"
+    },
+    "signUp": {
+      "title": "Регистрация",
+      "submit": "Создать аккаунт",
+      "haveAccount": "Уже есть аккаунт?",
+      "signIn": "Войти",
+      "busy": "Создаем аккаунт…"
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Пароль",
+      "passwordHint": "Не короче {min} символов"
+    }
+  },
+  "timer": {
+    "descriptionPlaceholder": "Над чем работаете?",
+    "start": "Запустить таймер",
+    "stop": "Остановить таймер",
+    "noProject": "Без проекта",
+    "selectProject": "Выбрать проект",
+    "startTime": "с",
+    "project": "Проект",
+    "noDescription": "Без описания",
+    "running": "Таймер идет"
+  },
+  "entries": {
+    "title": "Записи времени",
+    "thisWeek": "Эта неделя",
+    "emptyTitle": "Пока ничего не записано",
+    "empty": "Запустите таймер выше или добавьте запись за уже потраченное время.",
+    "loadMore": "Показать еще",
+    "showing": "Показана {count} запись | Показаны {count} записи | Показано {count} записей",
+    "addManual": "Добавить запись",
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "running": "Идет",
+    "changeDate": "Изменить дату",
+    "edit": {
+      "description": "Описание",
+      "descriptionPlaceholder": "Над чем работали?",
+      "date": "Дата",
+      "startedAt": "Начало",
+      "stoppedAt": "Конец"
+    },
+    "deleteTitle": "Удалить запись?",
+    "deleteConfirm": "Запись и ее время будут удалены безвозвратно.",
+    "deleteAction": "Удалить запись",
+    "loadFailed": "Не удалось загрузить записи.",
+    "weekPartial": "Учтены только загруженные записи; загрузите еще, чтобы увидеть всю неделю.",
+    "actionsFor": "Действия с записью \"{name}\""
+  },
+  "projects": {
+    "title": "Проекты",
+    "create": "Создать проект",
+    "emptyTitle": "Проектов пока нет",
+    "empty": "Проекты группируют записи времени. Создать проект можно и прямо из таймера.",
+    "emptyArchived": "В архиве пусто.",
+    "filter": {
+      "label": "Какие проекты показать",
+      "active": "Активные",
+      "archived": "Архив"
+    },
+    "actionsFor": "Действия с проектом {name}",
+    "archive": "В архив",
+    "unarchive": "Вернуть из архива",
+    "archived": "Проект в архиве",
+    "restored": "Проект возвращен",
+    "createFailed": "Не удалось создать проект",
+    "form": {
+      "createTitle": "Новый проект",
+      "editTitle": "Изменить проект",
+      "name": "Название",
+      "namePlaceholder": "Клиент, продукт или занятие",
+      "color": "Цвет",
+      "customColor": "Свой цвет",
+      "preset": "Готовые цвета"
+    },
+    "deleteTitle": "Удалить \"{name}\"?",
+    "deleteConfirm": "Записи времени останутся, но будут без проекта.",
+    "deleteAction": "Удалить проект",
+    "loadFailed": "Не удалось загрузить проекты.",
+    "colors": {
+      "blue": "Синий",
+      "cyan": "Голубой",
+      "teal": "Бирюзовый",
+      "green": "Зеленый",
+      "ochre": "Охра",
+      "orange": "Оранжевый",
+      "rust": "Ржавый",
+      "raspberry": "Малиновый",
+      "violet": "Фиолетовый",
+      "indigo": "Индиго",
+      "brown": "Коричневый",
+      "slate": "Серо-синий"
+    }
+  },
+  "settings": {
+    "title": "Настройки",
+    "appearance": "Внешний вид",
+    "themeLabel": "Тема",
+    "themeHint": "\"Авто\" следует системной настройке устройства.",
+    "theme": {
+      "auto": "Авто",
+      "light": "Светлая",
+      "dark": "Темная"
+    },
+    "language": "Язык",
+    "languageHint": "Язык интерфейса в этом браузере.",
+    "timeFormat": "Формат времени",
+    "timeFormatHint": "Как время показывается и вводится. При вводе понимаются оба формата.",
+    "hourCycle": {
+      "12": "12 часов (2:05 PM)",
+      "24": "24 часа (14:05)"
+    },
+    "account": "Аккаунт",
+    "email": "Email",
+    "sessions": "Сеансы",
+    "signOutEverywhere": "Выйти на всех устройствах",
+    "signOutEverywhereHint": "Завершает все сеансы, включая этот.",
+    "signOutEverywhereTitle": "Выйти на всех устройствах?"
+  },
+  "errors": {
+    "invalid_credentials": "Неверный email или пароль.",
+    "email_already_used": "Аккаунт с таким email уже есть.",
+    "registration_disabled": "Регистрация на этом сервере закрыта.",
+    "account_disabled": "Аккаунт отключен.",
+    "project_name_taken": "Проект с таким названием уже есть.",
+    "timer_already_running": "Таймер уже запущен.",
+    "not_found": "Не найдено.",
+    "validation_error": "Проверьте значения и попробуйте еще раз.",
+    "invalid_token": "Сеанс завершен. Войдите снова.",
+    "session_expired": "Сеанс истек. Войдите снова.",
+    "network_error": "Нет связи с сервером. Проверьте подключение.",
+    "unknown": "Что-то пошло не так. Попробуйте еще раз."
+  }
+}

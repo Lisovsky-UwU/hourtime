@@ -5,10 +5,15 @@ import { TooltipProvider } from 'reka-ui'
 
 import UiToastHost from '@/components/ui/UiToastHost.vue'
 import AppLayout from '@/layouts/AppLayout.vue'
+import AuthLayout from '@/layouts/AuthLayout.vue'
 
 const route = useRoute()
 
-const layout = computed(() => (route.meta.layout === 'app' ? AppLayout : null))
+const layout = computed(() => {
+  if (route.meta.layout === 'app') return AppLayout
+  if (route.meta.layout === 'auth') return AuthLayout
+  return null
+})
 </script>
 
 <template>

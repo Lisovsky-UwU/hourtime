@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import BaseDialog from '@/components/BaseDialog.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import UiDialog from '@/components/ui/UiDialog.vue'
+import UiField from '@/components/ui/UiField.vue'
+import UiInput from '@/components/ui/UiInput.vue'
 import { useAsyncAction } from '@/composables/useApiError'
 import { useProjectsStore } from '@/stores/projects'
 import type { Project } from '@/types'
-
-const DEFAULT_COLOR = '#4285f4'
+import { nextProjectColor } from '@/utils/projectColors'
 
 /** `project: null` opens the dialog in "create" mode. */
 const props = defineProps<{ open: boolean; project: Project | null }>()
@@ -17,12 +19,20 @@ const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 const projects = useProjectsStore()
 const { busy, error, run } = useAsyncAction()
+const errorId = useId()
 
 const name = ref('')
-const color = ref(DEFAULT_COLOR)
+const color = ref('')
 
 const isEditing = computed(() => props.project !== null)
 const canSave = computed(() => name.value.trim().length > 0)
+
+const model = computed({
+  get: () => props.open,
+  set: (value) => {
+    if (!value) emit('close')
+  },
+})
 
 watch(
   () => [props.open, props.project] as const,
@@ -30,7 +40,7 @@ watch(
     if (!open) return
     error.value = null
     name.value = project?.name ?? ''
-    color.value = project?.color ?? DEFAULT_COLOR
+    color.value = project?.color ?? nextProjectColor(projects.active.map((item) => item.color))
   },
   { immediate: true },
 )
@@ -49,36 +59,51 @@ async function save() {
 </script>
 
 <template>
-  <BaseDialog
-    :open="open"
+  <UiDialog
+    v-model:open="model"
     :title="isEditing ? t('projects.form.editTitle') : t('projects.form.createTitle')"
-    @close="emit('close')"
   >
-    <div class="field">
-      <label for="project-name">{{ t('projects.form.name') }}</label>
-      <input
-        id="project-name"
-        v-model="name"
-        type="text"
-        maxlength="100"
-        :placeholder="t('projects.form.namePlaceholder')"
-        @keyup.enter="save"
-      />
-    </div>
+    <form id="project-form" class="form" @submit.prevent="save">
+      <UiField :label="t('projects.form.name')">
+        <UiInput
+          v-model="name"
+          maxlength="100"
+          :placeholder="t('projects.form.namePlaceholder')"
+          required
+          :invalid="!!error"
+          :aria-describedby="error ? errorId : undefined"
+        />
+      </UiField>
 
-    <div class="field">
-      <label>{{ t('projects.form.color') }}</label>
-      <ColorPicker v-model="color" />
-    </div>
+      <UiField :label="t('projects.form.color')" group>
+        <ColorPicker v-model="color" />
+      </UiField>
 
-    <p v-if="error" class="banner">{{ error }}</p>
+      <p v-if="error" :id="errorId" class="form-error" role="alert">{{ error }}</p>
+    </form>
 
-    <div class="row-between">
-      <span class="spacer" />
-      <button type="button" @click="emit('close')">{{ t('common.cancel') }}</button>
-      <button type="button" class="btn-primary" :disabled="busy || !canSave" @click="save">
-        {{ busy ? t('common.saving') : t('common.save') }}
-      </button>
-    </div>
-  </BaseDialog>
+    <template #footer>
+      <UiButton @click="emit('close')">{{ t('common.cancel') }}</UiButton>
+      <UiButton
+        type="submit"
+        form="project-form"
+        variant="primary"
+        :disabled="busy || !canSave"
+      >
+        {{ busy ? t('common.saving') : isEditing ? t('common.saveChanges') : t('projects.create') }}
+      </UiButton>
+    </template>
+  </UiDialog>
 </template>
+
+<style scoped>
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-error {
+  color: var(--danger);
+}
+</style>
