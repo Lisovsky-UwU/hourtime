@@ -11,6 +11,8 @@ from hourtime.use_cases.dto import TimeEntryPage
 class TimeEntryResponse(BaseModel):
     id: UUID
     project_id: UUID | None
+    # Sorted by id, never null; an untagged entry has [].
+    tag_ids: list[UUID]
     description: str
     started_at: datetime
     stopped_at: datetime | None
@@ -30,6 +32,7 @@ class TimeEntryResponse(BaseModel):
         return cls(
             id=entry.id,
             project_id=entry.project_id,
+            tag_ids=entry.tag_ids,
             description=entry.description,
             started_at=entry.started_at,
             stopped_at=entry.stopped_at,
@@ -73,6 +76,7 @@ class TimeEntrySuggestionResponse(BaseModel):
 
 class StartTimerRequest(BaseModel):
     project_id: UUID | None = None
+    tag_ids: list[UUID] = Field(default_factory=list)
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
     # Defaults to the server's "now" when omitted.
     started_at: AwareDatetime | None = None
@@ -84,17 +88,20 @@ class StopTimerRequest(BaseModel):
 
 class CreateTimeEntryRequest(BaseModel):
     project_id: UUID | None = None
+    tag_ids: list[UUID] = Field(default_factory=list)
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
     started_at: AwareDatetime
     stopped_at: AwareDatetime
 
 
 class UpdateTimeEntryRequest(BaseModel):
-    """Omitted fields are left untouched; `project_id: null` clears the project."""
+    """Omitted fields are left untouched; `project_id: null` clears the project,
+    `tag_ids: []` clears the tags (`tag_ids: null` is rejected)."""
 
     model_config = ConfigDict(extra="forbid")
 
     project_id: UUID | None = None
+    tag_ids: list[UUID] | None = None
     description: str | None = Field(default=None, max_length=DESCRIPTION_MAX_LENGTH)
     started_at: AwareDatetime | None = None
     stopped_at: AwareDatetime | None = None

@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from hourtime.domain.entities import Project, TimeEntry, User
+from hourtime.domain.entities import Client, Project, Tag, TimeEntry, User
 
 NOW = datetime(2026, 3, 1, 12, 0, tzinfo=UTC)
 
@@ -24,6 +24,31 @@ def make_user(
     return User.model_validate(values)
 
 
+def make_client(workspace_id: UUID, *, name: str = "Acme", **overrides: object) -> Client:
+    values: dict[str, object] = {
+        "id": uuid4(),
+        "workspace_id": workspace_id,
+        "name": name,
+        "archived_at": None,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+    values.update(overrides)
+    return Client(**values)
+
+
+def make_tag(workspace_id: UUID, *, name: str = "billable", **overrides: object) -> Tag:
+    values: dict[str, object] = {
+        "id": uuid4(),
+        "workspace_id": workspace_id,
+        "name": name,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+    values.update(overrides)
+    return Tag(**values)
+
+
 def make_project(workspace_id: UUID, *, name: str = "Website", **overrides: object) -> Project:
     values: dict[str, object] = {
         "id": uuid4(),
@@ -35,7 +60,7 @@ def make_project(workspace_id: UUID, *, name: str = "Website", **overrides: obje
         "updated_at": NOW,
     }
     values.update(overrides)
-    return Project(**values)
+    return Project.model_validate(values)
 
 
 def make_entry(user: User, *, started_at: datetime = NOW, **overrides: object) -> TimeEntry:
@@ -52,4 +77,4 @@ def make_entry(user: User, *, started_at: datetime = NOW, **overrides: object) -
         "updated_at": started_at,
     }
     values.update(overrides)
-    return TimeEntry(**values)
+    return TimeEntry.model_validate(values)

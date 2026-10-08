@@ -92,12 +92,40 @@ class SessionModel(Base):
     )
 
 
+class ClientModel(Base):
+    __tablename__ = "clients"
+
+    id: Mapped[UUID] = _uuid_pk()
+    workspace_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
+    archived_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        sa.Index("ix_clients_workspace_id", "workspace_id"),
+        # Same rule as projects: archived clients may repeat a live one's name.
+        sa.Index(
+            "uq_clients_workspace_active_name",
+            "workspace_id",
+            sa.text("lower(name)"),
+            unique=True,
+            postgresql_where=sa.text("archived_at IS NULL"),
+        ),
+    )
+
+
 class ProjectModel(Base):
     __tablename__ = "projects"
 
     id: Mapped[UUID] = _uuid_pk()
     workspace_id: Mapped[UUID] = mapped_column(
         PgUUID(as_uuid=True), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    client_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("clients.id", ondelete="SET NULL")
     )
     name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
     color: Mapped[str] = mapped_column(sa.String(7), nullable=False)
@@ -107,6 +135,7 @@ class ProjectModel(Base):
 
     __table_args__ = (
         sa.Index("ix_projects_workspace_id", "workspace_id"),
+        sa.Index("ix_projects_client_id", "client_id"),
         # Names are unique per workspace among live projects; archived ones may repeat.
         sa.Index(
             "uq_projects_workspace_active_name",
@@ -115,6 +144,23 @@ class ProjectModel(Base):
             unique=True,
             postgresql_where=sa.text("archived_at IS NULL"),
         ),
+    )
+
+
+class TagModel(Base):
+    __tablename__ = "tags"
+
+    id: Mapped[UUID] = _uuid_pk()
+    workspace_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        # Also serves lookups by workspace, so there is no separate workspace index.
+        sa.Index("uq_tags_workspace_name", "workspace_id", sa.text("lower(name)"), unique=True),
     )
 
 
@@ -150,3 +196,20 @@ class TimeEntryModel(Base):
             postgresql_where=sa.text("stopped_at IS NULL"),
         ),
     )
+
+
+class TimeEntryTagModel(Base):
+    __tablename__ = "time_entry_tags"
+
+    time_entry_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        sa.ForeignKey("time_entries.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tag_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    # The primary key covers lookups by entry; this one covers the tag filter
+    # and the cascade when a tag is deleted.
+    __table_args__ = (sa.Index("ix_time_entry_tags_tag_id", "tag_id"),)

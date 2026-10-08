@@ -33,7 +33,16 @@ from hourtime.presentation.api.app import API_PREFIX, create_app  # noqa: E402
 # psycopg's async driver refuses to run on the default Windows event loop.
 use_selector_event_loop()
 
-TABLES = ("sessions", "time_entries", "projects", "workspaces", "users")
+TABLES = (
+    "sessions",
+    "time_entry_tags",
+    "time_entries",
+    "tags",
+    "projects",
+    "clients",
+    "workspaces",
+    "users",
+)
 
 
 @pytest.fixture(scope="session")

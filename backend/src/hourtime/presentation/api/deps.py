@@ -22,8 +22,10 @@ from hourtime.infrastructure.db.repositories.cached_session_repository import (
     CachedSessionRepository,
 )
 from hourtime.infrastructure.db.repositories.cached_user_repository import CachedUserRepository
+from hourtime.infrastructure.db.repositories.client_repository import SqlClientRepository
 from hourtime.infrastructure.db.repositories.project_repository import SqlProjectRepository
 from hourtime.infrastructure.db.repositories.session_repository import SqlSessionRepository
+from hourtime.infrastructure.db.repositories.tag_repository import SqlTagRepository
 from hourtime.infrastructure.db.repositories.time_entry_repository import SqlTimeEntryRepository
 from hourtime.infrastructure.db.repositories.user_repository import SqlUserRepository
 from hourtime.infrastructure.db.repositories.workspace_repository import (
@@ -31,7 +33,9 @@ from hourtime.infrastructure.db.repositories.workspace_repository import (
 )
 from hourtime.infrastructure.security.token_generator import OpaqueTokenGenerator
 from hourtime.interfaces.repositories import (
+    ClientRepository,
     ProjectRepository,
+    TagRepository,
     TimeEntryRepository,
     WorkspaceRepository,
 )
@@ -47,8 +51,10 @@ from hourtime.use_cases.auth import (
     SessionIssuer,
     UpdateProfile,
 )
+from hourtime.use_cases.clients import CreateClient, DeleteClient, ListClients, UpdateClient
 from hourtime.use_cases.dto import AuthenticatedUser
 from hourtime.use_cases.projects import CreateProject, DeleteProject, ListProjects, UpdateProject
+from hourtime.use_cases.tags import CreateTag, DeleteTag, ListTags, UpdateTag
 from hourtime.use_cases.time_entries import (
     CreateTimeEntry,
     DeleteTimeEntry,
@@ -142,6 +148,20 @@ def get_workspace_repository(session: DbSessionDep) -> WorkspaceRepository:
 
 
 WorkspacesDep = Annotated[WorkspaceRepository, Depends(get_workspace_repository)]
+
+
+def get_client_repository(session: DbSessionDep) -> ClientRepository:
+    return SqlClientRepository(session)
+
+
+ClientsDep = Annotated[ClientRepository, Depends(get_client_repository)]
+
+
+def get_tag_repository(session: DbSessionDep) -> TagRepository:
+    return SqlTagRepository(session)
+
+
+TagsDep = Annotated[TagRepository, Depends(get_tag_repository)]
 
 
 def get_project_repository(session: DbSessionDep) -> ProjectRepository:
@@ -318,19 +338,61 @@ async def get_current_user(
 CurrentUserDep = Annotated[AuthenticatedUser, Depends(get_current_user)]
 
 
+# --- client use cases --------------------------------------------------------
+
+
+def get_create_client(clients: ClientsDep, clock: ClockDep, uow: UowDep) -> CreateClient:
+    return CreateClient(clients, clock, uow)
+
+
+def get_list_clients(clients: ClientsDep) -> ListClients:
+    return ListClients(clients)
+
+
+def get_update_client(clients: ClientsDep, clock: ClockDep, uow: UowDep) -> UpdateClient:
+    return UpdateClient(clients, clock, uow)
+
+
+def get_delete_client(clients: ClientsDep, uow: UowDep) -> DeleteClient:
+    return DeleteClient(clients, uow)
+
+
+# --- tag use cases -----------------------------------------------------------
+
+
+def get_create_tag(tags: TagsDep, clock: ClockDep, uow: UowDep) -> CreateTag:
+    return CreateTag(tags, clock, uow)
+
+
+def get_list_tags(tags: TagsDep) -> ListTags:
+    return ListTags(tags)
+
+
+def get_update_tag(tags: TagsDep, clock: ClockDep, uow: UowDep) -> UpdateTag:
+    return UpdateTag(tags, clock, uow)
+
+
+def get_delete_tag(tags: TagsDep, uow: UowDep) -> DeleteTag:
+    return DeleteTag(tags, uow)
+
+
 # --- project use cases -------------------------------------------------------
 
 
-def get_create_project(projects: ProjectsDep, clock: ClockDep, uow: UowDep) -> CreateProject:
-    return CreateProject(projects, clock, uow)
+def get_create_project(
+    projects: ProjectsDep, clients: ClientsDep, clock: ClockDep, uow: UowDep
+) -> CreateProject:
+    return CreateProject(projects, clients, clock, uow)
 
 
 def get_list_projects(projects: ProjectsDep) -> ListProjects:
     return ListProjects(projects)
 
 
-def get_update_project(projects: ProjectsDep, clock: ClockDep, uow: UowDep) -> UpdateProject:
-    return UpdateProject(projects, clock, uow)
+def get_update_project(
+    projects: ProjectsDep, clients: ClientsDep, clock: ClockDep, uow: UowDep
+) -> UpdateProject:
+    return UpdateProject(projects, clients, clock, uow)
 
 
 def get_delete_project(projects: ProjectsDep, uow: UowDep) -> DeleteProject:
@@ -341,9 +403,9 @@ def get_delete_project(projects: ProjectsDep, uow: UowDep) -> DeleteProject:
 
 
 def get_start_timer(
-    entries: EntriesDep, projects: ProjectsDep, clock: ClockDep, uow: UowDep
+    entries: EntriesDep, projects: ProjectsDep, tags: TagsDep, clock: ClockDep, uow: UowDep
 ) -> StartTimer:
-    return StartTimer(entries, projects, clock, uow)
+    return StartTimer(entries, projects, tags, clock, uow)
 
 
 def get_stop_timer(entries: EntriesDep, clock: ClockDep, uow: UowDep) -> StopTimer:
@@ -363,15 +425,15 @@ def get_suggest_time_entries(entries: EntriesDep) -> SuggestTimeEntries:
 
 
 def get_create_time_entry(
-    entries: EntriesDep, projects: ProjectsDep, clock: ClockDep, uow: UowDep
+    entries: EntriesDep, projects: ProjectsDep, tags: TagsDep, clock: ClockDep, uow: UowDep
 ) -> CreateTimeEntry:
-    return CreateTimeEntry(entries, projects, clock, uow)
+    return CreateTimeEntry(entries, projects, tags, clock, uow)
 
 
 def get_update_time_entry(
-    entries: EntriesDep, projects: ProjectsDep, clock: ClockDep, uow: UowDep
+    entries: EntriesDep, projects: ProjectsDep, tags: TagsDep, clock: ClockDep, uow: UowDep
 ) -> UpdateTimeEntry:
-    return UpdateTimeEntry(entries, projects, clock, uow)
+    return UpdateTimeEntry(entries, projects, tags, clock, uow)
 
 
 def get_delete_time_entry(entries: EntriesDep, uow: UowDep) -> DeleteTimeEntry:

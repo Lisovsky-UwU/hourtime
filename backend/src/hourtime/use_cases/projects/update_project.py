@@ -2,17 +2,26 @@ from typing import Any
 
 from hourtime.domain.entities import Project
 from hourtime.domain.errors import ProjectNameTaken, ValidationError
-from hourtime.interfaces.repositories import ProjectRepository
+from hourtime.interfaces.repositories import ClientRepository, ProjectRepository
 from hourtime.interfaces.services import Clock, UnitOfWork
 from hourtime.use_cases.access import get_workspace_project
 from hourtime.use_cases.dto import UpdateProjectInput
+from hourtime.use_cases.projects.rules import resolve_client
 
 
 class UpdateProject:
-    """Renames, recolours and archives — everything PATCH /projects/{id} can do."""
+    """Renames, recolours, archives and (re)assigns the client - everything
+    PATCH /projects/{id} can do. `client_id: null` detaches the client."""
 
-    def __init__(self, projects: ProjectRepository, clock: Clock, uow: UnitOfWork) -> None:
+    def __init__(
+        self,
+        projects: ProjectRepository,
+        clients: ClientRepository,
+        clock: Clock,
+        uow: UnitOfWork,
+    ) -> None:
         self._projects = projects
+        self._clients = clients
         self._clock = clock
         self._uow = uow
 
@@ -39,6 +48,11 @@ class UpdateProject:
             if data.archived is None:
                 raise ValidationError("The archived flag is required")
             changes["archived_at"] = now if data.archived else None
+
+        if data.provided("client_id"):
+            changes["client_id"] = await resolve_client(
+                self._clients, data.workspace_id, data.client_id
+            )
 
         if not changes:
             return project

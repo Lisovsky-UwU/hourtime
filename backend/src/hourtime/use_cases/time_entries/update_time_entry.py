@@ -2,7 +2,11 @@ from typing import Any
 
 from hourtime.domain.entities import TimeEntry
 from hourtime.domain.errors import ValidationError
-from hourtime.interfaces.repositories import ProjectRepository, TimeEntryRepository
+from hourtime.interfaces.repositories import (
+    ProjectRepository,
+    TagRepository,
+    TimeEntryRepository,
+)
 from hourtime.interfaces.services import Clock, UnitOfWork
 from hourtime.use_cases.access import get_owned_time_entry
 from hourtime.use_cases.dto import UpdateTimeEntryInput
@@ -11,25 +15,29 @@ from hourtime.use_cases.time_entries.rules import (
     START_TIME,
     reject_future,
     resolve_project,
+    resolve_tags,
 )
 
 
 class UpdateTimeEntry:
-    """Edits an entry from the list: project, comment, start and stop time.
+    """Edits an entry from the list: project, tags, comment, start and stop time.
 
     A running entry stays running unless a stop time is supplied — sending
     `project_id: null` detaches the project, omitting the field leaves it be.
+    Likewise `tag_ids: []` removes every tag and an omitted `tag_ids` keeps them.
     """
 
     def __init__(
         self,
         entries: TimeEntryRepository,
         projects: ProjectRepository,
+        tags: TagRepository,
         clock: Clock,
         uow: UnitOfWork,
     ) -> None:
         self._entries = entries
         self._projects = projects
+        self._tags = tags
         self._clock = clock
         self._uow = uow
 
@@ -44,6 +52,11 @@ class UpdateTimeEntry:
             changes["project_id"] = await resolve_project(
                 self._projects, data.workspace_id, data.project_id
             )
+
+        if data.provided("tag_ids"):
+            if data.tag_ids is None:
+                raise ValidationError("tag_ids must be a list; send [] to remove every tag")
+            changes["tag_ids"] = await resolve_tags(self._tags, data.workspace_id, data.tag_ids)
 
         if data.provided("description"):
             changes["description"] = data.description or ""

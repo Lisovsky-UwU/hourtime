@@ -22,9 +22,54 @@ async def register_and_login(client: httpx.AsyncClient) -> dict[str, str]:
     return dict(tokens)
 
 
+async def other_user_headers(client: httpx.AsyncClient) -> dict[str, str]:
+    """Register a second account and return its auth header; it has its own workspace."""
+    await client.post("/auth/register", json={"email": "other@example.com", "password": PASSWORD})
+    login = await client.post(
+        "/auth/login", json={"email": "other@example.com", "password": PASSWORD}
+    )
+    return {"Authorization": f"Bearer {login.json()['tokens']['access_token']}"}
+
+
+async def track(client: httpx.AsyncClient, hours_ago: int, **fields: object) -> dict:
+    """A finished half-hour entry, `hours_ago` hours back."""
+    started = datetime.now(UTC) - timedelta(hours=hours_ago)
+    response = await client.post(
+        "/time-entries",
+        json={
+            "started_at": started.isoformat(),
+            "stopped_at": (started + timedelta(minutes=30)).isoformat(),
+            **fields,
+        },
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
 @pytest.fixture
 async def tokens(client: httpx.AsyncClient) -> dict[str, str]:
     return await register_and_login(client)
+
+
+@pytest.fixture
+def sql_statements(app: FastAPI) -> Iterator[list[str]]:
+    """Every statement the API sends, so a test can count them."""
+    recorded: list[str] = []
+
+    def record(
+        conn: object,
+        cursor: object,
+        statement: str,
+        parameters: object,
+        context: object,
+        executemany: bool,
+    ) -> None:
+        recorded.append(statement)
+
+    engine = app.state.engine.sync_engine
+    sa_event.listen(engine, "before_cursor_execute", record)
+    yield recorded
+    sa_event.remove(engine, "before_cursor_execute", record)
 
 
 class TestAuthEndpoints:
@@ -391,6 +436,278 @@ class TestSuggestions:
         assert response.status_code == 400
 
 
+class TestClientEndpoints:
+    async def test_crud_round_trip(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
+        created = await client.post("/clients", json={"name": "  Globex "})
+        assert created.status_code == 201
+        globex = created.json()
+        assert (globex["name"], globex["archived"]) == ("Globex", False)
+        await client.post("/clients", json={"name": "acme"})
+
+        listed = await client.get("/clients")
+        assert [item["name"] for item in listed.json()] == ["acme", "Globex"]
+
+        renamed = await client.patch(f"/clients/{globex['id']}", json={"name": "Initech"})
+        assert renamed.json()["name"] == "Initech"
+
+        archived = await client.patch(f"/clients/{globex['id']}", json={"archived": True})
+        assert archived.json()["archived"] is True
+        assert [item["name"] for item in (await client.get("/clients")).json()] == ["acme"]
+        everything = await client.get("/clients", params={"include_archived": True})
+        assert len(everything.json()) == 2
+
+        assert (await client.delete(f"/clients/{globex['id']}")).status_code == 204
+        assert len((await client.get("/clients", params={"include_archived": True})).json()) == 1
+
+    async def test_duplicate_name_conflicts_until_archived(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        first = (await client.post("/clients", json={"name": "Acme"})).json()
+        again = await client.post("/clients", json={"name": "ACME"})
+        assert again.status_code == 409
+        assert again.json()["error"]["code"] == "client_name_taken"
+
+        await client.patch(f"/clients/{first['id']}", json={"archived": True})
+        assert (await client.post("/clients", json={"name": "Acme"})).status_code == 201
+
+    async def test_another_workspaces_client_looks_missing(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        mine = (await client.post("/clients", json={"name": "Acme"})).json()
+        other = await other_user_headers(client)
+
+        assert (await client.get("/clients", headers=other)).json() == []
+        patched = await client.patch(f"/clients/{mine['id']}", json={"name": "X"}, headers=other)
+        assert patched.status_code == 404
+        assert (await client.delete(f"/clients/{mine['id']}", headers=other)).status_code == 404
+        borrowed = await client.post(
+            "/projects", json={"name": "Website", "client_id": mine["id"]}, headers=other
+        )
+        assert borrowed.status_code == 404
+
+    async def test_projects_get_and_lose_a_client(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        acme = (await client.post("/clients", json={"name": "Acme"})).json()
+        project = (
+            await client.post("/projects", json={"name": "Website", "client_id": acme["id"]})
+        ).json()
+        assert project["client_id"] == acme["id"]
+
+        renamed = await client.patch(f"/projects/{project['id']}", json={"name": "Landing"})
+        assert renamed.json()["client_id"] == acme["id"]
+
+        detached = await client.patch(f"/projects/{project['id']}", json={"client_id": None})
+        assert detached.json()["client_id"] is None
+
+        reattached = await client.patch(
+            f"/projects/{project['id']}", json={"client_id": acme["id"]}
+        )
+        assert reattached.json()["client_id"] == acme["id"]
+
+    async def test_an_archived_client_cannot_be_assigned(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        acme = (await client.post("/clients", json={"name": "Acme"})).json()
+        await client.patch(f"/clients/{acme['id']}", json={"archived": True})
+
+        response = await client.post("/projects", json={"name": "Website", "client_id": acme["id"]})
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "validation_error"
+
+    async def test_deleting_a_client_keeps_its_projects(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        acme = (await client.post("/clients", json={"name": "Acme"})).json()
+        project = (
+            await client.post("/projects", json={"name": "Website", "client_id": acme["id"]})
+        ).json()
+
+        assert (await client.delete(f"/clients/{acme['id']}")).status_code == 204
+
+        projects = (await client.get("/projects")).json()
+        assert [(item["id"], item["client_id"]) for item in projects] == [(project["id"], None)]
+
+
+class TestTagEndpoints:
+    async def test_crud_round_trip(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
+        created = await client.post("/tags", json={"name": " urgent "})
+        assert created.status_code == 201
+        urgent = created.json()
+        assert urgent["name"] == "urgent"
+        await client.post("/tags", json={"name": "Billable"})
+
+        assert [item["name"] for item in (await client.get("/tags")).json()] == [
+            "Billable",
+            "urgent",
+        ]
+
+        renamed = await client.patch(f"/tags/{urgent['id']}", json={"name": "asap"})
+        assert renamed.json()["name"] == "asap"
+
+        assert (await client.delete(f"/tags/{urgent['id']}")).status_code == 204
+        assert [item["name"] for item in (await client.get("/tags")).json()] == ["Billable"]
+
+    async def test_duplicate_name_conflicts(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        await client.post("/tags", json={"name": "billable"})
+        again = await client.post("/tags", json={"name": "BILLABLE"})
+        assert again.status_code == 409
+        assert again.json()["error"]["code"] == "tag_name_taken"
+
+    async def test_rename_needs_a_name(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        tag = (await client.post("/tags", json={"name": "billable"})).json()
+        assert (await client.patch(f"/tags/{tag['id']}", json={})).status_code == 400
+
+    async def test_another_workspaces_tag_looks_missing(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        mine = (await client.post("/tags", json={"name": "billable"})).json()
+        other = await other_user_headers(client)
+
+        assert (await client.get("/tags", headers=other)).json() == []
+        patched = await client.patch(f"/tags/{mine['id']}", json={"name": "x"}, headers=other)
+        assert patched.status_code == 404
+        assert (await client.delete(f"/tags/{mine['id']}", headers=other)).status_code == 404
+        borrowed = await client.post(
+            "/time-entries/start", json={"tag_ids": [mine["id"]]}, headers=other
+        )
+        assert borrowed.status_code == 404
+
+
+class TestEntryTags:
+    async def test_tags_travel_through_the_timer(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        red = (await client.post("/tags", json={"name": "red"})).json()
+        blue = (await client.post("/tags", json={"name": "blue"})).json()
+        expected = sorted([red["id"], blue["id"]])
+
+        started = await client.post(
+            "/time-entries/start", json={"tag_ids": [red["id"], blue["id"], red["id"]]}
+        )
+        assert started.status_code == 201
+        entry = started.json()
+        assert entry["tag_ids"] == expected
+
+        assert (await client.get("/time-entries/current")).json()["tag_ids"] == expected
+        stopped = await client.post(f"/time-entries/{entry['id']}/stop", json={})
+        assert stopped.json()["tag_ids"] == expected
+        assert (await client.get("/time-entries")).json()["items"][0]["tag_ids"] == expected
+
+    async def test_untagged_entries_report_an_empty_list(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        entry = await track(client, 1)
+        assert entry["tag_ids"] == []
+
+    async def test_patch_keeps_replaces_and_clears(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        red = (await client.post("/tags", json={"name": "red"})).json()
+        blue = (await client.post("/tags", json={"name": "blue"})).json()
+        entry = await track(client, 1, tag_ids=[red["id"]])
+
+        kept = await client.patch(f"/time-entries/{entry['id']}", json={"description": "x"})
+        assert kept.json()["tag_ids"] == [red["id"]]
+
+        replaced = await client.patch(
+            f"/time-entries/{entry['id']}", json={"tag_ids": [blue["id"]]}
+        )
+        assert replaced.json()["tag_ids"] == [blue["id"]]
+
+        cleared = await client.patch(f"/time-entries/{entry['id']}", json={"tag_ids": []})
+        assert cleared.json()["tag_ids"] == []
+        assert (await client.get("/time-entries")).json()["items"][0]["tag_ids"] == []
+
+        rejected = await client.patch(f"/time-entries/{entry['id']}", json={"tag_ids": None})
+        assert rejected.status_code == 400
+
+    async def test_deleting_a_tag_takes_it_off_entries(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        red = (await client.post("/tags", json={"name": "red"})).json()
+        blue = (await client.post("/tags", json={"name": "blue"})).json()
+        entry = await track(client, 1, tag_ids=[red["id"], blue["id"]])
+
+        assert (await client.delete(f"/tags/{red['id']}")).status_code == 204
+
+        items = (await client.get("/time-entries")).json()["items"]
+        assert [(item["id"], item["tag_ids"]) for item in items] == [(entry["id"], [blue["id"]])]
+
+    async def test_list_loads_tags_in_one_query(
+        self, client: httpx.AsyncClient, tokens: dict[str, str], sql_statements: list[str]
+    ) -> None:
+        tag = (await client.post("/tags", json={"name": "red"})).json()
+        for hours_ago in range(1, 6):
+            await track(client, hours_ago, tag_ids=[tag["id"]])
+
+        sql_statements.clear()
+        page = (await client.get("/time-entries")).json()
+
+        assert all(item["tag_ids"] == [tag["id"]] for item in page["items"])
+        tag_reads = [item for item in sql_statements if "FROM time_entry_tags" in item]
+        assert len(tag_reads) == 1
+
+
+class TestEntryFilters:
+    async def test_by_client(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
+        acme = (await client.post("/clients", json={"name": "Acme"})).json()
+        billed = (
+            await client.post("/projects", json={"name": "Billed", "client_id": acme["id"]})
+        ).json()
+        internal = (await client.post("/projects", json={"name": "Internal"})).json()
+        on_client = await track(client, 3, project_id=billed["id"])
+        await track(client, 2, project_id=internal["id"])
+        await track(client, 1)
+
+        page = await client.get("/time-entries", params={"client_id": acme["id"]})
+        assert [item["id"] for item in page.json()["items"]] == [on_client["id"]]
+
+    async def test_by_tags_matches_any_without_repeating_rows(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        red = (await client.post("/tags", json={"name": "red"})).json()
+        blue = (await client.post("/tags", json={"name": "blue"})).json()
+        green = (await client.post("/tags", json={"name": "green"})).json()
+        both = await track(client, 3, tag_ids=[red["id"], blue["id"]])
+        only_blue = await track(client, 2, tag_ids=[blue["id"]])
+        await track(client, 1, tag_ids=[green["id"]])
+        await track(client, 4)
+
+        page = await client.get(
+            "/time-entries", params=[("tag_ids", red["id"]), ("tag_ids", blue["id"])]
+        )
+        assert [item["id"] for item in page.json()["items"]] == [only_blue["id"], both["id"]]
+
+        first = await client.get(
+            "/time-entries",
+            params=[("tag_ids", red["id"]), ("tag_ids", blue["id"]), ("limit", 1)],
+        )
+        assert first.json()["has_more"] is True
+
+    async def test_without_project(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
+        project = (await client.post("/projects", json={"name": "Website"})).json()
+        await track(client, 2, project_id=project["id"])
+        bare = await track(client, 1)
+
+        page = await client.get("/time-entries", params={"without_project": True})
+        assert [item["id"] for item in page.json()["items"]] == [bare["id"]]
+
+    async def test_without_project_conflicts_with_a_project_filter(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        project = (await client.post("/projects", json={"name": "Website"})).json()
+        response = await client.get(
+            "/time-entries", params={"without_project": True, "project_id": project["id"]}
+        )
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "validation_error"
+
+
 class TestIsolationBetweenUsers:
     async def test_another_users_project_looks_missing(
         self, client: httpx.AsyncClient, tokens: dict[str, str]
@@ -433,26 +750,6 @@ class TestIsolationBetweenUsers:
 
 
 class TestSessionCache:
-    @pytest.fixture
-    def sql_statements(self, app: FastAPI) -> Iterator[list[str]]:
-        """Every statement the API sends, so a test can count them."""
-        recorded: list[str] = []
-
-        def record(
-            conn: object,
-            cursor: object,
-            statement: str,
-            parameters: object,
-            context: object,
-            executemany: bool,
-        ) -> None:
-            recorded.append(statement)
-
-        engine = app.state.engine.sync_engine
-        sa_event.listen(engine, "before_cursor_execute", record)
-        yield recorded
-        sa_event.remove(engine, "before_cursor_execute", record)
-
     async def test_repeated_requests_hit_the_database_once(
         self, client: httpx.AsyncClient, tokens: dict[str, str], sql_statements: list[str]
     ) -> None:

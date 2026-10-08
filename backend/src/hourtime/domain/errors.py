@@ -74,6 +74,16 @@ class ProjectNameTaken(DomainError):
     default_message = "A project with this name already exists"
 
 
+class ClientNameTaken(DomainError):
+    code = "client_name_taken"
+    default_message = "A client with this name already exists"
+
+
+class TagNameTaken(DomainError):
+    code = "tag_name_taken"
+    default_message = "A tag with this name already exists"
+
+
 class TimerAlreadyRunning(DomainError):
     code = "timer_already_running"
     default_message = "A timer is already running"

@@ -38,7 +38,12 @@ async def create_project(
     use_case: Annotated[CreateProject, Depends(get_create_project)],
 ) -> ProjectResponse:
     project = await use_case.execute(
-        CreateProjectInput(workspace_id=current.workspace_id, name=body.name, color=body.color)
+        CreateProjectInput(
+            workspace_id=current.workspace_id,
+            name=body.name,
+            color=body.color,
+            client_id=body.client_id,
+        )
     )
     return ProjectResponse.of(project)
 

@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from hourtime.domain.errors import (
     AccountDisabled,
+    ClientNameTaken,
     DomainError,
     EmailAlreadyUsed,
     InvalidCredentials,
@@ -23,6 +24,7 @@ from hourtime.domain.errors import (
     PermissionDenied,
     ProjectNameTaken,
     RegistrationDisabled,
+    TagNameTaken,
     TimerAlreadyRunning,
     ValidationError,
 )
@@ -38,7 +40,9 @@ _STATUS_BY_ERROR: dict[type, int] = {
     PermissionDenied: status.HTTP_403_FORBIDDEN,
     NotFound: status.HTTP_404_NOT_FOUND,
     EmailAlreadyUsed: status.HTTP_409_CONFLICT,
+    ClientNameTaken: status.HTTP_409_CONFLICT,
     ProjectNameTaken: status.HTTP_409_CONFLICT,
+    TagNameTaken: status.HTTP_409_CONFLICT,
     TimerAlreadyRunning: status.HTTP_409_CONFLICT,
 }
 

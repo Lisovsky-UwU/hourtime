@@ -4,17 +4,27 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from hourtime.domain.entities import (
+    Client,
     Project,
     Session,
+    Tag,
     TimeEntry,
     TimeEntrySuggestion,
     User,
     Workspace,
 )
-from hourtime.domain.errors import NotFound, ProjectNameTaken, TimerAlreadyRunning
+from hourtime.domain.errors import (
+    ClientNameTaken,
+    NotFound,
+    ProjectNameTaken,
+    TagNameTaken,
+    TimerAlreadyRunning,
+)
 from hourtime.interfaces.repositories import (
+    ClientRepository,
     ProjectRepository,
     SessionRepository,
+    TagRepository,
     TimeEntryRepository,
     UserRepository,
     WorkspaceRepository,
@@ -117,6 +127,97 @@ class InMemoryWorkspaceRepository(WorkspaceRepository):
         return workspace
 
 
+class InMemoryClientRepository(ClientRepository):
+    """Deleting a client does not detach it from projects: this fake knows no projects."""
+
+    def __init__(self, clients: list[Client] | None = None) -> None:
+        self.items: dict[UUID, Client] = {client.id: client for client in clients or []}
+
+    async def get_by_id(self, client_id: UUID) -> Client | None:
+        return self.items.get(client_id)
+
+    async def list_for_workspace(
+        self, workspace_id: UUID, *, include_archived: bool = False
+    ) -> list[Client]:
+        found = [item for item in self.items.values() if item.workspace_id == workspace_id]
+        if not include_archived:
+            found = [item for item in found if not item.is_archived]
+        return sorted(found, key=lambda item: item.name.lower())
+
+    async def find_by_name(self, workspace_id: UUID, name: str) -> Client | None:
+        wanted = name.strip().lower()
+        return next(
+            (
+                item
+                for item in self.items.values()
+                if item.workspace_id == workspace_id
+                and item.name.lower() == wanted
+                and not item.is_archived
+            ),
+            None,
+        )
+
+    async def add(self, client: Client) -> Client:
+        if await self.find_by_name(client.workspace_id, client.name) is not None:
+            raise ClientNameTaken
+        self.items[client.id] = client
+        return client
+
+    async def update(self, client: Client) -> Client:
+        if client.id not in self.items:
+            raise NotFound("Client not found")
+        self.items[client.id] = client
+        return client
+
+    async def delete(self, client_id: UUID) -> None:
+        if self.items.pop(client_id, None) is None:
+            raise NotFound("Client not found")
+
+
+class InMemoryTagRepository(TagRepository):
+    """Deleting a tag does not take it off entries: this fake knows no entries."""
+
+    def __init__(self, tags: list[Tag] | None = None) -> None:
+        self.items: dict[UUID, Tag] = {tag.id: tag for tag in tags or []}
+
+    async def get_by_id(self, tag_id: UUID) -> Tag | None:
+        return self.items.get(tag_id)
+
+    async def get_many(self, tag_ids: list[UUID]) -> list[Tag]:
+        return [self.items[tag_id] for tag_id in set(tag_ids) if tag_id in self.items]
+
+    async def list_for_workspace(self, workspace_id: UUID) -> list[Tag]:
+        found = [item for item in self.items.values() if item.workspace_id == workspace_id]
+        return sorted(found, key=lambda item: item.name.lower())
+
+    async def find_by_name(self, workspace_id: UUID, name: str) -> Tag | None:
+        wanted = name.strip().lower()
+        return next(
+            (
+                item
+                for item in self.items.values()
+                if item.workspace_id == workspace_id and item.name.lower() == wanted
+            ),
+            None,
+        )
+
+    async def add(self, tag: Tag) -> Tag:
+        if await self.find_by_name(tag.workspace_id, tag.name) is not None:
+            raise TagNameTaken
+        self.items[tag.id] = tag
+        return tag
+
+    async def update(self, tag: Tag) -> Tag:
+        if tag.id not in self.items:
+            raise NotFound("Tag not found")
+        self.items[tag.id] = tag
+        return tag
+
+    async def delete(self, tag_id: UUID) -> None:
+        if self.items.pop(tag_id, None) is None:
+            raise NotFound("Tag not found")
+
+
 class InMemoryProjectRepository(ProjectRepository):
     def __init__(self, projects: list[Project] | None = None) -> None:
         self.items: dict[UUID, Project] = {project.id: project for project in projects or []}
@@ -163,10 +264,18 @@ class InMemoryProjectRepository(ProjectRepository):
 
 
 class InMemoryTimeEntryRepository(TimeEntryRepository):
-    """Mirrors the partial unique index that keeps one timer running per user."""
+    """Mirrors the partial unique index that keeps one timer running per user.
 
-    def __init__(self, entries: list[TimeEntry] | None = None) -> None:
+    The `client_id` filter looks projects up in `projects`, when one is given.
+    """
+
+    def __init__(
+        self,
+        entries: list[TimeEntry] | None = None,
+        projects: InMemoryProjectRepository | None = None,
+    ) -> None:
         self.items: dict[UUID, TimeEntry] = {entry.id: entry for entry in entries or []}
+        self._projects = projects
 
     def _check_single_running(self, entry: TimeEntry) -> None:
         if not entry.is_running:
@@ -202,6 +311,9 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
         started_from: datetime | None,
         started_to: datetime | None,
         project_id: UUID | None,
+        client_id: UUID | None = None,
+        tag_ids: list[UUID] | None = None,
+        without_project: bool = False,
     ) -> list[TimeEntry]:
         found = [
             entry
@@ -214,6 +326,17 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
             found = [entry for entry in found if entry.started_at <= started_to]
         if project_id is not None:
             found = [entry for entry in found if entry.project_id == project_id]
+        if without_project:
+            found = [entry for entry in found if entry.project_id is None]
+        if client_id is not None:
+            projects = self._projects.items if self._projects else {}
+            client_projects = {
+                project.id for project in projects.values() if project.client_id == client_id
+            }
+            found = [entry for entry in found if entry.project_id in client_projects]
+        if tag_ids:
+            wanted = set(tag_ids)
+            found = [entry for entry in found if wanted & set(entry.tag_ids)]
         return sorted(found, key=lambda entry: entry.started_at, reverse=True)
 
     async def list_for_user(
@@ -224,10 +347,22 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
         started_from: datetime | None = None,
         started_to: datetime | None = None,
         project_id: UUID | None = None,
+        client_id: UUID | None = None,
+        tag_ids: list[UUID] | None = None,
+        without_project: bool = False,
         limit: int = 50,
         offset: int = 0,
     ) -> list[TimeEntry]:
-        found = self._matching(user_id, workspace_id, started_from, started_to, project_id)
+        found = self._matching(
+            user_id,
+            workspace_id,
+            started_from,
+            started_to,
+            project_id,
+            client_id,
+            tag_ids,
+            without_project,
+        )
         return found[offset : offset + limit]
 
     async def suggest(

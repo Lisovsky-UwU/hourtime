@@ -53,6 +53,10 @@ async def list_time_entries(
     started_from: Annotated[datetime | None, Query()] = None,
     started_to: Annotated[datetime | None, Query()] = None,
     project_id: Annotated[UUID | None, Query()] = None,
+    client_id: Annotated[UUID | None, Query()] = None,
+    # Repeated in the query string: `?tag_ids=a&tag_ids=b` matches entries with either tag.
+    tag_ids: Annotated[list[UUID] | None, Query()] = None,
+    without_project: Annotated[bool, Query()] = False,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TimeEntryPageResponse:
@@ -63,6 +67,9 @@ async def list_time_entries(
             started_from=started_from,
             started_to=started_to,
             project_id=project_id,
+            client_id=client_id,
+            tag_ids=tag_ids or [],
+            without_project=without_project,
             limit=limit,
             offset=offset,
         )
@@ -105,6 +112,7 @@ async def start_timer(
             user_id=current.user.id,
             workspace_id=current.workspace_id,
             project_id=body.project_id,
+            tag_ids=body.tag_ids,
             description=body.description,
             started_at=body.started_at,
         )
@@ -141,6 +149,7 @@ async def create_time_entry(
             user_id=current.user.id,
             workspace_id=current.workspace_id,
             project_id=body.project_id,
+            tag_ids=body.tag_ids,
             description=body.description,
             started_at=body.started_at,
             stopped_at=body.stopped_at,

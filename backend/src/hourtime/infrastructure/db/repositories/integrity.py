@@ -9,15 +9,19 @@ from collections.abc import Awaitable, Callable
 from sqlalchemy.exc import IntegrityError
 
 from hourtime.domain.errors import (
+    ClientNameTaken,
     DomainError,
     EmailAlreadyUsed,
     ProjectNameTaken,
+    TagNameTaken,
     TimerAlreadyRunning,
 )
 
 _BY_CONSTRAINT: dict[str, type[DomainError]] = {
     "users_email_key": EmailAlreadyUsed,
+    "uq_clients_workspace_active_name": ClientNameTaken,
     "uq_projects_workspace_active_name": ProjectNameTaken,
+    "uq_tags_workspace_name": TagNameTaken,
     "uq_time_entries_one_running": TimerAlreadyRunning,
 }
 

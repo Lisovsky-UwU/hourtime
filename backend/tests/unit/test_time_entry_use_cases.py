@@ -1,5 +1,6 @@
 from datetime import timedelta
-from uuid import uuid4
+from typing import Any
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -22,11 +23,12 @@ from hourtime.use_cases.time_entries import (
     SuggestTimeEntries,
     UpdateTimeEntry,
 )
-from tests.factories import make_entry, make_project, make_user
+from tests.factories import make_client, make_entry, make_project, make_tag, make_user
 from tests.fakes import (
     FakeClock,
     FakeUnitOfWork,
     InMemoryProjectRepository,
+    InMemoryTagRepository,
     InMemoryTimeEntryRepository,
 )
 
@@ -34,18 +36,19 @@ from tests.fakes import (
 class TimerWorld:
     def __init__(self) -> None:
         self.clock = FakeClock()
-        self.entries = InMemoryTimeEntryRepository()
         self.projects = InMemoryProjectRepository()
+        self.entries = InMemoryTimeEntryRepository(projects=self.projects)
+        self.tags = InMemoryTagRepository()
         self.uow = FakeUnitOfWork()
         self.user = make_user()
         self.other_user = make_user(email="someone@example.com")
 
-        self.start = StartTimer(self.entries, self.projects, self.clock, self.uow)
+        self.start = StartTimer(self.entries, self.projects, self.tags, self.clock, self.uow)
         self.stop = StopTimer(self.entries, self.clock, self.uow)
         self.running = GetRunningTimer(self.entries)
         self.listing = ListTimeEntries(self.entries)
-        self.create = CreateTimeEntry(self.entries, self.projects, self.clock, self.uow)
-        self.update = UpdateTimeEntry(self.entries, self.projects, self.clock, self.uow)
+        self.create = CreateTimeEntry(self.entries, self.projects, self.tags, self.clock, self.uow)
+        self.update = UpdateTimeEntry(self.entries, self.projects, self.tags, self.clock, self.uow)
         self.delete = DeleteTimeEntry(self.entries, self.uow)
         self.suggest = SuggestTimeEntries(self.entries)
 
@@ -569,3 +572,174 @@ class TestDelete:
     async def test_reports_a_missing_entry_as_not_found(self, world: TimerWorld) -> None:
         with pytest.raises(NotFound):
             await world.delete.execute(world.user.id, world.user.default_workspace_id, uuid4())
+
+
+class TestTags:
+    async def test_start_collapses_repeated_tags(self, world: TimerWorld) -> None:
+        workspace_id = world.user.default_workspace_id
+        first = await world.tags.add(make_tag(workspace_id, name="billable"))
+        second = await world.tags.add(make_tag(workspace_id, name="urgent"))
+
+        entry = await world.start.execute(
+            StartTimerInput(
+                user_id=world.user.id,
+                workspace_id=workspace_id,
+                tag_ids=[second.id, first.id, second.id],
+            )
+        )
+
+        assert entry.tag_ids == sorted([first.id, second.id])
+
+    async def test_manual_entry_carries_tags(self, world: TimerWorld) -> None:
+        tag = await world.tags.add(make_tag(world.user.default_workspace_id))
+        entry = await world.create.execute(
+            CreateTimeEntryInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                tag_ids=[tag.id],
+                started_at=world.clock.now() - timedelta(hours=2),
+                stopped_at=world.clock.now() - timedelta(hours=1),
+            )
+        )
+        assert entry.tag_ids == [tag.id]
+
+    async def test_rejects_a_tag_from_another_workspace(self, world: TimerWorld) -> None:
+        mine = await world.tags.add(make_tag(world.user.default_workspace_id))
+        theirs = await world.tags.add(make_tag(world.other_user.default_workspace_id))
+        with pytest.raises(NotFound):
+            await world.start.execute(
+                StartTimerInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    tag_ids=[mine.id, theirs.id],
+                )
+            )
+        with pytest.raises(NotFound):
+            await world.create.execute(
+                CreateTimeEntryInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    tag_ids=[theirs.id],
+                    started_at=world.clock.now() - timedelta(hours=2),
+                    stopped_at=world.clock.now() - timedelta(hours=1),
+                )
+            )
+        entry = await world.entries.add(make_entry(world.user))
+        with pytest.raises(NotFound):
+            await world.update.execute(
+                UpdateTimeEntryInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    entry_id=entry.id,
+                    tag_ids=[theirs.id],
+                )
+            )
+
+    async def test_rejects_a_missing_tag(self, world: TimerWorld) -> None:
+        with pytest.raises(NotFound):
+            await world.start.execute(
+                StartTimerInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    tag_ids=[uuid4()],
+                )
+            )
+
+    async def test_patch_without_tag_ids_keeps_them(self, world: TimerWorld) -> None:
+        tag = await world.tags.add(make_tag(world.user.default_workspace_id))
+        entry = await world.entries.add(make_entry(world.user, tag_ids=[tag.id]))
+
+        updated = await world.update.execute(
+            UpdateTimeEntryInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                entry_id=entry.id,
+                description="Changed",
+            )
+        )
+
+        assert updated.tag_ids == [tag.id]
+
+    async def test_patch_replaces_and_clears_tags(self, world: TimerWorld) -> None:
+        workspace_id = world.user.default_workspace_id
+        old = await world.tags.add(make_tag(workspace_id, name="old"))
+        new = await world.tags.add(make_tag(workspace_id, name="new"))
+        entry = await world.entries.add(make_entry(world.user, tag_ids=[old.id]))
+
+        replaced = await world.update.execute(
+            UpdateTimeEntryInput(
+                user_id=world.user.id,
+                workspace_id=workspace_id,
+                entry_id=entry.id,
+                tag_ids=[new.id, new.id],
+            )
+        )
+        assert replaced.tag_ids == [new.id]
+
+        cleared = await world.update.execute(
+            UpdateTimeEntryInput(
+                user_id=world.user.id, workspace_id=workspace_id, entry_id=entry.id, tag_ids=[]
+            )
+        )
+        assert cleared.tag_ids == []
+
+    async def test_patch_rejects_null_tag_ids(self, world: TimerWorld) -> None:
+        entry = await world.entries.add(make_entry(world.user))
+        with pytest.raises(ValidationError):
+            await world.update.execute(
+                UpdateTimeEntryInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    entry_id=entry.id,
+                    tag_ids=None,
+                )
+            )
+
+
+class TestListingFilters:
+    async def _track(self, world: TimerWorld, hours_ago: int, **extra: object) -> UUID:
+        started = world.clock.now() - timedelta(hours=hours_ago)
+        entry = await world.entries.add(
+            make_entry(
+                world.user, started_at=started, stopped_at=started + timedelta(minutes=30), **extra
+            )
+        )
+        return entry.id
+
+    def _query(self, world: TimerWorld, **filters: Any) -> ListTimeEntriesInput:
+        return ListTimeEntriesInput(
+            user_id=world.user.id, workspace_id=world.user.default_workspace_id, **filters
+        )
+
+    async def test_filters_by_client_tags_and_missing_project(self, world: TimerWorld) -> None:
+        workspace_id = world.user.default_workspace_id
+        client = make_client(workspace_id)
+        billed = await world.projects.add(
+            make_project(workspace_id, name="Billed", client_id=client.id)
+        )
+        internal = await world.projects.add(make_project(workspace_id, name="Internal"))
+        red = await world.tags.add(make_tag(workspace_id, name="red"))
+        blue = await world.tags.add(make_tag(workspace_id, name="blue"))
+
+        on_client = await self._track(world, 4, project_id=billed.id)
+        await self._track(world, 3, project_id=internal.id, tag_ids=[red.id])
+        both_tags = await self._track(world, 2, tag_ids=[red.id, blue.id])
+        bare = await self._track(world, 1)
+
+        by_client = await world.listing.execute(self._query(world, client_id=client.id))
+        assert [entry.id for entry in by_client.items] == [on_client]
+
+        by_tag = await world.listing.execute(self._query(world, tag_ids=[blue.id]))
+        assert [entry.id for entry in by_tag.items] == [both_tags]
+
+        no_project = await world.listing.execute(self._query(world, without_project=True))
+        assert [entry.id for entry in no_project.items] == [bare, both_tags]
+
+    @pytest.mark.parametrize("other_filter", ["project_id", "client_id"])
+    async def test_without_project_conflicts_with_project_filters(
+        self, world: TimerWorld, other_filter: str
+    ) -> None:
+        with pytest.raises(ValidationError):
+            await world.listing.execute(
+                self._query(world, without_project=True, **{other_filter: uuid4()})
+            )

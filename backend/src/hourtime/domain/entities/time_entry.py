@@ -18,6 +18,9 @@ class TimeEntry(Entity):
     user_id: UUID
     workspace_id: UUID
     project_id: UUID | None = None
+    # Sorted by id and free of duplicates, so the same set of tags always reads
+    # the same no matter how it was sent or stored.
+    tag_ids: list[UUID] = Field(default_factory=list)
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
     started_at: UtcDatetime
     stopped_at: UtcDatetime | None = None
@@ -30,6 +33,11 @@ class TimeEntry(Entity):
         if value is None:
             return ""
         return value.strip() if isinstance(value, str) else value
+
+    @field_validator("tag_ids", mode="after")
+    @classmethod
+    def _normalise_tag_ids(cls, value: list[UUID]) -> list[UUID]:
+        return sorted(set(value))
 
     @model_validator(mode="after")
     def _check_interval(self) -> Self:

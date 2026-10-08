@@ -7,7 +7,7 @@ HTTP schemas stay in `presentation`, ORM models stay in `infrastructure`.
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from hourtime.domain.entities import Session, TimeEntry, User
 from hourtime.domain.entities.user import DurationFormat, HourCycle
@@ -91,6 +91,35 @@ class ChangePasswordInput(BaseModel):
     new_password: str
 
 
+# --- clients ----------------------------------------------------------------
+
+
+class CreateClientInput(BaseModel):
+    workspace_id: UUID
+    name: str
+
+
+class UpdateClientInput(PatchInput):
+    workspace_id: UUID
+    client_id: UUID
+    name: str | None = None
+    archived: bool | None = None
+
+
+# --- tags -------------------------------------------------------------------
+
+
+class CreateTagInput(BaseModel):
+    workspace_id: UUID
+    name: str
+
+
+class UpdateTagInput(BaseModel):
+    workspace_id: UUID
+    tag_id: UUID
+    name: str
+
+
 # --- projects ---------------------------------------------------------------
 
 
@@ -98,6 +127,7 @@ class CreateProjectInput(BaseModel):
     workspace_id: UUID
     name: str
     color: str | None = None
+    client_id: UUID | None = None
 
 
 class UpdateProjectInput(PatchInput):
@@ -106,6 +136,7 @@ class UpdateProjectInput(PatchInput):
     name: str | None = None
     color: str | None = None
     archived: bool | None = None
+    client_id: UUID | None = None
 
 
 # --- time entries -----------------------------------------------------------
@@ -115,6 +146,7 @@ class StartTimerInput(BaseModel):
     user_id: UUID
     workspace_id: UUID
     project_id: UUID | None = None
+    tag_ids: list[UUID] = Field(default_factory=list)
     description: str = ""
     started_at: datetime | None = None
 
@@ -130,6 +162,7 @@ class CreateTimeEntryInput(BaseModel):
     user_id: UUID
     workspace_id: UUID
     project_id: UUID | None = None
+    tag_ids: list[UUID] = Field(default_factory=list)
     description: str = ""
     started_at: datetime
     stopped_at: datetime
@@ -140,6 +173,7 @@ class UpdateTimeEntryInput(PatchInput):
     workspace_id: UUID
     entry_id: UUID
     project_id: UUID | None = None
+    tag_ids: list[UUID] | None = None
     description: str | None = None
     started_at: datetime | None = None
     stopped_at: datetime | None = None
@@ -151,6 +185,9 @@ class ListTimeEntriesInput(BaseModel):
     started_from: datetime | None = None
     started_to: datetime | None = None
     project_id: UUID | None = None
+    client_id: UUID | None = None
+    tag_ids: list[UUID] = Field(default_factory=list)
+    without_project: bool = False
     limit: int = 50
     offset: int = 0
 

@@ -3,8 +3,8 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from hourtime.domain.errors import ValidationError
-from hourtime.interfaces.repositories import ProjectRepository
+from hourtime.domain.errors import NotFound, ValidationError
+from hourtime.interfaces.repositories import ProjectRepository, TagRepository
 from hourtime.use_cases.access import get_workspace_project
 
 # Browsers stop timers against their own clock, which drifts from the server's.
@@ -32,3 +32,14 @@ async def resolve_project(
     if project.is_archived:
         raise ValidationError("An archived project cannot be assigned")
     return project.id
+
+
+async def resolve_tags(tags: TagRepository, workspace_id: UUID, tag_ids: list[UUID]) -> list[UUID]:
+    """Verify every tag is in the entry's workspace; repeated ids count once."""
+    wanted = set(tag_ids)
+    if not wanted:
+        return []
+    found = await tags.get_many(list(wanted))
+    if len(found) != len(wanted) or any(tag.workspace_id != workspace_id for tag in found):
+        raise NotFound("Tag not found")
+    return sorted(wanted)

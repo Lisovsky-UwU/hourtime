@@ -2,7 +2,11 @@ from uuid import uuid4
 
 from hourtime.domain.entities import TimeEntry
 from hourtime.domain.errors import ValidationError
-from hourtime.interfaces.repositories import ProjectRepository, TimeEntryRepository
+from hourtime.interfaces.repositories import (
+    ProjectRepository,
+    TagRepository,
+    TimeEntryRepository,
+)
 from hourtime.interfaces.services import Clock, UnitOfWork
 from hourtime.use_cases.dto import CreateTimeEntryInput
 from hourtime.use_cases.time_entries.rules import (
@@ -10,6 +14,7 @@ from hourtime.use_cases.time_entries.rules import (
     START_TIME,
     reject_future,
     resolve_project,
+    resolve_tags,
 )
 
 
@@ -20,11 +25,13 @@ class CreateTimeEntry:
         self,
         entries: TimeEntryRepository,
         projects: ProjectRepository,
+        tags: TagRepository,
         clock: Clock,
         uow: UnitOfWork,
     ) -> None:
         self._entries = entries
         self._projects = projects
+        self._tags = tags
         self._clock = clock
         self._uow = uow
 
@@ -36,12 +43,14 @@ class CreateTimeEntry:
             raise ValidationError("The end time must be later than the start time")
 
         project_id = await resolve_project(self._projects, data.workspace_id, data.project_id)
+        tag_ids = await resolve_tags(self._tags, data.workspace_id, data.tag_ids)
 
         entry = TimeEntry(
             id=uuid4(),
             user_id=data.user_id,
             workspace_id=data.workspace_id,
             project_id=project_id,
+            tag_ids=tag_ids,
             description=data.description,
             started_at=data.started_at,
             stopped_at=data.stopped_at,

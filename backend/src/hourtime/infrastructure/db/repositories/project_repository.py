@@ -14,6 +14,7 @@ def to_domain(model: ProjectModel) -> Project:
     return Project(
         id=model.id,
         workspace_id=model.workspace_id,
+        client_id=model.client_id,
         name=model.name,
         color=model.color,
         archived_at=model.archived_at,

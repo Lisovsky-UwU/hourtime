@@ -29,6 +29,7 @@ def normalise_color(value: str) -> str:
 class Project(Entity):
     id: UUID
     workspace_id: UUID
+    client_id: UUID | None = None
     name: str = Field(min_length=1, max_length=NAME_MAX_LENGTH)
     color: str = DEFAULT_COLOR
     archived_at: UtcDatetime | None = None
