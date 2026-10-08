@@ -154,3 +154,23 @@ Build the frontend (`npm run build`) and serve `frontend/dist` as static files;
 run the API behind a reverse proxy that terminates TLS and forwards `/api` to
 uvicorn. Tokens travel in the `Authorization` header, so HTTPS is not optional —
 without it, every session token is readable on the wire.
+
+`docker-compose.server.yml` does exactly that for a host that already runs
+PostgreSQL, Redis and a TLS-terminating proxy: an `api` container (migrates the
+database on start) and a `web` container (nginx with the built frontend,
+proxying `/api` to the API) listening on `127.0.0.1:${HTTP_PORT}`. On top of the
+usual `HOURTIME_*` settings, its `.env` needs:
+
+```bash
+COMPOSE_FILE=docker-compose.server.yml
+HTTP_PORT=3100                                 # what the outer proxy points at
+POSTGRES_NETWORK=docker-containers_pg-network  # external networks the API joins
+REDIS_NETWORK=docker-containers_default
+HOURTIME_DATABASE_URL=postgresql+psycopg://user:pass@postgres:5432/hourtime
+HOURTIME_REDIS_URL=redis://user:pass@redis:6379/3
+HOURTIME_CORS_ORIGINS=https://hourtime.example.com
+```
+
+Then `git pull && docker compose up -d --build` deploys a new version. The outer
+proxy must set `X-Real-IP` and `X-Forwarded-Proto`: the web container passes
+them to the API as the client address and scheme.
