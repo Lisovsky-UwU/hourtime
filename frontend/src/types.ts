@@ -33,10 +33,26 @@ export interface LoginResponse {
   tokens: Tokens
 }
 
+export interface Client {
+  id: string
+  name: string
+  archived: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Tag {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Project {
   id: string
   name: string
   color: string
+  client_id: string | null
   archived: boolean
   created_at: string
   updated_at: string
@@ -45,6 +61,7 @@ export interface Project {
 export interface TimeEntry {
   id: string
   project_id: string | null
+  tag_ids: string[]
   description: string
   started_at: string
   /** Null while the timer is still running. */

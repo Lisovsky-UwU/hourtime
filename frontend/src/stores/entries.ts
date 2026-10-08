@@ -80,12 +80,7 @@ export const useEntriesStore = defineStore('entries', () => {
     return updated
   }
 
-  async function create(payload: {
-    started_at: string
-    stopped_at: string
-    project_id?: string | null
-    description?: string
-  }): Promise<TimeEntry> {
+  async function create(payload: Parameters<typeof entriesApi.create>[0]): Promise<TimeEntry> {
     const created = await entriesApi.create(payload)
     upsert(created)
     return created

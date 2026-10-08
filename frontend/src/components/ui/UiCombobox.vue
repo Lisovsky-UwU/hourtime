@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 import {
   ListboxContent,
   ListboxFilter,
+  ListboxGroup,
+  ListboxGroupLabel,
   ListboxItem,
   ListboxItemIndicator,
   ListboxRoot,
@@ -20,6 +22,9 @@ export interface ComboboxItem {
   label: string
   /** Shown as a dot before the label, e.g. a project color. */
   color?: string
+  /** Heading the item is listed under, e.g. a project's client. Items without
+   *  one come first; groups keep the order in which `items` mention them. */
+  group?: string
 }
 
 /**
@@ -80,6 +85,19 @@ const canCreate = computed(
     normalizedQuery.value !== '' &&
     !props.items.some((item) => item.label.toLocaleLowerCase() === normalizedQuery.value),
 )
+
+const sections = computed(() => {
+  const ungrouped: ComboboxItem[] = []
+  const byGroup = new Map<string, ComboboxItem[]>()
+  for (const item of filtered.value) {
+    if (item.group === undefined) ungrouped.push(item)
+    else byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
+  }
+  return [
+    { label: undefined, items: ungrouped },
+    ...[...byGroup].map(([label, items]) => ({ label, items })),
+  ].filter((section) => section.items.length > 0)
+})
 
 const showNone = computed(() => props.noneLabel !== undefined && !normalizedQuery.value)
 
@@ -149,22 +167,31 @@ function choose(value: unknown) {
               </ListboxItemIndicator>
             </ListboxItem>
 
-            <ListboxItem
-              v-for="item in filtered"
-              :key="item.value"
-              :value="item.value"
-              class="ui-menu-item"
+            <ListboxGroup
+              v-for="section in sections"
+              :key="section.label ?? NONE"
+              class="ui-combobox-group"
             >
-              <span
-                class="ui-combobox-dot"
-                :class="{ 'is-none': !item.color }"
-                :style="item.color ? { background: item.color } : undefined"
-              />
-              <span class="ui-combobox-label">{{ item.label }}</span>
-              <ListboxItemIndicator class="ui-combobox-check">
-                <AppIcon name="check" :size="16" />
-              </ListboxItemIndicator>
-            </ListboxItem>
+              <ListboxGroupLabel v-if="section.label" class="ui-combobox-group-label">
+                {{ section.label }}
+              </ListboxGroupLabel>
+              <ListboxItem
+                v-for="item in section.items"
+                :key="item.value"
+                :value="item.value"
+                class="ui-menu-item"
+              >
+                <span
+                  class="ui-combobox-dot"
+                  :class="{ 'is-none': !item.color }"
+                  :style="item.color ? { background: item.color } : undefined"
+                />
+                <span class="ui-combobox-label">{{ item.label }}</span>
+                <ListboxItemIndicator class="ui-combobox-check">
+                  <AppIcon name="check" :size="16" />
+                </ListboxItemIndicator>
+              </ListboxItem>
+            </ListboxGroup>
 
             <ListboxItem v-if="canCreate" :value="CREATE" class="ui-menu-item ui-combobox-create">
               <AppIcon name="plus" :size="16" />
@@ -282,6 +309,21 @@ function choose(value: unknown) {
   max-height: min(320px, calc(var(--reka-popover-content-available-height) - 48px));
   overflow-y: auto;
   padding: 4px;
+}
+
+/* A client heading: pencil, smaller, set apart by space rather than a rule. */
+.ui-combobox-group + .ui-combobox-group {
+  margin-top: 4px;
+}
+
+.ui-combobox-group-label {
+  padding: 8px 8px 4px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ui-combobox-label {

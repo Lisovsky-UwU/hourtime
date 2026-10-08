@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { EntryPatch } from '@/api/timeEntries'
 import AutoTextarea from '@/components/AutoTextarea.vue'
 import ProjectPicker from '@/components/ProjectPicker.vue'
+import TagPicker from '@/components/TagPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import type { MenuEntry } from '@/components/ui/UiDropdownMenu.vue'
 import UiDropdownMenu from '@/components/ui/UiDropdownMenu.vue'
@@ -36,6 +37,7 @@ const showDuration = useDuration()
 
 const description = ref('')
 const projectId = ref<string | null>(null)
+const tagIds = ref<string[]>([])
 const startDate = ref('')
 const startTime = ref<TimeOfDay>({ hours: 0, minutes: 0, seconds: 0, dayOffset: 0 })
 const endTime = ref<TimeOfDay | null>(null)
@@ -47,6 +49,7 @@ const duration = computed(() => showDuration(timer.secondsOf(props.entry)))
 function adopt(entry: TimeEntry) {
   description.value = entry.description
   projectId.value = entry.project_id
+  tagIds.value = [...entry.tag_ids]
   startDate.value = toDateInput(entry.started_at)
   startTime.value = toTimeOfDay(entry.started_at)
   endTime.value = entry.stopped_at ? toTimeOfDay(entry.stopped_at, entry.started_at) : null
@@ -109,6 +112,14 @@ watch(projectId, (value) => {
   void commit({ project_id: value })
 })
 
+// TagPicker only writes when the set changed, so any write here is a real edit.
+// `adopt` also writes, with the server's own set - that one is skipped.
+watch(tagIds, (value) => {
+  const saved = props.entry.tag_ids
+  if (value.length === saved.length && value.every((id) => saved.includes(id))) return
+  void commit({ tag_ids: value })
+})
+
 const dateInput = ref<HTMLInputElement | null>(null)
 
 /**
@@ -159,6 +170,10 @@ const menu = computed<MenuEntry[]>(() => [
     />
 
     <span class="project"><ProjectPicker v-model="projectId" compact /></span>
+
+    <span class="tags" :data-empty="tagIds.length ? undefined : ''">
+      <TagPicker v-model="tagIds" />
+    </span>
 
     <span class="when">
       <input
@@ -219,8 +234,8 @@ const menu = computed<MenuEntry[]>(() => [
   /* Fixed side columns, so projects and times line up from row to row. The
      date has a column of its own: sharing one with the times, a long time
      range pushed it over the project. */
-  grid-template-columns: minmax(0, 1fr) 200px 116px 160px 64px 36px 36px;
-  grid-template-areas: 'description project date times duration continue menu';
+  grid-template-columns: minmax(0, 1fr) 200px 44px 116px 160px 64px 36px 36px;
+  grid-template-areas: 'description project tags date times duration continue menu';
   align-items: center;
   column-gap: 8px;
   padding: 6px 8px 6px 8px;
@@ -239,6 +254,24 @@ const menu = computed<MenuEntry[]>(() => [
   grid-area: project;
   display: flex;
   min-width: 0;
+}
+
+/* No tags: the icon waits for hover or focus, like the row's other actions. */
+.tags {
+  grid-area: tags;
+  display: flex;
+  justify-content: center;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.tags[data-empty] {
+  opacity: 0;
+}
+
+.entry:hover .tags,
+.entry:focus-within .tags,
+.tags:has([data-state='open']) {
+  opacity: 1;
 }
 
 /* Only a wrapper for the phone layout; on wide screens its parts sit in the grid. */
@@ -366,6 +399,7 @@ const menu = computed<MenuEntry[]>(() => [
 
 @media (hover: none) {
   .date,
+  .tags[data-empty],
   .continue,
   .menu {
     opacity: 1;
@@ -410,6 +444,11 @@ const menu = computed<MenuEntry[]>(() => [
   .project {
     order: 4;
     flex: 1 1 0;
+  }
+
+  .tags {
+    order: 4;
+    flex: 0 0 auto;
   }
 
   .when {

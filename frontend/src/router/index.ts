@@ -29,6 +29,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.projects' },
   },
   {
+    path: '/clients',
+    name: 'clients',
+    component: () => import('@/views/ClientsView.vue'),
+    meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.clients' },
+  },
+  {
+    path: '/tags',
+    name: 'tags',
+    component: () => import('@/views/TagsView.vue'),
+    meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.tags' },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/SettingsView.vue'),

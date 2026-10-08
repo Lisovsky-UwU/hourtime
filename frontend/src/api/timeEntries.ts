@@ -11,6 +11,7 @@ export interface ListQuery {
 
 export interface StartPayload {
   project_id?: string | null
+  tag_ids?: string[]
   description?: string
   /** Omit to start from the server's now. */
   started_at?: string
@@ -22,6 +23,8 @@ export interface StartPayload {
  */
 export interface EntryPatch {
   project_id?: string | null
+  /** The whole new set; `[]` removes every tag. */
+  tag_ids?: string[]
   description?: string
   started_at?: string
   stopped_at?: string
@@ -55,6 +58,7 @@ export function create(payload: {
   started_at: string
   stopped_at: string
   project_id?: string | null
+  tag_ids?: string[]
   description?: string
 }): Promise<TimeEntry> {
   return request<TimeEntry>('/time-entries', { method: 'POST', body: payload })

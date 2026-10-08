@@ -10,9 +10,11 @@ import UiButton from '@/components/ui/UiButton.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
 import { useDuration } from '@/composables/useDuration'
+import { useClientsStore } from '@/stores/clients'
 import { useEntriesStore } from '@/stores/entries'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
+import { useTagsStore } from '@/stores/tags'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
 import { localDayKey, startOfLocalDay, startOfLocalWeek } from '@/utils/datetime'
@@ -27,6 +29,8 @@ const showDuration = useDuration()
 const entries = useEntriesStore()
 const preferences = usePreferencesStore()
 const projects = useProjectsStore()
+const clients = useClientsStore()
+const tags = useTagsStore()
 const initialLoad = ref(true)
 /** Only a failed load of the list shows inline; failed actions go to a toast. */
 const loadError = ref<string | null>(null)
@@ -63,7 +67,7 @@ interface DayGroup {
 }
 
 /**
- * Same description and project within a day make one row, placed where the
+ * Same description, project and tags within a day make one row, placed where the
  * newest of them is. The running entry is never folded away: it is the one
  * row that has to stay in sight.
  */
@@ -75,7 +79,8 @@ function foldAlike(items: TimeEntry[]): DayRow[] {
       rows.push({ key: entry.id, entries: [entry] })
       continue
     }
-    const key = `alike:${entry.description}\u0000${entry.project_id ?? ''}`
+    const tagKey = [...entry.tag_ids].sort().join(',')
+    const key = `alike:${entry.description}\u0000${entry.project_id ?? ''}\u0000${tagKey}`
     const row = byKey.get(key)
     if (row) {
       row.entries.push(entry)
@@ -152,6 +157,11 @@ function usableProject(projectId: string | null): string | null {
   return projects.find(projectId)?.archived ? null : projectId
 }
 
+/** A tag deleted since the entry was loaded would be rejected. */
+function usableTags(tagIds: string[]): string[] {
+  return tagIds.filter((id) => tags.byId.has(id))
+}
+
 /**
  * Starts a new timer with the entry's description and project.
  *
@@ -164,6 +174,7 @@ async function continueEntry(entry: TimeEntry) {
     const started = await timer.start({
       description: entry.description,
       project_id: usableProject(entry.project_id),
+      tag_ids: usableTags(entry.tag_ids),
     })
     if (previous) {
       entries.upsert({
@@ -186,6 +197,7 @@ async function duplicateEntry(entry: TimeEntry) {
       stopped_at: stoppedAt,
       description: entry.description,
       project_id: usableProject(entry.project_id),
+      tag_ids: usableTags(entry.tag_ids),
     }),
   )
 }
@@ -232,7 +244,7 @@ function resync() {
 async function loadAll() {
   loadError.value = null
   try {
-    await projects.load()
+    await Promise.all([projects.load(), clients.load(), tags.load()])
     await Promise.all([timer.sync(), entries.load()])
   } catch (cause) {
     loadError.value = messageFor(cause)

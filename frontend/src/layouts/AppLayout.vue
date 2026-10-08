@@ -20,9 +20,11 @@ import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiTooltip from '@/components/ui/UiTooltip.vue'
 import { useHotkeys } from '@/composables/useHotkeys'
 import { useAuthStore } from '@/stores/auth'
-import { useEntriesStore } from '@/stores/entries'
+import { useClientsStore } from '@/stores/clients'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
+import { resetAccountData } from '@/stores/reset'
+import { useTagsStore } from '@/stores/tags'
 import { useTimerStore } from '@/stores/timer'
 
 /**
@@ -36,7 +38,8 @@ const auth = useAuthStore()
 const accountName = computed(() => auth.user?.display_name ?? auth.user?.email)
 const timer = useTimerStore()
 const projects = useProjectsStore()
-const entries = useEntriesStore()
+const clients = useClientsStore()
+const tags = useTagsStore()
 const preferences = usePreferencesStore()
 const router = useRouter()
 const route = useRoute()
@@ -50,6 +53,8 @@ interface NavItem {
 const main: NavItem[] = [
   { name: 'timer', icon: 'timer', label: 'nav.timer' },
   { name: 'projects', icon: 'projects', label: 'nav.projects' },
+  { name: 'clients', icon: 'clients', label: 'nav.clients' },
+  { name: 'tags', icon: 'tags', label: 'nav.tags' },
 ]
 const secondary: NavItem[] = [{ name: 'settings', icon: 'settings', label: 'nav.settings' }]
 
@@ -66,6 +71,8 @@ watch(
 // screen, not only after the timer page has been opened.
 void timer.sync().catch(() => {})
 void projects.load().catch(() => {})
+void clients.load().catch(() => {})
+void tags.load().catch(() => {})
 
 /**
  * Keeps the indicator honest on screens other than the timer, which runs its
@@ -96,9 +103,7 @@ onUnmounted(() => {
 
 async function signOut() {
   await auth.signOut()
-  timer.reset()
-  projects.reset()
-  entries.reset()
+  resetAccountData()
   await router.push({ name: 'login' })
 }
 </script>

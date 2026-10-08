@@ -12,7 +12,9 @@
     "openMenu": "Open menu",
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "clients": "Clients",
+    "tags": "Tags"
   },
   "common": {
     "saveChanges": "Save changes",
@@ -22,7 +24,8 @@
     "close": "Close",
     "loading": "Loading…",
     "saving": "Saving…",
-    "retry": "Retry"
+    "retry": "Retry",
+    "rename": "Rename"
   },
   "ui": {
     "search": "Search",
@@ -116,10 +119,12 @@
       "createTitle": "New project",
       "editTitle": "Edit project",
       "name": "Name",
-      "namePlaceholder": "Client, product or activity",
+      "namePlaceholder": "Product, feature or activity",
       "color": "Color",
       "customColor": "Custom color",
-      "preset": "Preset colors"
+      "preset": "Preset colors",
+      "client": "Client",
+      "noClient": "No client"
     },
     "deleteTitle": "Delete \"{name}\"?",
     "deleteConfirm": "Its time entries are kept, but lose the project.",
@@ -139,6 +144,53 @@
       "brown": "Brown",
       "slate": "Slate"
     }
+  },
+  "clients": {
+    "title": "Clients",
+    "create": "Create client",
+    "createTitle": "New client",
+    "renameTitle": "Rename client",
+    "name": "Name",
+    "namePlaceholder": "Company or person you work for",
+    "projects": "Projects",
+    "emptyTitle": "No clients yet",
+    "empty": "A client groups projects done for one company or person. Pick it in a project's settings.",
+    "emptyArchived": "No archived clients.",
+    "filter": {
+      "label": "Show clients",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "actionsFor": "Actions for {name}",
+    "archive": "Archive",
+    "unarchive": "Restore",
+    "archived": "Client archived",
+    "restored": "Client restored",
+    "createFailed": "Could not create the client",
+    "deleteTitle": "Delete \"{name}\"?",
+    "deleteConfirm": "Its projects are kept, but lose the client.",
+    "deleteAction": "Delete client",
+    "loadFailed": "Could not load the clients."
+  },
+  "tags": {
+    "title": "Tags",
+    "label": "Tags",
+    "add": "Add tags",
+    "search": "Find or create a tag",
+    "pickerEmpty": "Type a name to create the first tag",
+    "create": "Create tag",
+    "createTitle": "New tag",
+    "renameTitle": "Rename tag",
+    "name": "Name",
+    "namePlaceholder": "For example, meeting or bugfix",
+    "emptyTitle": "No tags yet",
+    "empty": "Tags mark entries across projects, like meetings or overtime. You can also add one right from an entry.",
+    "actionsFor": "Actions for {name}",
+    "createFailed": "Could not create the tag",
+    "deleteTitle": "Delete \"{name}\"?",
+    "deleteConfirm": "The tag is removed from every entry that has it.",
+    "deleteAction": "Delete tag",
+    "loadFailed": "Could not load the tags."
   },
   "settings": {
     "title": "Settings",
@@ -209,6 +261,8 @@
     "session_expired": "Your session has expired. Please sign in again.",
     "network_error": "Cannot reach the server. Check your connection.",
     "unknown": "Something went wrong. Try again.",
-    "invalid_current_password": "The current password is wrong."
+    "invalid_current_password": "The current password is wrong.",
+    "client_name_taken": "A client with this name already exists.",
+    "tag_name_taken": "A tag with this name already exists."
   }
 }

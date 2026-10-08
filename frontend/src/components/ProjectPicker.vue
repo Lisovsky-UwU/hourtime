@@ -6,6 +6,7 @@ import type { ComboboxItem } from '@/components/ui/UiCombobox.vue'
 import UiCombobox from '@/components/ui/UiCombobox.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
+import { useClientsStore } from '@/stores/clients'
 import { useProjectsStore } from '@/stores/projects'
 import { nextProjectColor } from '@/utils/projectColors'
 
@@ -21,18 +22,29 @@ withDefaults(defineProps<{ compact?: boolean; disabled?: boolean }>(), {
 
 const { t } = useI18n()
 const projects = useProjectsStore()
+const clients = useClientsStore()
 
 /**
  * Archived projects stay selectable only while an entry already points at one,
  * so editing an old entry does not silently drop its project.
+ *
+ * Grouped under their client, like Toggl; projects without one come first.
  */
 const items = computed<ComboboxItem[]>(() => {
   const visible = projects.active
   const current = projects.find(model.value)
   const list = current && current.archived ? [current, ...visible] : visible
-  return [...list]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((project) => ({ value: project.id, label: project.name, color: project.color }))
+  return list
+    .map((project) => ({
+      value: project.id,
+      label: project.name,
+      color: project.color,
+      group: clients.find(project.client_id)?.name,
+    }))
+    .sort(
+      (a, b) =>
+        (a.group ?? '').localeCompare(b.group ?? '') || a.label.localeCompare(b.label),
+    )
 })
 
 async function create(name: string) {

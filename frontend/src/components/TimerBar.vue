@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import AppIcon from '@/components/AppIcon.vue'
 import DescriptionInput from '@/components/DescriptionInput.vue'
 import ProjectPicker from '@/components/ProjectPicker.vue'
+import TagPicker from '@/components/TagPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import { toast } from '@/components/ui/toast'
 import { useAsyncAction } from '@/composables/useApiError'
@@ -35,6 +36,7 @@ watch(error, (message) => {
 
 const description = ref('')
 const projectId = ref<string | null>(null)
+const tagIds = ref<string[]>([])
 const startTime = ref<TimeOfDay>(toTimeOfDay(serverNowIso()))
 /** True once the user has typed a start time, which stops it tracking the clock. */
 const startPinned = ref(false)
@@ -53,6 +55,8 @@ watch(
   (entry) => {
     description.value = entry?.description ?? ''
     projectId.value = entry?.project_id ?? null
+    // Tags picked while idle wait for the next start; a stopped timer clears them.
+    tagIds.value = entry?.tag_ids ?? []
     startTime.value = toTimeOfDay(entry?.started_at ?? serverNowIso())
     startPinned.value = false
   },
@@ -82,6 +86,7 @@ async function toggle() {
     const started = await timer.start({
       description: description.value,
       project_id: projectId.value,
+      tag_ids: tagIds.value,
       ...(startedAt ? { started_at: startedAt } : {}),
     })
     entries.upsert(started)
@@ -104,6 +109,15 @@ watch(projectId, (value) => {
   if (!timer.entry || timer.entry.project_id === value) return
   void amend({ project_id: value })
 })
+
+watch(tagIds, (value) => {
+  if (!timer.entry || sameSet(timer.entry.tag_ids, value)) return
+  void amend({ tag_ids: value })
+})
+
+function sameSet(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id))
+}
 
 function pickSuggestion(suggestion: TimeEntrySuggestion) {
   // Archived since the list was fetched: assigning it would be rejected.
@@ -154,6 +168,8 @@ function commitStart() {
 
     <div class="controls">
       <span class="project"><ProjectPicker v-model="projectId" /></span>
+
+      <span class="tags"><TagPicker v-model="tagIds" /></span>
 
       <span class="start">
         <span class="start-label">{{ t('timer.startTime') }}</span>
@@ -217,6 +233,11 @@ function commitStart() {
   flex: 0 1 auto;
   min-width: 0;
   max-width: 220px;
+}
+
+.tags {
+  display: flex;
+  flex: 0 0 auto;
 }
 
 .start {
@@ -301,7 +322,7 @@ function commitStart() {
     flex: 1 1 100%;
   }
 
-  .project {
+  .tags {
     margin-right: auto;
   }
 

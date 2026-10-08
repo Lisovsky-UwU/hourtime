@@ -30,8 +30,12 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  async function create(name: string, color: string): Promise<Project> {
-    const project = await projectsApi.create(name, color)
+  async function create(
+    name: string,
+    color: string,
+    clientId: string | null = null,
+  ): Promise<Project> {
+    const project = await projectsApi.create(name, color, clientId)
     items.value = [...items.value, project]
     return project
   }

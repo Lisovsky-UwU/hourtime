@@ -15,11 +15,9 @@ import { messageFor, useAsyncAction } from '@/composables/useApiError'
 import { currentLocale, LOCALE_NAMES, setLocale, SUPPORTED_LOCALES } from '@/i18n'
 import type { Locale } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
-import { useEntriesStore } from '@/stores/entries'
 import type { Theme } from '@/stores/preferences'
 import { usePreferencesStore } from '@/stores/preferences'
-import { useProjectsStore } from '@/stores/projects'
-import { useTimerStore } from '@/stores/timer'
+import { resetAccountData } from '@/stores/reset'
 import type { DurationFormat, ProfilePatch } from '@/types'
 import { formatDuration } from '@/utils/duration'
 import type { HourCycle } from '@/utils/timeOfDay'
@@ -28,9 +26,6 @@ import { deviceTimezone, timezoneLabel, timezoneOptions } from '@/utils/timezone
 const { t, locale: i18nLocale } = useI18n()
 const auth = useAuthStore()
 const preferences = usePreferencesStore()
-const timer = useTimerStore()
-const projects = useProjectsStore()
-const entries = useEntriesStore()
 const router = useRouter()
 const { busy, error, run } = useAsyncAction()
 const nameErrorId = useId()
@@ -158,9 +153,7 @@ async function signOutEverywhere() {
   })
   confirmSignOut.value = false
   if (!done) return
-  timer.reset()
-  projects.reset()
-  entries.reset()
+  resetAccountData()
   await router.replace({ name: 'login' })
 }
 </script>

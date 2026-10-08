@@ -2,17 +2,19 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AppIcon from '@/components/AppIcon.vue'
 import EntryRow from '@/components/EntryRow.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import { useDuration } from '@/composables/useDuration'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
+import { useTagsStore } from '@/stores/tags'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
 import { formatTimeOfDay, toTimeOfDay } from '@/utils/timeOfDay'
 
 /**
- * Entries of one day with the same description and project, folded into one
+ * Entries of one day with the same description, project and tags, folded into one
  * line the way Toggl does it: the count opens the entries, each still
  * editable on its own. The header itself is read-only - which of the entries
  * a change to it should land on is not obvious.
@@ -27,6 +29,7 @@ const { t } = useI18n()
 const timer = useTimerStore()
 const showDuration = useDuration()
 const projects = useProjectsStore()
+const tags = useTagsStore()
 const preferences = usePreferencesStore()
 
 const expanded = ref(false)
@@ -34,6 +37,7 @@ const expanded = ref(false)
 const newest = computed(() => props.entries[0]!)
 const oldest = computed(() => props.entries.at(-1)!)
 const project = computed(() => projects.find(newest.value.project_id))
+const tagNames = computed(() => tags.namesOf(newest.value.tag_ids))
 const total = computed(() =>
   showDuration(props.entries.reduce((sum, entry) => sum + timer.secondsOf(entry), 0)),
 )
@@ -76,6 +80,16 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
       <span v-if="project" class="project" :title="project.name">
         <span class="ui-combobox-dot" :style="{ background: project.color }" />
         <span class="project-name">{{ project.name }}</span>
+      </span>
+
+      <span
+        v-if="tagNames.length"
+        class="tags"
+        :title="tagNames.join(', ')"
+        :aria-label="`${t('tags.label')}: ${tagNames.join(', ')}`"
+      >
+        <AppIcon name="tag" :size="16" />
+        <span class="num">{{ tagNames.length }}</span>
       </span>
 
       <span class="times num">
@@ -121,8 +135,8 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
 /* The same columns as EntryRow, so the header lines up with the rows. */
 .head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 200px 116px 160px 64px 36px 36px;
-  grid-template-areas: 'description project date times duration continue menu';
+  grid-template-columns: minmax(0, 1fr) 200px 44px 116px 160px 64px 36px 36px;
+  grid-template-areas: 'description project tags date times duration continue menu';
   align-items: center;
   column-gap: 8px;
   /* As tall as a row, whose menu button sets its height. */
@@ -207,6 +221,17 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
 
 .ui-combobox-dot {
   flex: 0 0 auto;
+}
+
+/* Read-only copy of the rows' tag button, at the same spot. */
+.tags {
+  grid-area: tags;
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 500;
 }
 
 /* Laid out like the time fields of a row: same widths, same dash between. */
@@ -294,6 +319,11 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
   .project {
     order: 4;
     flex: 1 1 0;
+  }
+
+  .tags {
+    order: 4;
+    padding: 0 6px;
   }
 
   .times {

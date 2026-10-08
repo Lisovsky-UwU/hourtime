@@ -10,6 +10,7 @@ import UiDropdownMenu from '@/components/ui/UiDropdownMenu.vue'
 import UiSegmented from '@/components/ui/UiSegmented.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
+import { useClientsStore } from '@/stores/clients'
 import { useEntriesStore } from '@/stores/entries'
 import { useProjectsStore } from '@/stores/projects'
 import type { Project } from '@/types'
@@ -18,6 +19,7 @@ type Filter = 'active' | 'archived'
 
 const { t } = useI18n()
 const projects = useProjectsStore()
+const clients = useClientsStore()
 const entries = useEntriesStore()
 /** Only a failed load shows inline; failed actions go to a toast. */
 const loadError = ref<string | null>(null)
@@ -73,7 +75,7 @@ async function confirmDelete() {
 async function load() {
   loadError.value = null
   try {
-    await projects.load()
+    await Promise.all([projects.load(), clients.load()])
   } catch (cause) {
     loadError.value = messageFor(cause)
   }
@@ -101,7 +103,7 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="page">
+  <div class="page list-page">
     <header class="page-head">
       <h1>{{ t('projects.title') }}</h1>
       <UiSegmented v-model="filter" :options="filters" :label="t('projects.filter.label')" />
@@ -135,10 +137,11 @@ onMounted(load)
       <p v-else class="muted">{{ t('projects.emptyArchived') }}</p>
     </div>
 
-    <table v-else class="sheet table">
+    <table v-else class="sheet data-table">
       <thead>
         <tr>
           <th scope="col">{{ t('projects.form.name') }}</th>
+          <th scope="col">{{ t('projects.form.client') }}</th>
           <th scope="col" class="actions-col">
             <span class="visually-hidden">{{ t('ui.more') }}</span>
           </th>
@@ -147,11 +150,12 @@ onMounted(load)
       <tbody>
         <tr v-for="project in visible" :key="project.id">
           <td>
-            <button type="button" class="name" @click="openDialog(project)">
-              <span class="dot" :style="{ background: project.color }" />
-              <span class="name-text">{{ project.name }}</span>
+            <button type="button" class="row-name" @click="openDialog(project)">
+              <span class="row-dot" :style="{ background: project.color }" />
+              <span class="row-name-text">{{ project.name }}</span>
             </button>
           </td>
+          <td class="client">{{ clients.find(project.client_id)?.name }}</td>
           <td class="actions-col">
             <UiDropdownMenu
               :items="menuFor(project)"
@@ -177,114 +181,8 @@ onMounted(load)
 </template>
 
 <style scoped>
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 28px;
-}
-
-.page-head {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.page-head h1 {
-  margin-right: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.table th {
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
+.client {
   color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: 500;
-  text-align: left;
-}
-
-.table td {
-  padding: 4px 16px;
-  border-top: 1px solid var(--border);
-}
-
-.table tbody tr:first-child td {
-  border-top: none;
-}
-
-.table tbody tr:hover {
-  background: var(--surface-muted);
-}
-
-.actions-col {
-  width: 56px;
-  text-align: right;
-}
-
-.name {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 100%;
-  min-height: 40px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-}
-
-.name:hover .name-text {
-  text-decoration: underline;
-}
-
-.name-text {
-  min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.dot {
-  flex: 0 0 auto;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.skeleton-row {
-  padding: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.skeleton-row:first-child {
-  border-top: none;
-}
-
-@media (width < 600px) {
-  .page {
-    padding-top: 16px;
-  }
-
-  .page-head h1 {
-    flex-basis: 100%;
-  }
-
-  .page-head :deep(.ui-segmented) {
-    margin-right: auto;
-  }
-
-  .table th,
-  .table td {
-    padding-inline: 12px;
-  }
 }
 </style>

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Component } from 'vue'
 import {
   Archive,
+  BriefcaseBusiness,
   CalendarDays,
   ArchiveRestore,
   Check,
@@ -26,6 +27,8 @@ import {
   Search,
   Settings,
   Square,
+  Tag,
+  Tags,
   Sun,
   Timer,
   Trash2,
@@ -47,6 +50,9 @@ const ICONS = {
   copy: Copy,
   more: Ellipsis,
   projects: FolderKanban,
+  clients: BriefcaseBusiness,
+  tag: Tag,
+  tags: Tags,
   info: Info,
   keyboard: Keyboard,
   key: KeyRound,

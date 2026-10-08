@@ -4,6 +4,8 @@ import type { Project } from '@/types'
 export interface ProjectPatch {
   name?: string
   color?: string
+  /** `null` detaches the client. */
+  client_id?: string | null
   archived?: boolean
 }
 
@@ -11,8 +13,15 @@ export function list(includeArchived = false): Promise<Project[]> {
   return request<Project[]>('/projects', { query: { include_archived: includeArchived } })
 }
 
-export function create(name: string, color: string): Promise<Project> {
-  return request<Project>('/projects', { method: 'POST', body: { name, color } })
+export function create(
+  name: string,
+  color: string,
+  clientId: string | null = null,
+): Promise<Project> {
+  return request<Project>('/projects', {
+    method: 'POST',
+    body: { name, color, client_id: clientId },
+  })
 }
 
 /** Only the keys present in `patch` are changed. */
