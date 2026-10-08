@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { EntryPatch } from '@/api/timeEntries'
 import AutoTextarea from '@/components/AutoTextarea.vue'
+import BillableToggle from '@/components/BillableToggle.vue'
 import ProjectPicker from '@/components/ProjectPicker.vue'
 import TagPicker from '@/components/TagPicker.vue'
 import TimeField from '@/components/TimeField.vue'
@@ -38,6 +39,7 @@ const showDuration = useDuration()
 const description = ref('')
 const projectId = ref<string | null>(null)
 const tagIds = ref<string[]>([])
+const billable = ref(false)
 const startDate = ref('')
 const startTime = ref<TimeOfDay>({ hours: 0, minutes: 0, seconds: 0, dayOffset: 0 })
 const endTime = ref<TimeOfDay | null>(null)
@@ -50,6 +52,7 @@ function adopt(entry: TimeEntry) {
   description.value = entry.description
   projectId.value = entry.project_id
   tagIds.value = [...entry.tag_ids]
+  billable.value = entry.billable
   startDate.value = toDateInput(entry.started_at)
   startTime.value = toTimeOfDay(entry.started_at)
   endTime.value = entry.stopped_at ? toTimeOfDay(entry.stopped_at, entry.started_at) : null
@@ -120,6 +123,11 @@ watch(tagIds, (value) => {
   void commit({ tag_ids: value })
 })
 
+watch(billable, (value) => {
+  if (value === props.entry.billable) return
+  void commit({ billable: value })
+})
+
 const dateInput = ref<HTMLInputElement | null>(null)
 
 /**
@@ -173,6 +181,10 @@ const menu = computed<MenuEntry[]>(() => [
 
     <span class="tags" :data-empty="tagIds.length ? undefined : ''">
       <TagPicker v-model="tagIds" />
+    </span>
+
+    <span class="billable" :data-off="billable ? undefined : ''">
+      <BillableToggle v-model="billable" />
     </span>
 
     <span class="when">
@@ -234,8 +246,8 @@ const menu = computed<MenuEntry[]>(() => [
   /* Fixed side columns, so projects and times line up from row to row. The
      date has a column of its own: sharing one with the times, a long time
      range pushed it over the project. */
-  grid-template-columns: minmax(0, 1fr) 200px 44px 116px 160px 64px 36px 36px;
-  grid-template-areas: 'description project tags date times duration continue menu';
+  grid-template-columns: minmax(0, 1fr) 200px 44px 36px 116px 160px 64px 36px 36px;
+  grid-template-areas: 'description project tags billable date times duration continue menu';
   align-items: center;
   column-gap: 8px;
   padding: 6px 8px 6px 8px;
@@ -256,20 +268,30 @@ const menu = computed<MenuEntry[]>(() => [
   min-width: 0;
 }
 
-/* No tags: the icon waits for hover or focus, like the row's other actions. */
-.tags {
-  grid-area: tags;
+/* No tags, not billable: the marks wait for hover or focus, like the row's
+   other actions. */
+.tags,
+.billable {
   display: flex;
   justify-content: center;
   transition: opacity var(--dur) var(--ease);
 }
 
-.tags[data-empty] {
+.tags {
+  grid-area: tags;
+}
+
+.billable {
+  grid-area: billable;
+}
+
+.tags[data-empty],
+.billable[data-off] {
   opacity: 0;
 }
 
-.entry:hover .tags,
-.entry:focus-within .tags,
+.entry:hover :is(.tags, .billable),
+.entry:focus-within :is(.tags, .billable),
 .tags:has([data-state='open']) {
   opacity: 1;
 }
@@ -400,6 +422,7 @@ const menu = computed<MenuEntry[]>(() => [
 @media (hover: none) {
   .date,
   .tags[data-empty],
+  .billable[data-off],
   .continue,
   .menu {
     opacity: 1;
@@ -446,7 +469,8 @@ const menu = computed<MenuEntry[]>(() => [
     flex: 1 1 0;
   }
 
-  .tags {
+  .tags,
+  .billable {
     order: 4;
     flex: 0 0 auto;
   }

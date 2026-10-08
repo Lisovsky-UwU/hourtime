@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, onMounted, ref, useId, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -12,14 +12,17 @@ import UiInput from '@/components/ui/UiInput.vue'
 import UiSegmented from '@/components/ui/UiSegmented.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor, useAsyncAction } from '@/composables/useApiError'
+import { useBilling } from '@/composables/useBilling'
 import { currentLocale, LOCALE_NAMES, setLocale, SUPPORTED_LOCALES } from '@/i18n'
 import type { Locale } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import type { Theme } from '@/stores/preferences'
 import { usePreferencesStore } from '@/stores/preferences'
 import { resetAccountData } from '@/stores/reset'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { DurationFormat, ProfilePatch } from '@/types'
 import { formatDuration } from '@/utils/duration'
+import { currencyOptions, parseRate, rateForInput } from '@/utils/money'
 import type { HourCycle } from '@/utils/timeOfDay'
 import { deviceTimezone, timezoneLabel, timezoneOptions } from '@/utils/timezones'
 
@@ -29,6 +32,9 @@ const preferences = usePreferencesStore()
 const router = useRouter()
 const { busy, error, run } = useAsyncAction()
 const nameErrorId = useId()
+const rateErrorId = useId()
+const workspace = useWorkspaceStore()
+const billing = useBilling()
 
 const THEME_ICONS: Record<Theme, IconName> = {
   auto: 'theme-auto',
@@ -144,6 +150,56 @@ const timezone = computed({
 
 const showDeviceZone = computed(() => !!auth.user?.timezone && auth.user.timezone !== device)
 
+// --- billing: the workspace's default rate and currency ----------------------
+
+const defaultRate = ref('')
+const rateError = ref<string | null>(null)
+
+watch(
+  [() => workspace.item?.default_hourly_rate ?? null, i18nLocale],
+  ([value, lang]) => {
+    defaultRate.value = rateForInput(value, lang)
+  },
+  { immediate: true },
+)
+
+/** Saved on blur or Enter, like the name. */
+async function saveRate() {
+  const value = parseRate(defaultRate.value)
+  if (value === undefined) {
+    rateError.value = t('billing.rateInvalid')
+    return
+  }
+  rateError.value = null
+  const current = workspace.item?.default_hourly_rate ?? null
+  if (value === null ? current === null : current !== null && Number(value) === Number(current)) {
+    return
+  }
+  try {
+    await workspace.update({ default_hourly_rate: value })
+  } catch (cause) {
+    rateError.value = messageFor(cause)
+  }
+}
+
+const currencies = computed(() => currencyOptions(i18nLocale.value, workspace.item?.currency ?? null))
+
+const currency = computed({
+  get: () => workspace.item?.currency ?? null,
+  set: (value: string | null) => {
+    if (!value || value === workspace.item?.currency) return
+    workspace.update({ currency: value }).catch((cause: unknown) => {
+      toast.error(t('settings.saveFailed'), messageFor(cause))
+    })
+  },
+})
+
+onMounted(() => {
+  workspace.load().catch((cause: unknown) => {
+    toast.error(t('billing.loadFailed'), messageFor(cause))
+  })
+})
+
 // --- sessions ----------------------------------------------------------------
 
 async function signOutEverywhere() {
@@ -243,6 +299,52 @@ async function signOutEverywhere() {
           <p class="muted">{{ t('settings.timeFormatHint') }}</p>
         </div>
         <UiSegmented v-model="hourCycle" :options="hourCycles" :label="t('settings.timeFormat')" />
+      </div>
+    </section>
+
+    <section class="section">
+      <header class="section-head">
+        <h2>{{ t('billing.title') }}</h2>
+        <p class="muted scope">{{ t('settings.synced') }}</p>
+      </header>
+
+      <div class="setting">
+        <div class="setting-text">
+          <h3>{{ t('billing.defaultRate') }}</h3>
+          <p class="muted">{{ t('billing.defaultRateHint') }}</p>
+          <p v-if="rateError" :id="rateErrorId" class="error" role="alert">{{ rateError }}</p>
+        </div>
+        <span class="control-wide rate">
+          <UiInput
+            v-model="defaultRate"
+            class="num"
+            inputmode="decimal"
+            autocomplete="off"
+            :aria-label="t('billing.defaultRate')"
+            :placeholder="t('billing.ratePlaceholder')"
+            :disabled="!workspace.loaded"
+            :invalid="!!rateError"
+            :aria-describedby="rateError ? rateErrorId : undefined"
+            @change="saveRate"
+            @keydown.enter="saveRate"
+          />
+          <span class="rate-unit">{{ t('billing.perHour', { currency: billing.symbol.value }) }}</span>
+        </span>
+      </div>
+
+      <div class="setting">
+        <div class="setting-text">
+          <h3>{{ t('billing.currency') }}</h3>
+          <p class="muted">{{ t('billing.currencyHint') }}</p>
+        </div>
+        <div class="control-wide picker">
+          <UiCombobox
+            v-model="currency"
+            :items="currencies"
+            :label="t('billing.currency')"
+            :placeholder="t('common.loading')"
+          />
+        </div>
       </div>
     </section>
 
@@ -393,6 +495,21 @@ async function signOutEverywhere() {
   justify-content: space-between;
   border-color: var(--control-border);
   background: var(--surface);
+}
+
+.rate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rate :deep(.ui-input) {
+  text-align: right;
+}
+
+.rate-unit {
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .device-zone {

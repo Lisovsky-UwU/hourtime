@@ -33,6 +33,17 @@ export interface LoginResponse {
   tokens: Tokens
 }
 
+export interface Workspace {
+  id: string
+  name: string
+  /** Decimal string such as "150.00", for billable entries of projects without a rate. */
+  default_hourly_rate: string | null
+  /** ISO 4217 code: one currency for every rate and amount. */
+  currency: string
+}
+
+export type WorkspacePatch = Partial<Pick<Workspace, 'default_hourly_rate' | 'currency'>>
+
 export interface Client {
   id: string
   name: string
@@ -53,6 +64,10 @@ export interface Project {
   name: string
   color: string
   client_id: string | null
+  /** What new entries on this project start as. */
+  billable: boolean
+  /** Decimal string such as "150.00"; null - the workspace rate applies. */
+  hourly_rate: string | null
   archived: boolean
   created_at: string
   updated_at: string
@@ -63,6 +78,7 @@ export interface TimeEntry {
   project_id: string | null
   tag_ids: string[]
   description: string
+  billable: boolean
   started_at: string
   /** Null while the timer is still running. */
   stopped_at: string | null

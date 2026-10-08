@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import * as projectsApi from '@/api/projects'
-import type { ProjectPatch } from '@/api/projects'
+import type { ProjectExtras, ProjectPatch } from '@/api/projects'
 import type { Project } from '@/types'
 
 export const useProjectsStore = defineStore('projects', () => {
@@ -30,12 +30,8 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  async function create(
-    name: string,
-    color: string,
-    clientId: string | null = null,
-  ): Promise<Project> {
-    const project = await projectsApi.create(name, color, clientId)
+  async function create(name: string, color: string, extras: ProjectExtras = {}): Promise<Project> {
+    const project = await projectsApi.create(name, color, extras)
     items.value = [...items.value, project]
     return project
   }

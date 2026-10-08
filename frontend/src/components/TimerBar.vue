@@ -3,6 +3,7 @@ import { onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppIcon from '@/components/AppIcon.vue'
+import BillableToggle from '@/components/BillableToggle.vue'
 import DescriptionInput from '@/components/DescriptionInput.vue'
 import ProjectPicker from '@/components/ProjectPicker.vue'
 import TagPicker from '@/components/TagPicker.vue'
@@ -37,6 +38,7 @@ watch(error, (message) => {
 const description = ref('')
 const projectId = ref<string | null>(null)
 const tagIds = ref<string[]>([])
+const billable = ref(false)
 const startTime = ref<TimeOfDay>(toTimeOfDay(serverNowIso()))
 /** True once the user has typed a start time, which stops it tracking the clock. */
 const startPinned = ref(false)
@@ -57,6 +59,7 @@ watch(
     projectId.value = entry?.project_id ?? null
     // Tags picked while idle wait for the next start; a stopped timer clears them.
     tagIds.value = entry?.tag_ids ?? []
+    billable.value = entry?.billable ?? false
     startTime.value = toTimeOfDay(entry?.started_at ?? serverNowIso())
     startPinned.value = false
   },
@@ -87,6 +90,7 @@ async function toggle() {
       description: description.value,
       project_id: projectId.value,
       tag_ids: tagIds.value,
+      billable: billable.value,
       ...(startedAt ? { started_at: startedAt } : {}),
     })
     entries.upsert(started)
@@ -105,9 +109,20 @@ function commitDescription() {
   void amend({ description: description.value })
 }
 
+// Picking a project brings its billable default, as the server does for a
+// running entry when its project changes.
 watch(projectId, (value) => {
-  if (!timer.entry || timer.entry.project_id === value) return
+  if (!timer.entry) {
+    billable.value = projects.find(value)?.billable ?? false
+    return
+  }
+  if (timer.entry.project_id === value) return
   void amend({ project_id: value })
+})
+
+watch(billable, (value) => {
+  if (!timer.entry || timer.entry.billable === value) return
+  void amend({ billable: value })
 })
 
 watch(tagIds, (value) => {
@@ -170,6 +185,8 @@ function commitStart() {
       <span class="project"><ProjectPicker v-model="projectId" /></span>
 
       <span class="tags"><TagPicker v-model="tagIds" /></span>
+
+      <span class="billable"><BillableToggle v-model="billable" /></span>
 
       <span class="start">
         <span class="start-label">{{ t('timer.startTime') }}</span>
@@ -235,7 +252,8 @@ function commitStart() {
   max-width: 220px;
 }
 
-.tags {
+.tags,
+.billable {
   display: flex;
   flex: 0 0 auto;
 }
@@ -322,7 +340,7 @@ function commitStart() {
     flex: 1 1 100%;
   }
 
-  .tags {
+  .billable {
     margin-right: auto;
   }
 

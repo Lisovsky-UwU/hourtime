@@ -9,6 +9,8 @@ import TimerBar from '@/components/TimerBar.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
+import type { BillableTotals } from '@/composables/useBilling'
+import { useBilling } from '@/composables/useBilling'
 import { useDuration } from '@/composables/useDuration'
 import { useClientsStore } from '@/stores/clients'
 import { useEntriesStore } from '@/stores/entries'
@@ -16,6 +18,7 @@ import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
 import { useTagsStore } from '@/stores/tags'
 import { useTimerStore } from '@/stores/timer'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { TimeEntry } from '@/types'
 import { localDayKey, startOfLocalDay, startOfLocalWeek } from '@/utils/datetime'
 import { secondsBetween } from '@/utils/duration'
@@ -31,6 +34,8 @@ const preferences = usePreferencesStore()
 const projects = useProjectsStore()
 const clients = useClientsStore()
 const tags = useTagsStore()
+const workspace = useWorkspaceStore()
+const billing = useBilling()
 const initialLoad = ref(true)
 /** Only a failed load of the list shows inline; failed actions go to a toast. */
 const loadError = ref<string | null>(null)
@@ -63,11 +68,12 @@ interface DayGroup {
   key: string
   label: string
   totalSeconds: number
+  billable: BillableTotals
   rows: DayRow[]
 }
 
 /**
- * Same description, project and tags within a day make one row, placed where the
+ * Same description, project, tags and billable flag within a day make one row, placed where the
  * newest of them is. The running entry is never folded away: it is the one
  * row that has to stay in sight.
  */
@@ -80,7 +86,7 @@ function foldAlike(items: TimeEntry[]): DayRow[] {
       continue
     }
     const tagKey = [...entry.tag_ids].sort().join(',')
-    const key = `alike:${entry.description}\u0000${entry.project_id ?? ''}\u0000${tagKey}`
+    const key = `alike:${entry.description}\u0000${entry.project_id ?? ''}\u0000${tagKey}\u0000${entry.billable}`
     const row = byKey.get(key)
     if (row) {
       row.entries.push(entry)
@@ -107,6 +113,7 @@ const groups = computed<DayGroup[]>(() => {
     key,
     label: labelFor(key, items[0]),
     totalSeconds: items.reduce((sum, item) => sum + timer.secondsOf(item), 0),
+    billable: billing.totals(items),
     rows: foldAlike(items),
   }))
 })
@@ -115,12 +122,16 @@ const groups = computed<DayGroup[]>(() => {
  * Counted from the loaded entries only: a long week can reach past the first
  * page. Server-side totals arrive with reports (stage 9 of the plan).
  */
-const weekTotal = computed(() => {
+const weekEntries = computed(() => {
   const from = startOfLocalWeek(preferences.weekStart).getTime()
-  return entries.items
-    .filter((item) => Date.parse(item.started_at) >= from)
-    .reduce((sum, item) => sum + timer.secondsOf(item), 0)
+  return entries.items.filter((item) => Date.parse(item.started_at) >= from)
 })
+
+const weekTotal = computed(() =>
+  weekEntries.value.reduce((sum, item) => sum + timer.secondsOf(item), 0),
+)
+
+const weekBillable = computed(() => billing.totals(weekEntries.value))
 
 /** Newest first: if the oldest loaded entry is still inside the week, more may follow. */
 const weekPartial = computed(() => {
@@ -175,6 +186,7 @@ async function continueEntry(entry: TimeEntry) {
       description: entry.description,
       project_id: usableProject(entry.project_id),
       tag_ids: usableTags(entry.tag_ids),
+      billable: entry.billable,
     })
     if (previous) {
       entries.upsert({
@@ -198,6 +210,7 @@ async function duplicateEntry(entry: TimeEntry) {
       description: entry.description,
       project_id: usableProject(entry.project_id),
       tag_ids: usableTags(entry.tag_ids),
+      billable: entry.billable,
     }),
   )
 }
@@ -244,7 +257,7 @@ function resync() {
 async function loadAll() {
   loadError.value = null
   try {
-    await Promise.all([projects.load(), clients.load(), tags.load()])
+    await Promise.all([projects.load(), clients.load(), tags.load(), workspace.load()])
     await Promise.all([timer.sync(), entries.load()])
   } catch (cause) {
     loadError.value = messageFor(cause)
@@ -274,6 +287,16 @@ onUnmounted(() => {
     <section class="entries" :aria-label="t('entries.title')">
       <header class="week">
         <h1>{{ t('entries.thisWeek') }}</h1>
+        <span v-if="weekBillable.seconds > 0" class="week-billable muted">
+          {{
+            weekBillable.priced
+              ? t('billing.weekSummaryPriced', {
+                  time: showDuration(weekBillable.seconds),
+                  amount: billing.money(weekBillable.cents),
+                })
+              : t('billing.weekSummary', { time: showDuration(weekBillable.seconds) })
+          }}
+        </span>
         <span
           class="week-total num"
           :title="weekPartial ? t('entries.weekPartial') : undefined"
@@ -311,6 +334,13 @@ onUnmounted(() => {
       <section v-for="group in groups" :key="group.key" class="sheet" :aria-label="group.label">
         <header class="day-head">
           <h2>{{ group.label }}</h2>
+          <span
+            v-if="group.billable.priced"
+            class="day-amount num"
+            :title="t('billing.billableTime', { time: showDuration(group.billable.seconds) })"
+          >
+            {{ billing.money(group.billable.cents) }}
+          </span>
           <span class="day-total num">{{ showDuration(group.totalSeconds) }}</span>
         </header>
 
@@ -388,6 +418,12 @@ onUnmounted(() => {
   font-size: var(--text-lg);
 }
 
+/* Billable time and money: secondary to the week total, so in pencil and small. */
+.week-billable {
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
 .week-total {
   margin-left: auto;
   font-size: var(--text-lg);
@@ -404,7 +440,13 @@ onUnmounted(() => {
 }
 
 .day-head h2 {
+  flex: 1 1 auto;
   font-size: var(--text-md);
+}
+
+.day-amount {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
 }
 
 /* Russian weekdays come lowercase from Intl ("вторник, 6 октября"). */

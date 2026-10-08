@@ -13,6 +13,8 @@ export interface StartPayload {
   project_id?: string | null
   tag_ids?: string[]
   description?: string
+  /** Omit to follow the project's default. */
+  billable?: boolean
   /** Omit to start from the server's now. */
   started_at?: string
 }
@@ -26,6 +28,8 @@ export interface EntryPatch {
   /** The whole new set; `[]` removes every tag. */
   tag_ids?: string[]
   description?: string
+  /** Sent alongside a new project, wins over that project's default. */
+  billable?: boolean
   started_at?: string
   stopped_at?: string
 }
@@ -60,6 +64,7 @@ export function create(payload: {
   project_id?: string | null
   tag_ids?: string[]
   description?: string
+  billable?: boolean
 }): Promise<TimeEntry> {
   return request<TimeEntry>('/time-entries', { method: 'POST', body: payload })
 }

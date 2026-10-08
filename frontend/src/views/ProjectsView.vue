@@ -10,10 +10,13 @@ import UiDropdownMenu from '@/components/ui/UiDropdownMenu.vue'
 import UiSegmented from '@/components/ui/UiSegmented.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
+import { useBilling } from '@/composables/useBilling'
 import { useClientsStore } from '@/stores/clients'
 import { useEntriesStore } from '@/stores/entries'
 import { useProjectsStore } from '@/stores/projects'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { Project } from '@/types'
+import { toCents } from '@/utils/money'
 
 type Filter = 'active' | 'archived'
 
@@ -21,6 +24,8 @@ const { t } = useI18n()
 const projects = useProjectsStore()
 const clients = useClientsStore()
 const entries = useEntriesStore()
+const workspace = useWorkspaceStore()
+const billing = useBilling()
 /** Only a failed load shows inline; failed actions go to a toast. */
 const loadError = ref<string | null>(null)
 const busy = ref(false)
@@ -40,6 +45,20 @@ const visible = computed(() =>
     .filter((project) => project.archived === (filter.value === 'archived'))
     .sort((a, b) => a.name.localeCompare(b.name)),
 )
+
+/**
+ * What a billable project charges: its own rate in ink, the workspace rate it
+ * falls back to in pencil. Non-billable projects show nothing.
+ */
+function rateOf(project: Project): { text: string; own: boolean } | null {
+  if (!project.billable) return null
+  const own = toCents(project.hourly_rate)
+  if (own !== null) return { text: billing.money(own), own: true }
+  if (workspace.defaultRateCents !== null) {
+    return { text: billing.money(workspace.defaultRateCents), own: false }
+  }
+  return { text: t('billing.noRate'), own: false }
+}
 
 function openDialog(project: Project | null) {
   editing.value = project
@@ -75,7 +94,7 @@ async function confirmDelete() {
 async function load() {
   loadError.value = null
   try {
-    await Promise.all([projects.load(), clients.load()])
+    await Promise.all([projects.load(), clients.load(), workspace.load()])
   } catch (cause) {
     loadError.value = messageFor(cause)
   }
@@ -142,6 +161,7 @@ onMounted(load)
         <tr>
           <th scope="col">{{ t('projects.form.name') }}</th>
           <th scope="col">{{ t('projects.form.client') }}</th>
+          <th scope="col" class="num-col">{{ t('billing.rateColumn') }}</th>
           <th scope="col" class="actions-col">
             <span class="visually-hidden">{{ t('ui.more') }}</span>
           </th>
@@ -156,6 +176,9 @@ onMounted(load)
             </button>
           </td>
           <td class="client">{{ clients.find(project.client_id)?.name }}</td>
+          <td class="num-col num rate" :data-inherited="rateOf(project)?.own === false ? '' : undefined">
+            {{ rateOf(project)?.text }}
+          </td>
           <td class="actions-col">
             <UiDropdownMenu
               :items="menuFor(project)"
@@ -184,5 +207,15 @@ onMounted(load)
 .client {
   color: var(--text-muted);
   overflow-wrap: anywhere;
+}
+
+/* Own rate in ink; .num-col alone would pencil it. */
+.data-table .rate {
+  color: var(--text);
+}
+
+/* The workspace rate, not the project's own: pencil, as everything inherited. */
+.data-table .rate[data-inherited] {
+  color: var(--text-muted);
 }
 </style>

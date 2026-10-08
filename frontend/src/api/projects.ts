@@ -7,21 +7,20 @@ export interface ProjectPatch {
   /** `null` detaches the client. */
   client_id?: string | null
   archived?: boolean
+  billable?: boolean
+  /** Decimal string; `null` falls back to the workspace rate. */
+  hourly_rate?: string | null
 }
+
+/** Everything a new project may start with besides its name and color. */
+export type ProjectExtras = Pick<ProjectPatch, 'client_id' | 'billable' | 'hourly_rate'>
 
 export function list(includeArchived = false): Promise<Project[]> {
   return request<Project[]>('/projects', { query: { include_archived: includeArchived } })
 }
 
-export function create(
-  name: string,
-  color: string,
-  clientId: string | null = null,
-): Promise<Project> {
-  return request<Project>('/projects', {
-    method: 'POST',
-    body: { name, color, client_id: clientId },
-  })
+export function create(name: string, color: string, extras: ProjectExtras = {}): Promise<Project> {
+  return request<Project>('/projects', { method: 'POST', body: { name, color, ...extras } })
 }
 
 /** Only the keys present in `patch` are changed. */

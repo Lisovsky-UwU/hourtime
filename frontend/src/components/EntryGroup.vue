@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppIcon from '@/components/AppIcon.vue'
+import BillableToggle from '@/components/BillableToggle.vue'
 import EntryRow from '@/components/EntryRow.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import { useDuration } from '@/composables/useDuration'
@@ -14,8 +15,8 @@ import type { TimeEntry } from '@/types'
 import { formatTimeOfDay, toTimeOfDay } from '@/utils/timeOfDay'
 
 /**
- * Entries of one day with the same description, project and tags, folded into one
- * line the way Toggl does it: the count opens the entries, each still
+ * Entries of one day with the same description, project, tags and billable
+ * flag, folded into one line the way Toggl does it: the count opens the entries, each still
  * editable on its own. The header itself is read-only - which of the entries
  * a change to it should land on is not obvious.
  */
@@ -92,6 +93,10 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
         <span class="num">{{ tagNames.length }}</span>
       </span>
 
+      <span v-if="newest.billable" class="billable">
+        <BillableToggle :model-value="true" readonly />
+      </span>
+
       <span class="times num">
         <span class="time" :style="{ width: fieldWidth(span.from) }">{{ span.from }}</span>
         <span aria-hidden="true">-</span>
@@ -135,8 +140,8 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
 /* The same columns as EntryRow, so the header lines up with the rows. */
 .head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 200px 44px 116px 160px 64px 36px 36px;
-  grid-template-areas: 'description project tags date times duration continue menu';
+  grid-template-columns: minmax(0, 1fr) 200px 44px 36px 116px 160px 64px 36px 36px;
+  grid-template-areas: 'description project tags billable date times duration continue menu';
   align-items: center;
   column-gap: 8px;
   /* As tall as a row, whose menu button sets its height. */
@@ -234,6 +239,11 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
   font-weight: 500;
 }
 
+.billable {
+  grid-area: billable;
+  justify-self: center;
+}
+
 /* Laid out like the time fields of a row: same widths, same dash between. */
 .times {
   grid-area: times;
@@ -324,6 +334,10 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
   .tags {
     order: 4;
     padding: 0 6px;
+  }
+
+  .billable {
+    order: 4;
   }
 
   .times {

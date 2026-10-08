@@ -9,26 +9,43 @@ import UiButton from '@/components/ui/UiButton.vue'
 import UiDialog from '@/components/ui/UiDialog.vue'
 import UiField from '@/components/ui/UiField.vue'
 import UiInput from '@/components/ui/UiInput.vue'
+import UiSwitch from '@/components/ui/UiSwitch.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor, useAsyncAction } from '@/composables/useApiError'
+import { useBilling } from '@/composables/useBilling'
 import { useClientsStore } from '@/stores/clients'
 import { useProjectsStore } from '@/stores/projects'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { Project } from '@/types'
+import { parseRate, rateForInput } from '@/utils/money'
 import { nextProjectColor } from '@/utils/projectColors'
 
 /** `project: null` opens the dialog in "create" mode. */
 const props = defineProps<{ open: boolean; project: Project | null }>()
 const emit = defineEmits<{ close: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const projects = useProjectsStore()
 const clients = useClientsStore()
+const workspace = useWorkspaceStore()
+const billing = useBilling()
 const { busy, error, run } = useAsyncAction()
 const errorId = useId()
+const rateErrorId = useId()
 
 const name = ref('')
 const color = ref('')
 const clientId = ref<string | null>(null)
+const billable = ref(false)
+const rate = ref('')
+const rateError = ref<string | null>(null)
+
+/** What an empty rate means, so the field explains itself. */
+const rateHint = computed(() =>
+  workspace.defaultRateCents === null
+    ? t('billing.projectRateNoDefault')
+    : t('billing.projectRateHint', { rate: billing.money(workspace.defaultRateCents) }),
+)
 
 /** An archived client stays listed only while the project still has it. */
 const clientItems = computed<ComboboxItem[]>(() => {
@@ -65,12 +82,21 @@ watch(
     name.value = project?.name ?? ''
     color.value = project?.color ?? nextProjectColor(projects.active.map((item) => item.color))
     clientId.value = project?.client_id ?? null
+    billable.value = project?.billable ?? false
+    rate.value = rateForInput(project?.hourly_rate ?? null, locale.value)
+    rateError.value = null
   },
   { immediate: true },
 )
 
 async function save() {
   if (!canSave.value) return
+  const hourlyRate = parseRate(rate.value)
+  if (hourlyRate === undefined) {
+    rateError.value = t('billing.rateInvalid')
+    return
+  }
+  rateError.value = null
   await run(async () => {
     if (props.project) {
       // Re-sending an archived client the project already has would be rejected.
@@ -78,10 +104,16 @@ async function save() {
       await projects.update(props.project.id, {
         name: name.value.trim(),
         color: color.value,
+        billable: billable.value,
+        hourly_rate: hourlyRate,
         ...(clientChanged ? { client_id: clientId.value } : {}),
       })
     } else {
-      await projects.create(name.value.trim(), color.value, clientId.value)
+      await projects.create(name.value.trim(), color.value, {
+        client_id: clientId.value,
+        billable: billable.value,
+        hourly_rate: hourlyRate,
+      })
     }
     emit('close')
   })
@@ -118,6 +150,30 @@ async function save() {
           />
         </span>
       </UiField>
+
+      <div class="billing">
+        <UiSwitch
+          v-model="billable"
+          :label="t('billing.projectBillable')"
+          :hint="t('billing.projectBillableHint')"
+        />
+
+        <UiField :label="t('billing.hourlyRate')" :hint="rateHint">
+          <span class="rate">
+            <UiInput
+              v-model="rate"
+              inputmode="decimal"
+              autocomplete="off"
+              class="num"
+              :placeholder="t('billing.ratePlaceholder')"
+              :invalid="!!rateError"
+              :aria-describedby="rateError ? rateErrorId : undefined"
+            />
+            <span class="rate-unit">{{ t('billing.perHour', { currency: billing.symbol.value }) }}</span>
+          </span>
+        </UiField>
+        <p v-if="rateError" :id="rateErrorId" class="form-error" role="alert">{{ rateError }}</p>
+      </div>
 
       <UiField :label="t('projects.form.color')" group>
         <ColorPicker v-model="color" />
@@ -156,5 +212,30 @@ async function save() {
 
 .form-error {
   color: var(--danger);
+}
+
+/* Billing sits apart from naming: a rule above says it is a different concern. */
+.billing {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.rate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rate :deep(.ui-input) {
+  flex: 0 1 160px;
+  text-align: right;
+}
+
+.rate-unit {
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 </style>
