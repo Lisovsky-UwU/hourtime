@@ -50,6 +50,7 @@ from hourtime.use_cases.time_entries import (
     ListTimeEntries,
     StartTimer,
     StopTimer,
+    SuggestTimeEntries,
     UpdateTimeEntry,
 )
 
@@ -314,6 +315,10 @@ def get_running_timer(entries: EntriesDep) -> GetRunningTimer:
 
 def get_list_time_entries(entries: EntriesDep) -> ListTimeEntries:
     return ListTimeEntries(entries)
+
+
+def get_suggest_time_entries(entries: EntriesDep) -> SuggestTimeEntries:
+    return SuggestTimeEntries(entries)
 
 
 def get_create_time_entry(

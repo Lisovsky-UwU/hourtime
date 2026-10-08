@@ -254,6 +254,65 @@ class TestTimerEndpoints:
         assert page["items"][0]["project_id"] is None
 
 
+class TestSuggestions:
+    async def _track(self, client: httpx.AsyncClient, description: str, hours_ago: int, **extra):
+        started = datetime.now(UTC) - timedelta(hours=hours_ago)
+        response = await client.post(
+            "/time-entries",
+            json={
+                "description": description,
+                "started_at": started.isoformat(),
+                "stopped_at": (started + timedelta(minutes=30)).isoformat(),
+                **extra,
+            },
+        )
+        assert response.status_code == 201
+
+    async def test_pairs_newest_first_without_archived_projects(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        live = (await client.post("/projects", json={"name": "Website"})).json()
+        old = (await client.post("/projects", json={"name": "Legacy"})).json()
+        await self._track(client, "Ревью кода", 6, project_id=old["id"])
+        await self._track(client, "Ревью кода", 5)
+        await self._track(client, "Ревью кода", 4, project_id=live["id"])
+        await self._track(client, "Ревью кода", 3, project_id=live["id"])
+        await self._track(client, "Standup", 2)
+        await self._track(client, "", 1)
+        await client.patch(f"/projects/{old['id']}", json={"archived": True})
+
+        response = await client.get("/time-entries/suggestions")
+
+        assert response.status_code == 200
+        assert [(item["description"], item["project_id"]) for item in response.json()] == [
+            ("Standup", None),
+            ("Ревью кода", live["id"]),
+            ("Ревью кода", None),
+        ]
+
+    async def test_search_ignores_case_and_wildcards(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        await self._track(client, "Ревью кода", 3)
+        await self._track(client, "Discount 100%", 2)
+        await self._track(client, "Discount 1000", 1)
+
+        cyrillic = await client.get("/time-entries/suggestions", params={"q": "РЕВЬЮ"})
+        assert [item["description"] for item in cyrillic.json()] == ["Ревью кода"]
+
+        literal = await client.get("/time-entries/suggestions", params={"q": "0%"})
+        assert [item["description"] for item in literal.json()] == ["Discount 100%"]
+
+        underscore = await client.get("/time-entries/suggestions", params={"q": "1_0"})
+        assert underscore.json() == []
+
+    async def test_limit_is_bounded(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        response = await client.get("/time-entries/suggestions", params={"limit": 500})
+        assert response.status_code == 400
+
+
 class TestIsolationBetweenUsers:
     async def test_another_users_project_looks_missing(
         self, client: httpx.AsyncClient, tokens: dict[str, str]

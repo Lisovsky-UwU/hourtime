@@ -1,5 +1,5 @@
 import { request } from '@/api/client'
-import type { TimeEntry, TimeEntryPage } from '@/types'
+import type { TimeEntry, TimeEntryPage, TimeEntrySuggestion } from '@/types'
 
 export interface ListQuery {
   started_from?: string
@@ -29,6 +29,11 @@ export interface EntryPatch {
 
 export function list(query: ListQuery = {}): Promise<TimeEntryPage> {
   return request<TimeEntryPage>('/time-entries', { query: { ...query } })
+}
+
+/** Past descriptions containing `q`, newest first; archived projects are left out. */
+export function suggestions(q: string, limit = 8): Promise<TimeEntrySuggestion[]> {
+  return request<TimeEntrySuggestion[]>('/time-entries/suggestions', { query: { q, limit } })
 }
 
 export function current(): Promise<TimeEntry | null> {

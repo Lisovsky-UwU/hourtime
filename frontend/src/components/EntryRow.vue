@@ -8,6 +8,7 @@ import ProjectPicker from '@/components/ProjectPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import type { MenuEntry } from '@/components/ui/UiDropdownMenu.vue'
 import UiDropdownMenu from '@/components/ui/UiDropdownMenu.vue'
+import UiIconButton from '@/components/ui/UiIconButton.vue'
 import { messageFor } from '@/composables/useApiError'
 import { useEntriesStore } from '@/stores/entries'
 import { useTimerStore } from '@/stores/timer'
@@ -24,8 +25,9 @@ import { combine, combineEnd, toDateInput, toTimeOfDay } from '@/utils/timeOfDay
  * value the server rejects snaps back to what the server holds.
  */
 const props = defineProps<{ entry: TimeEntry }>()
-/** Asks the list to delete; the list confirms first. */
-const emit = defineEmits<{ remove: [TimeEntry] }>()
+/** Actions that touch more than this row are left to the list: it confirms
+ *  deletes and keeps the timer and the entries in step. */
+const emit = defineEmits<{ remove: [TimeEntry]; continue: [TimeEntry]; duplicate: [TimeEntry] }>()
 
 const { t } = useI18n()
 const entries = useEntriesStore()
@@ -40,11 +42,6 @@ const error = ref<string | null>(null)
 
 const isRunning = computed(() => props.entry.stopped_at === null)
 const duration = computed(() => formatClock(timer.secondsOf(props.entry)))
-
-// Both ends of an entry show seconds as soon as either one has them.
-const showSeconds = computed(
-  () => startTime.value.seconds !== 0 || (endTime.value?.seconds ?? 0) !== 0,
-)
 
 function adopt(entry: TimeEntry) {
   description.value = entry.description
@@ -133,6 +130,13 @@ function pickDate() {
 
 const menu = computed<MenuEntry[]>(() => [
   { label: t('entries.changeDate'), icon: 'calendar', select: pickDate },
+  {
+    label: t('entries.duplicate'),
+    icon: 'copy',
+    // A copy of a running entry would be a second running timer.
+    disabled: isRunning.value,
+    select: () => emit('duplicate', props.entry),
+  },
   'separator',
   {
     label: t('common.delete'),
@@ -167,7 +171,6 @@ const menu = computed<MenuEntry[]>(() => [
       <span class="times">
         <TimeField
           v-model="startTime"
-          :show-seconds="showSeconds"
           :aria-label="t('entries.edit.startedAt')"
           @commit="commitTimes"
         />
@@ -175,7 +178,6 @@ const menu = computed<MenuEntry[]>(() => [
         <TimeField
           v-if="endTime"
           v-model="endTime"
-          :show-seconds="showSeconds"
           :aria-label="t('entries.edit.stoppedAt')"
           @commit="commitTimes"
         />
@@ -186,6 +188,16 @@ const menu = computed<MenuEntry[]>(() => [
     <span class="duration num">
       <span v-if="isRunning" class="live-dot" aria-hidden="true" />
       {{ duration }}
+    </span>
+
+    <span class="continue">
+      <UiIconButton
+        v-if="!isRunning"
+        icon="play"
+        size="sm"
+        :label="t('entries.continue')"
+        @click="emit('continue', props.entry)"
+      />
     </span>
 
     <span class="menu">
@@ -203,9 +215,11 @@ const menu = computed<MenuEntry[]>(() => [
 .entry {
   position: relative;
   display: grid;
-  /* Fixed side columns, so projects and times line up from row to row. */
-  grid-template-columns: minmax(0, 1fr) 200px 260px 80px 36px;
-  grid-template-areas: 'description project when duration menu';
+  /* Fixed side columns, so projects and times line up from row to row. The
+     date has a column of its own: sharing one with the times, a long time
+     range pushed it over the project. */
+  grid-template-columns: minmax(0, 1fr) 200px 116px 160px 64px 36px 36px;
+  grid-template-areas: 'description project date times duration continue menu';
   align-items: center;
   column-gap: 8px;
   padding: 6px 8px 6px 8px;
@@ -226,15 +240,14 @@ const menu = computed<MenuEntry[]>(() => [
   min-width: 0;
 }
 
+/* Only a wrapper for the phone layout; on wide screens its parts sit in the grid. */
 .when {
-  grid-area: when;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
+  display: contents;
 }
 
 .times {
+  grid-area: times;
+  justify-self: end;
   display: flex;
   align-items: center;
   white-space: nowrap;
@@ -260,6 +273,9 @@ const menu = computed<MenuEntry[]>(() => [
 /* The day heading already says the date; the field only matters when moving
    an entry to another day, so it shows up on hover or focus. */
 .date {
+  grid-area: date;
+  justify-self: end;
+  max-width: 100%;
   height: var(--control-h-sm);
   padding: 0 4px;
   border: 1px solid transparent;
@@ -316,16 +332,28 @@ const menu = computed<MenuEntry[]>(() => [
 }
 
 /* Hidden until the row is in use, but still reachable from the keyboard. */
+.continue,
 .menu {
-  grid-area: menu;
   opacity: 0;
   transition: opacity var(--dur) var(--ease);
 }
 
-.entry:hover .menu,
-.entry:focus-within .menu,
+.continue {
+  grid-area: continue;
+}
+
+.menu {
+  grid-area: menu;
+}
+
+.entry:hover :is(.continue, .menu),
+.entry:focus-within :is(.continue, .menu),
 .menu:has([data-state='open']) {
   opacity: 1;
+}
+
+.entry .continue :deep(.ui-icon-button):hover {
+  color: var(--accent);
 }
 
 .row-error {
@@ -337,6 +365,7 @@ const menu = computed<MenuEntry[]>(() => [
 
 @media (hover: none) {
   .date,
+  .continue,
   .menu {
     opacity: 1;
   }
@@ -356,13 +385,20 @@ const menu = computed<MenuEntry[]>(() => [
 
   .description {
     order: 1;
-    flex: 1 1 calc(100% - 128px);
+    /* Exactly what the duration, continue and menu leave (76 + 36 + 36 + 3 gaps),
+       so the project starts the second line instead of squeezing into the first. */
+    flex: 1 1 calc(100% - 166px);
     min-width: 0;
   }
 
   .duration {
     order: 2;
     flex: 0 0 76px;
+  }
+
+  .continue {
+    order: 3;
+    flex: 0 0 36px;
   }
 
   .menu {
@@ -378,6 +414,9 @@ const menu = computed<MenuEntry[]>(() => [
   .when {
     order: 5;
     flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .row-error {

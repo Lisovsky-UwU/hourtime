@@ -61,7 +61,8 @@
     "startTime": "from",
     "project": "Project",
     "noDescription": "No description",
-    "running": "Timer running"
+    "running": "Timer running",
+    "suggestions": "Previous entries"
   },
   "entries": {
     "title": "Time entries",
@@ -87,7 +88,12 @@
     "deleteAction": "Delete entry",
     "loadFailed": "Could not load the entries.",
     "weekPartial": "Only loaded entries are counted; load more to see the full week.",
-    "actionsFor": "Actions for \"{name}\""
+    "actionsFor": "Actions for \"{name}\"",
+    "continue": "Continue",
+    "duplicate": "Duplicate",
+    "group": {
+      "toggle": "{count} entries: {name}"
+    }
   },
   "projects": {
     "title": "Projects",
@@ -158,6 +164,13 @@
     "signOutEverywhere": "Sign out on all devices",
     "signOutEverywhereHint": "Ends every session, including this one.",
     "signOutEverywhereTitle": "Sign out on all devices?"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "hint": "N and S work on the timer page while no text field is in use.",
+    "focusDescription": "Type a description for the next timer",
+    "toggleTimer": "Start or stop the timer",
+    "help": "Show this list"
   },
   "errors": {
     "invalid_credentials": "Wrong email or password.",

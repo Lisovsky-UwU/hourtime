@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import EntryGroup from '@/components/EntryGroup.vue'
 import EntryRow from '@/components/EntryRow.vue'
 import TimerBar from '@/components/TimerBar.vue'
 import UiButton from '@/components/ui/UiButton.vue'
@@ -13,7 +14,7 @@ import { useProjectsStore } from '@/stores/projects'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
 import { localDayKey, startOfLocalDay, startOfLocalWeek } from '@/utils/datetime'
-import { formatClock } from '@/utils/duration'
+import { formatClock, secondsBetween } from '@/utils/duration'
 import { serverNow } from '@/utils/serverTime'
 
 const HOUR_MS = 60 * 60 * 1000
@@ -44,11 +45,43 @@ const currentYear = new Date().getFullYear()
 const todayKey = localDayKey(startOfLocalDay().toISOString())
 const yesterdayKey = localDayKey(startOfLocalDay(-1).toISOString())
 
+/** One line of a day: a single entry, or several alike folded together. */
+interface DayRow {
+  key: string
+  entries: TimeEntry[]
+}
+
 interface DayGroup {
   key: string
   label: string
   totalSeconds: number
-  items: TimeEntry[]
+  rows: DayRow[]
+}
+
+/**
+ * Same description and project within a day make one row, placed where the
+ * newest of them is. The running entry is never folded away: it is the one
+ * row that has to stay in sight.
+ */
+function foldAlike(items: TimeEntry[]): DayRow[] {
+  const rows: DayRow[] = []
+  const byKey = new Map<string, DayRow>()
+  for (const entry of items) {
+    if (entry.stopped_at === null) {
+      rows.push({ key: entry.id, entries: [entry] })
+      continue
+    }
+    const key = `alike:${entry.description}\u0000${entry.project_id ?? ''}`
+    const row = byKey.get(key)
+    if (row) {
+      row.entries.push(entry)
+      continue
+    }
+    const created = { key, entries: [entry] }
+    byKey.set(key, created)
+    rows.push(created)
+  }
+  return rows
 }
 
 /** The list is flat on the server; the day headings are purely presentational. */
@@ -65,7 +98,7 @@ const groups = computed<DayGroup[]>(() => {
     key,
     label: labelFor(key, items[0]),
     totalSeconds: items.reduce((sum, item) => sum + timer.secondsOf(item), 0),
-    items,
+    rows: foldAlike(items),
   }))
 })
 
@@ -106,6 +139,49 @@ async function addEntry() {
       stopped_at: new Date(now).toISOString(),
       description: '',
       project_id: null,
+    }),
+  )
+}
+
+/** An archived project cannot be assigned, so the copy goes without one. */
+function usableProject(projectId: string | null): string | null {
+  return projects.find(projectId)?.archived ? null : projectId
+}
+
+/**
+ * Starts a new timer with the entry's description and project.
+ *
+ * The server stops a running timer itself, exactly where the new one starts,
+ * so the stopped entry is folded into the list locally instead of refetched.
+ */
+async function continueEntry(entry: TimeEntry) {
+  const previous = timer.entry
+  await act(async () => {
+    const started = await timer.start({
+      description: entry.description,
+      project_id: usableProject(entry.project_id),
+    })
+    if (previous) {
+      entries.upsert({
+        ...previous,
+        stopped_at: started.started_at,
+        duration_seconds: secondsBetween(previous.started_at, started.started_at),
+      })
+    }
+    entries.upsert(started)
+  })
+}
+
+/** An exact copy, same times included, ready to be shifted in place. */
+async function duplicateEntry(entry: TimeEntry) {
+  if (!entry.stopped_at) return
+  const stoppedAt = entry.stopped_at
+  await act(() =>
+    entries.create({
+      started_at: entry.started_at,
+      stopped_at: stoppedAt,
+      description: entry.description,
+      project_id: usableProject(entry.project_id),
     }),
   )
 }
@@ -223,12 +299,22 @@ onUnmounted(() => {
         </header>
 
         <ul class="list">
-          <EntryRow
-            v-for="entry in group.items"
-            :key="entry.id"
-            :entry="entry"
-            @remove="pendingDelete = $event"
-          />
+          <template v-for="row in group.rows" :key="row.entries.length > 1 ? row.key : row.entries[0]!.id">
+            <EntryGroup
+              v-if="row.entries.length > 1"
+              :entries="row.entries"
+              @remove="pendingDelete = $event"
+              @continue="continueEntry"
+              @duplicate="duplicateEntry"
+            />
+            <EntryRow
+              v-else
+              :entry="row.entries[0]!"
+              @remove="pendingDelete = $event"
+              @continue="continueEntry"
+              @duplicate="duplicateEntry"
+            />
+          </template>
         </ul>
       </section>
 
@@ -310,9 +396,10 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 
-/* Lines up with the duration column of the rows below. */
+/* Lines up with the duration column of the rows below: past the continue
+   and menu columns and the gaps between them. */
 .day-total {
-  padding-right: 36px;
+  padding-right: 80px;
   font-size: var(--text-md);
   font-weight: 600;
 }
@@ -367,6 +454,10 @@ onUnmounted(() => {
 
   .day-head {
     padding: 10px 12px 8px;
+  }
+
+  .day-total {
+    padding-right: 78px;
   }
 
   .more {

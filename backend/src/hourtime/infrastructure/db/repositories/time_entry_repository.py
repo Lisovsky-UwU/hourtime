@@ -5,9 +5,9 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
-from hourtime.domain.entities import TimeEntry
+from hourtime.domain.entities import TimeEntry, TimeEntrySuggestion
 from hourtime.domain.errors import NotFound
-from hourtime.infrastructure.db.models import TimeEntryModel
+from hourtime.infrastructure.db.models import ProjectModel, TimeEntryModel
 from hourtime.infrastructure.db.repositories.integrity import translating_integrity_errors
 from hourtime.interfaces.repositories import TimeEntryRepository
 
@@ -23,6 +23,11 @@ def to_domain(model: TimeEntryModel) -> TimeEntry:
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
+
+
+def _escape_like(text: str) -> str:
+    """Typed `%` and `_` are meant literally, not as wildcards."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 class SqlTimeEntryRepository(TimeEntryRepository):
@@ -75,6 +80,36 @@ class SqlTimeEntryRepository(TimeEntryRepository):
         )
         models = (await self._session.execute(statement)).scalars().all()
         return [to_domain(model) for model in models]
+
+    async def suggest(
+        self, user_id: UUID, *, query: str = "", limit: int = 10
+    ) -> list[TimeEntrySuggestion]:
+        last_used = sa.func.max(TimeEntryModel.started_at).label("last_used_at")
+        statement = (
+            sa.select(TimeEntryModel.description, TimeEntryModel.project_id, last_used)
+            .outerjoin(ProjectModel, ProjectModel.id == TimeEntryModel.project_id)
+            .where(
+                TimeEntryModel.user_id == user_id,
+                TimeEntryModel.description != "",
+                ProjectModel.archived_at.is_(None),
+            )
+            .group_by(TimeEntryModel.description, TimeEntryModel.project_id)
+            .order_by(last_used.desc())
+            .limit(limit)
+        )
+        if query:
+            statement = statement.where(
+                TimeEntryModel.description.ilike(f"%{_escape_like(query)}%", escape="\\")
+            )
+        rows = (await self._session.execute(statement)).all()
+        return [
+            TimeEntrySuggestion(
+                description=row.description,
+                project_id=row.project_id,
+                last_used_at=row.last_used_at,
+            )
+            for row in rows
+        ]
 
     async def add(self, entry: TimeEntry) -> TimeEntry:
         model = TimeEntryModel(**entry.model_dump())

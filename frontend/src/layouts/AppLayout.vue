@@ -15,8 +15,10 @@ import AppIcon from '@/components/AppIcon.vue'
 import BrandMark from '@/components/BrandMark.vue'
 import type { IconName } from '@/components/AppIcon.vue'
 import RunningIndicator from '@/components/RunningIndicator.vue'
+import ShortcutsDialog from '@/components/ShortcutsDialog.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiTooltip from '@/components/ui/UiTooltip.vue'
+import { useHotkeys } from '@/composables/useHotkeys'
 import { useAuthStore } from '@/stores/auth'
 import { useEntriesStore } from '@/stores/entries'
 import { usePreferencesStore } from '@/stores/preferences'
@@ -50,6 +52,9 @@ const main: NavItem[] = [
 const secondary: NavItem[] = [{ name: 'settings', icon: 'settings', label: 'nav.settings' }]
 
 const drawerOpen = ref(false)
+const shortcutsOpen = ref(false)
+
+useHotkeys({ '?': () => (shortcutsOpen.value = true) })
 watch(
   () => route.fullPath,
   () => (drawerOpen.value = false),
@@ -146,6 +151,13 @@ async function signOut() {
 
         <div class="account">
           <span class="email" :title="auth.user?.email">{{ auth.user?.email }}</span>
+          <UiIconButton
+            icon="keyboard"
+            size="sm"
+            :label="`${t('shortcuts.title')} (?)`"
+            aria-keyshortcuts="?"
+            @click="shortcutsOpen = true"
+          />
           <UiIconButton icon="sign-out" size="sm" :label="t('nav.signOut')" @click="signOut" />
         </div>
       </div>
@@ -192,6 +204,8 @@ async function signOut() {
     <main id="content" class="content" tabindex="-1">
       <slot />
     </main>
+
+    <ShortcutsDialog v-model:open="shortcutsOpen" />
   </div>
 </template>
 
@@ -341,6 +355,7 @@ async function signOut() {
 }
 
 .shell[data-collapsed] .sidebar .account {
+  flex-direction: column;
   justify-content: center;
   padding-left: 0;
 }

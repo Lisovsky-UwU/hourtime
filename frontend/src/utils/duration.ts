@@ -4,12 +4,11 @@ function pad(value: number): string {
   return value.toString().padStart(2, '0')
 }
 
-/** `H:MM:SS`, the running-timer format. */
+/** `H:MM`, for every duration and total. Seconds are left out on purpose. */
 export function formatClock(totalSeconds: number): string {
-  const seconds = Math.max(0, Math.floor(totalSeconds))
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  return `${hours}:${pad(minutes)}:${pad(seconds % 60)}`
+  const minutesTotal = Math.floor(Math.max(0, totalSeconds) / 60)
+  const hours = Math.floor(minutesTotal / 60)
+  return `${hours}:${pad(minutesTotal % 60)}`
 }
 
 export function secondsBetween(from: string, to: string): number {

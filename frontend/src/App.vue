@@ -1,13 +1,33 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { TooltipProvider } from 'reka-ui'
 
 import UiToastHost from '@/components/ui/UiToastHost.vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import { useTimerStore } from '@/stores/timer'
+import { formatClock } from '@/utils/duration'
 
 const route = useRoute()
+const { t } = useI18n()
+const timer = useTimerStore()
+
+/**
+ * A running timer takes over the tab title, clock first, so it reads even in
+ * a narrow tab. Otherwise the title names the page.
+ */
+watchEffect(() => {
+  const app = t('app.name')
+  const running = timer.entry
+  if (running) {
+    document.title = `${formatClock(timer.elapsed)} - ${running.description || app}`
+    return
+  }
+  const page = route.meta.titleKey
+  document.title = page ? `${t(page)} - ${app}` : app
+})
 
 const layout = computed(() => {
   if (route.meta.layout === 'app') return AppLayout

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import UUID
 
-from hourtime.domain.entities import TimeEntry
+from hourtime.domain.entities import TimeEntry, TimeEntrySuggestion
 
 
 class TimeEntryRepository(ABC):
@@ -29,6 +29,17 @@ class TimeEntryRepository(ABC):
         There is deliberately no `count`: paging asks for one row more than it
         needs and infers "there is more" from that, which keeps the list to a
         single query.
+        """
+
+    @abstractmethod
+    async def suggest(
+        self, user_id: UUID, *, query: str = "", limit: int = 10
+    ) -> list[TimeEntrySuggestion]:
+        """Distinct (description, project) pairs, most recently used first.
+
+        Only pairs with a description whose text contains `query`
+        case-insensitively; pairs pointing at an archived project are left out,
+        since picking one would be rejected.
         """
 
     @abstractmethod

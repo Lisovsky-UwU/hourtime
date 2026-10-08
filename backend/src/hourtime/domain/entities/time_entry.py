@@ -44,3 +44,11 @@ class TimeEntry(Entity):
 
     def stop(self, at: datetime) -> "TimeEntry":
         return self.evolve(stopped_at=at, updated_at=at)
+
+
+class TimeEntrySuggestion(Entity):
+    """A description and project pair tracked before, offered while typing a new one."""
+
+    description: str
+    project_id: UUID | None = None
+    last_used_at: UtcDatetime

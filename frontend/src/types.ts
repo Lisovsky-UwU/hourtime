@@ -41,6 +41,13 @@ export interface TimeEntry {
   updated_at: string
 }
 
+/** A description tracked before, with the project it was tracked under. */
+export interface TimeEntrySuggestion {
+  description: string
+  project_id: string | null
+  last_used_at: string
+}
+
 export interface TimeEntryPage {
   items: TimeEntry[]
   /** Whether another page exists. The API reports no total on purpose. */

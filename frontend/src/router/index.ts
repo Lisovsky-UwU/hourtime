@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
-import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
@@ -77,9 +76,4 @@ router.beforeEach(async (to) => {
     return { name: 'timer' }
   }
   return true
-})
-
-router.afterEach((to) => {
-  const name = i18n.global.t('app.name')
-  document.title = to.meta.titleKey ? `${i18n.global.t(to.meta.titleKey)} - ${name}` : name
 })

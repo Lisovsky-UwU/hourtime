@@ -46,23 +46,18 @@ export function parseTimeOfDay(input: string): TimeOfDay | null {
 }
 
 /**
- * `withSeconds` forces the `:ss` part on even when it is zero, so the two ends
- * of one entry agree — showing `18:30 – 21:31:09` looks like a bug.
+ * Hours and minutes only: seconds are noise in a list of entries. They are
+ * still stored and kept unless the user types a different time.
  */
-export function formatTimeOfDay(
-  time: TimeOfDay,
-  cycle: HourCycle,
-  withSeconds = false,
-): string {
-  const seconds = withSeconds || time.seconds ? `:${pad(time.seconds)}` : ''
+export function formatTimeOfDay(time: TimeOfDay, cycle: HourCycle): string {
   let text: string
 
   if (cycle === '12') {
     const meridiem = time.hours < 12 ? 'AM' : 'PM'
     const hour = time.hours % 12 === 0 ? 12 : time.hours % 12
-    text = `${hour}:${pad(time.minutes)}${seconds} ${meridiem}`
+    text = `${hour}:${pad(time.minutes)} ${meridiem}`
   } else {
-    text = `${pad(time.hours)}:${pad(time.minutes)}${seconds}`
+    text = `${pad(time.hours)}:${pad(time.minutes)}`
   }
 
   return time.dayOffset > 0 ? `${text} +${time.dayOffset}d` : text

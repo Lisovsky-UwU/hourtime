@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from hourtime.domain.entities import Project, Session, TimeEntry, User
+from hourtime.domain.entities import Project, Session, TimeEntry, TimeEntrySuggestion, User
 from hourtime.domain.errors import NotFound, ProjectNameTaken, TimerAlreadyRunning
 from hourtime.interfaces.repositories import (
     ProjectRepository,
@@ -206,6 +206,23 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
     ) -> list[TimeEntry]:
         found = self._matching(user_id, started_from, started_to, project_id)
         return found[offset : offset + limit]
+
+    async def suggest(
+        self, user_id: UUID, *, query: str = "", limit: int = 10
+    ) -> list[TimeEntrySuggestion]:
+        """Archived projects are not filtered here: this fake knows no projects."""
+        needle = query.casefold()
+        found: dict[tuple[str, UUID | None], TimeEntrySuggestion] = {}
+        for entry in self._matching(user_id, None, None, None):
+            key = (entry.description, entry.project_id)
+            if not entry.description or key in found or needle not in entry.description.casefold():
+                continue
+            found[key] = TimeEntrySuggestion(
+                description=entry.description,
+                project_id=entry.project_id,
+                last_used_at=entry.started_at,
+            )
+        return list(found.values())[:limit]
 
     async def add(self, entry: TimeEntry) -> TimeEntry:
         self._check_single_running(entry)

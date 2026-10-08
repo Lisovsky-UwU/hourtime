@@ -12,6 +12,7 @@ from hourtime.presentation.api.deps import (
     get_running_timer,
     get_start_timer,
     get_stop_timer,
+    get_suggest_time_entries,
     get_update_time_entry,
 )
 from hourtime.presentation.api.schemas.time_entries import (
@@ -20,6 +21,7 @@ from hourtime.presentation.api.schemas.time_entries import (
     StopTimerRequest,
     TimeEntryPageResponse,
     TimeEntryResponse,
+    TimeEntrySuggestionResponse,
     UpdateTimeEntryRequest,
 )
 from hourtime.use_cases.dto import (
@@ -27,6 +29,7 @@ from hourtime.use_cases.dto import (
     ListTimeEntriesInput,
     StartTimerInput,
     StopTimerInput,
+    SuggestTimeEntriesInput,
     UpdateTimeEntryInput,
 )
 from hourtime.use_cases.time_entries import (
@@ -36,6 +39,7 @@ from hourtime.use_cases.time_entries import (
     ListTimeEntries,
     StartTimer,
     StopTimer,
+    SuggestTimeEntries,
     UpdateTimeEntry,
 )
 
@@ -63,6 +67,19 @@ async def list_time_entries(
         )
     )
     return TimeEntryPageResponse.of(page)
+
+
+@router.get("/suggestions", response_model=list[TimeEntrySuggestionResponse])
+async def suggest_time_entries(
+    current: CurrentUserDep,
+    use_case: Annotated[SuggestTimeEntries, Depends(get_suggest_time_entries)],
+    q: Annotated[str, Query(max_length=200)] = "",
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+) -> list[TimeEntrySuggestionResponse]:
+    found = await use_case.execute(
+        SuggestTimeEntriesInput(user_id=current.user.id, query=q, limit=limit)
+    )
+    return [TimeEntrySuggestionResponse.of(suggestion) for suggestion in found]
 
 
 @router.get("/current", response_model=TimeEntryResponse | None)

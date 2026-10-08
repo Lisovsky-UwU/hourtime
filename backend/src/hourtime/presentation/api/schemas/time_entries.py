@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
-from hourtime.domain.entities import TimeEntry
+from hourtime.domain.entities import TimeEntry, TimeEntrySuggestion
 from hourtime.domain.entities.time_entry import DESCRIPTION_MAX_LENGTH
 from hourtime.use_cases.dto import TimeEntryPage
 
@@ -54,6 +54,20 @@ class TimeEntryPageResponse(BaseModel):
             has_more=page.has_more,
             limit=page.limit,
             offset=page.offset,
+        )
+
+
+class TimeEntrySuggestionResponse(BaseModel):
+    description: str
+    project_id: UUID | None
+    last_used_at: datetime
+
+    @classmethod
+    def of(cls, suggestion: TimeEntrySuggestion) -> "TimeEntrySuggestionResponse":
+        return cls(
+            description=suggestion.description,
+            project_id=suggestion.project_id,
+            last_used_at=suggestion.last_used_at,
         )
 
 

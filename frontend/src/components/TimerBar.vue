@@ -3,13 +3,16 @@ import { onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppIcon from '@/components/AppIcon.vue'
-import AutoTextarea from '@/components/AutoTextarea.vue'
+import DescriptionInput from '@/components/DescriptionInput.vue'
 import ProjectPicker from '@/components/ProjectPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import { toast } from '@/components/ui/toast'
 import { useAsyncAction } from '@/composables/useApiError'
+import { useHotkeys } from '@/composables/useHotkeys'
 import { useEntriesStore } from '@/stores/entries'
+import { useProjectsStore } from '@/stores/projects'
 import { useTimerStore } from '@/stores/timer'
+import type { TimeEntrySuggestion } from '@/types'
 import { formatClock } from '@/utils/duration'
 import { serverNow, serverNowIso } from '@/utils/serverTime'
 import type { TimeOfDay } from '@/utils/timeOfDay'
@@ -20,6 +23,7 @@ const timer = useTimerStore()
 // Every timer write returns the saved entry, so the list is folded in directly
 // rather than refetched.
 const entries = useEntriesStore()
+const projects = useProjectsStore()
 const { busy, error, run } = useAsyncAction()
 
 // The bar is sticky and sits on top of the list; a banner inside it would push
@@ -100,6 +104,28 @@ watch(projectId, (value) => {
   void amend({ project_id: value })
 })
 
+function pickSuggestion(suggestion: TimeEntrySuggestion) {
+  // Archived since the list was fetched: assigning it would be rejected.
+  const project = projects.find(suggestion.project_id)
+  const nextProject = project?.archived ? null : suggestion.project_id
+  if (timer.entry) {
+    // One request for both; the fields follow once the saved entry comes back.
+    void amend({ description: suggestion.description, project_id: nextProject })
+    return
+  }
+  description.value = suggestion.description
+  projectId.value = nextProject
+}
+
+const descriptionField = ref<InstanceType<typeof DescriptionInput> | null>(null)
+
+useHotkeys({
+  n: () => descriptionField.value?.focus(),
+  s: () => {
+    if (!busy.value) void toggle()
+  },
+})
+
 function commitStart() {
   const running = timer.entry
   if (!running) {
@@ -115,12 +141,14 @@ function commitStart() {
 
 <template>
   <section class="timer-bar" :data-running="timer.isRunning ? '' : undefined">
-    <AutoTextarea
+    <DescriptionInput
+      ref="descriptionField"
       v-model="description"
       class="description"
       :placeholder="t('timer.descriptionPlaceholder')"
-      :aria-label="t('timer.descriptionPlaceholder')"
-      @blur="commitDescription"
+      :label="t('timer.descriptionPlaceholder')"
+      @commit="commitDescription"
+      @pick="pickSuggestion"
     />
 
     <div class="controls">
@@ -140,6 +168,8 @@ function commitStart() {
         class="action"
         :disabled="busy"
         :aria-label="timer.isRunning ? t('timer.stop') : t('timer.start')"
+        :title="`${timer.isRunning ? t('timer.stop') : t('timer.start')} (S)`"
+        aria-keyshortcuts="S"
         @click="toggle"
       >
         <AppIcon :name="timer.isRunning ? 'stop' : 'play'" :size="20" />

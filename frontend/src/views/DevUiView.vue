@@ -117,7 +117,7 @@ const running = ref(true)
       <h2>Clock</h2>
       <div class="clock-specimen">
         <span class="live-dot" :class="{ on: running }" />
-        <span class="num clock" :class="{ on: running }">0:42:17</span>
+        <span class="num clock" :class="{ on: running }">0:42</span>
         <button
           type="button"
           class="timer-action"
@@ -157,17 +157,17 @@ const running = ref(true)
         <div class="ledger-row">
           <span>Fix login redirect</span>
           <span class="muted num">09:10 - 10:02</span>
-          <span class="num">0:52:08</span>
+          <span class="num">0:52</span>
         </div>
         <div class="ledger-row">
           <span>Code review</span>
           <span class="muted num">10:05 - 12:23</span>
-          <span class="num">2:18:41</span>
+          <span class="num">2:18</span>
         </div>
         <div class="ledger-row total">
           <span>Today</span>
           <span />
-          <span class="num">3:10:49</span>
+          <span class="num">3:10</span>
         </div>
       </div>
     </section>
@@ -279,7 +279,7 @@ const running = ref(true)
       <h2>Dialog and toasts</h2>
       <div class="row wrap">
         <UiButton @click="dialogOpen = true">Open dialog</UiButton>
-        <UiButton variant="ghost" @click="toast.info('Timer stopped', '0:42:17 on hourtime')">
+        <UiButton variant="ghost" @click="toast.info('Timer stopped', '0:42 on hourtime')">
           Info toast
         </UiButton>
         <UiButton variant="ghost" @click="toast.success('Project created')">Success toast</UiButton>

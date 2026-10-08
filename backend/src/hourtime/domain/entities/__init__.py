@@ -1,7 +1,7 @@
 from hourtime.domain.entities.base import Entity, UtcDatetime
 from hourtime.domain.entities.project import DEFAULT_COLOR, Project, normalise_color
 from hourtime.domain.entities.session import Session
-from hourtime.domain.entities.time_entry import TimeEntry
+from hourtime.domain.entities.time_entry import TimeEntry, TimeEntrySuggestion
 from hourtime.domain.entities.user import User
 
 __all__ = [
@@ -10,6 +10,7 @@ __all__ = [
     "Project",
     "Session",
     "TimeEntry",
+    "TimeEntrySuggestion",
     "User",
     "UtcDatetime",
     "normalise_color",

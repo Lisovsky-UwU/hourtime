@@ -9,6 +9,7 @@ from hourtime.use_cases.dto import (
     ListTimeEntriesInput,
     StartTimerInput,
     StopTimerInput,
+    SuggestTimeEntriesInput,
     UpdateTimeEntryInput,
 )
 from hourtime.use_cases.time_entries import (
@@ -18,6 +19,7 @@ from hourtime.use_cases.time_entries import (
     ListTimeEntries,
     StartTimer,
     StopTimer,
+    SuggestTimeEntries,
     UpdateTimeEntry,
 )
 from tests.factories import make_entry, make_project, make_user
@@ -45,6 +47,7 @@ class TimerWorld:
         self.create = CreateTimeEntry(self.entries, self.projects, self.clock, self.uow)
         self.update = UpdateTimeEntry(self.entries, self.projects, self.clock, self.uow)
         self.delete = DeleteTimeEntry(self.entries, self.uow)
+        self.suggest = SuggestTimeEntries(self.entries)
 
 
 @pytest.fixture
@@ -360,6 +363,64 @@ class TestListing:
     async def test_rejects_an_oversized_page(self, world: TimerWorld) -> None:
         with pytest.raises(ValidationError):
             await world.listing.execute(ListTimeEntriesInput(user_id=world.user.id, limit=10_000))
+
+
+class TestSuggestions:
+    async def _track(self, world: TimerWorld, description: str, hours_ago: int, **extra: object):
+        start = world.clock.now() - timedelta(hours=hours_ago)
+        return await world.entries.add(
+            make_entry(
+                world.user.id,
+                description=description,
+                started_at=start,
+                stopped_at=start + timedelta(minutes=30),
+                **extra,
+            )
+        )
+
+    async def test_distinct_pairs_newest_first(self, world: TimerWorld) -> None:
+        project = await world.projects.add(make_project(world.user.id))
+        await self._track(world, "Code review", hours_ago=5)
+        await self._track(world, "Standup", hours_ago=4)
+        await self._track(world, "Code review", hours_ago=3)
+        await self._track(world, "Code review", hours_ago=2, project_id=project.id)
+        await self._track(world, "", hours_ago=1)
+
+        found = await world.suggest.execute(SuggestTimeEntriesInput(user_id=world.user.id))
+
+        assert [(item.description, item.project_id) for item in found] == [
+            ("Code review", project.id),
+            ("Code review", None),
+            ("Standup", None),
+        ]
+        assert found[1].last_used_at == world.clock.now() - timedelta(hours=3)
+
+    async def test_matches_any_part_ignoring_case(self, world: TimerWorld) -> None:
+        await self._track(world, "Fix login redirect", hours_ago=2)
+        await self._track(world, "Standup", hours_ago=1)
+
+        found = await world.suggest.execute(
+            SuggestTimeEntriesInput(user_id=world.user.id, query="  LOGIN ")
+        )
+
+        assert [item.description for item in found] == ["Fix login redirect"]
+
+    async def test_respects_the_limit(self, world: TimerWorld) -> None:
+        for index in range(5):
+            await self._track(world, f"Task {index}", hours_ago=index + 1)
+
+        found = await world.suggest.execute(SuggestTimeEntriesInput(user_id=world.user.id, limit=2))
+
+        assert [item.description for item in found] == ["Task 0", "Task 1"]
+
+    async def test_never_suggests_another_users_entries(self, world: TimerWorld) -> None:
+        await world.entries.add(make_entry(world.other_user.id, description="Secret"))
+        found = await world.suggest.execute(SuggestTimeEntriesInput(user_id=world.user.id))
+        assert found == []
+
+    async def test_rejects_an_oversized_limit(self, world: TimerWorld) -> None:
+        with pytest.raises(ValidationError):
+            await world.suggest.execute(SuggestTimeEntriesInput(user_id=world.user.id, limit=1_000))
 
 
 class TestDelete:

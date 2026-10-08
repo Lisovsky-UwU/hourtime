@@ -127,6 +127,12 @@ class ListTimeEntriesInput(BaseModel):
     offset: int = 0
 
 
+class SuggestTimeEntriesInput(BaseModel):
+    user_id: UUID
+    query: str = ""
+    limit: int = 10
+
+
 class TimeEntryPage(BaseModel):
     items: list[TimeEntry]
     # No total: knowing it costs a second query on every page load, and the list

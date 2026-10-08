@@ -19,6 +19,8 @@ function resize() {
 }
 
 function onKeydown(event: KeyboardEvent) {
+  // A wrapper (the suggestion list) may have taken the key already.
+  if (event.defaultPrevented) return
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     field.value?.blur()
@@ -43,6 +45,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => observer?.disconnect())
+
+defineExpose({ focus: () => field.value?.focus() })
 </script>
 
 <template>
