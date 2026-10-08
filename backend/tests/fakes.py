@@ -265,10 +265,12 @@ class InMemorySessionRepository(SessionRepository):
         self.items[session.id] = session
         return session
 
-    async def revoke_all_for_user(self, user_id: UUID, at: datetime) -> int:
+    async def revoke_all_for_user(
+        self, user_id: UUID, at: datetime, *, keep: UUID | None = None
+    ) -> int:
         revoked = 0
         for key, item in list(self.items.items()):
-            if item.user_id == user_id and not item.is_revoked:
+            if item.user_id == user_id and not item.is_revoked and item.id != keep:
                 self.items[key] = item.revoke(at)
                 revoked += 1
         return revoked

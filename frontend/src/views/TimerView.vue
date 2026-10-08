@@ -9,19 +9,23 @@ import TimerBar from '@/components/TimerBar.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
+import { useDuration } from '@/composables/useDuration'
 import { useEntriesStore } from '@/stores/entries'
+import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
 import { localDayKey, startOfLocalDay, startOfLocalWeek } from '@/utils/datetime'
-import { formatClock, secondsBetween } from '@/utils/duration'
+import { secondsBetween } from '@/utils/duration'
 import { serverNow } from '@/utils/serverTime'
 
 const HOUR_MS = 60 * 60 * 1000
 
 const { t, d } = useI18n()
 const timer = useTimerStore()
+const showDuration = useDuration()
 const entries = useEntriesStore()
+const preferences = usePreferencesStore()
 const projects = useProjectsStore()
 const initialLoad = ref(true)
 /** Only a failed load of the list shows inline; failed actions go to a toast. */
@@ -107,7 +111,7 @@ const groups = computed<DayGroup[]>(() => {
  * page. Server-side totals arrive with reports (stage 9 of the plan).
  */
 const weekTotal = computed(() => {
-  const from = startOfLocalWeek().getTime()
+  const from = startOfLocalWeek(preferences.weekStart).getTime()
   return entries.items
     .filter((item) => Date.parse(item.started_at) >= from)
     .reduce((sum, item) => sum + timer.secondsOf(item), 0)
@@ -116,7 +120,7 @@ const weekTotal = computed(() => {
 /** Newest first: if the oldest loaded entry is still inside the week, more may follow. */
 const weekPartial = computed(() => {
   const oldest = entries.items.at(-1)
-  return entries.hasMore && !!oldest && Date.parse(oldest.started_at) >= startOfLocalWeek().getTime()
+  return entries.hasMore && !!oldest && Date.parse(oldest.started_at) >= startOfLocalWeek(preferences.weekStart).getTime()
 })
 
 function labelFor(key: string, sample: TimeEntry | undefined): string {
@@ -262,7 +266,7 @@ onUnmounted(() => {
           class="week-total num"
           :title="weekPartial ? t('entries.weekPartial') : undefined"
         >
-          {{ weekPartial ? '≥ ' : '' }}{{ formatClock(weekTotal) }}
+          {{ weekPartial ? '≥ ' : '' }}{{ showDuration(weekTotal) }}
         </span>
         <UiButton variant="ghost" size="sm" icon="plus" :disabled="busy" @click="addEntry">
           {{ t('entries.addManual') }}
@@ -295,7 +299,7 @@ onUnmounted(() => {
       <section v-for="group in groups" :key="group.key" class="sheet" :aria-label="group.label">
         <header class="day-head">
           <h2>{{ group.label }}</h2>
-          <span class="day-total num">{{ formatClock(group.totalSeconds) }}</span>
+          <span class="day-total num">{{ showDuration(group.totalSeconds) }}</span>
         </header>
 
         <ul class="list">

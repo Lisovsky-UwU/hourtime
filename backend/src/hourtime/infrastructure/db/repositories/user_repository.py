@@ -1,9 +1,11 @@
+from typing import cast
 from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from hourtime.domain.entities import User
+from hourtime.domain.entities.user import DurationFormat, HourCycle
 from hourtime.domain.errors import NotFound
 from hourtime.infrastructure.db.models import UserModel
 from hourtime.infrastructure.db.repositories.integrity import translating_integrity_errors
@@ -16,6 +18,12 @@ def to_domain(model: UserModel) -> User:
         email=model.email,
         password_hash=model.password_hash,
         is_active=model.is_active,
+        display_name=model.display_name,
+        timezone=model.timezone,
+        week_start=model.week_start,
+        # The columns are plain strings and ints; the entity re-checks the values.
+        duration_format=cast(DurationFormat, model.duration_format),
+        hour_cycle=cast(HourCycle, model.hour_cycle),
         created_at=model.created_at,
         updated_at=model.updated_at,
     )

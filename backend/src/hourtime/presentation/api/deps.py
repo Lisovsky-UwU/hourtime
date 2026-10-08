@@ -34,12 +34,14 @@ from hourtime.interfaces.repositories import (
 from hourtime.interfaces.services import Clock, PasswordHasher, TokenGenerator, UnitOfWork
 from hourtime.use_cases.auth import (
     AuthenticateAccessToken,
+    ChangePassword,
     LoginUser,
     LogoutUser,
     PurgeExpiredSessions,
     RefreshSession,
     RegisterUser,
     SessionIssuer,
+    UpdateProfile,
 )
 from hourtime.use_cases.dto import AuthenticatedUser
 from hourtime.use_cases.projects import CreateProject, DeleteProject, ListProjects, UpdateProject
@@ -225,6 +227,28 @@ def get_logout_user(
     sessions: SessionsDep, tokens: TokensDep, clock: ClockDep, uow: UowDep
 ) -> LogoutUser:
     return LogoutUser(sessions, tokens, clock, uow)
+
+
+def get_update_profile(users: UsersDep, clock: ClockDep, uow: UowDep) -> UpdateProfile:
+    return UpdateProfile(users, clock, uow)
+
+
+def get_change_password(
+    users: UsersDep,
+    sessions: SessionsDep,
+    hasher: HasherDep,
+    clock: ClockDep,
+    uow: UowDep,
+    settings: SettingsDep,
+) -> ChangePassword:
+    return ChangePassword(
+        users,
+        sessions,
+        hasher,
+        clock,
+        uow,
+        password_min_length=settings.password_min_length,
+    )
 
 
 def get_authenticate_access_token(

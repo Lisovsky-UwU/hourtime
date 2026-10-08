@@ -95,6 +95,84 @@ class TestAuthEndpoints:
         assert response.json()["error"]["code"] == "registration_disabled"
 
 
+class TestProfileEndpoints:
+    async def test_defaults_are_reported(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        me = (await client.get("/auth/me")).json()
+        assert me["display_name"] is None
+        assert me["timezone"] is None
+        assert (me["week_start"], me["duration_format"], me["hour_cycle"]) == (1, "classic", 24)
+
+    async def test_patch_is_visible_on_the_next_read(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        """The cached user must be dropped, or other devices keep the old settings."""
+        assert (await client.get("/auth/me")).status_code == 200
+
+        patched = await client.patch(
+            "/auth/me",
+            json={"timezone": "Asia/Yekaterinburg", "duration_format": "decimal", "hour_cycle": 12},
+        )
+        assert patched.status_code == 200
+        assert patched.json()["timezone"] == "Asia/Yekaterinburg"
+
+        me = (await client.get("/auth/me")).json()
+        assert me["timezone"] == "Asia/Yekaterinburg"
+        assert me["duration_format"] == "decimal"
+        assert me["hour_cycle"] == 12
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            {"timezone": "Nowhere/Town"},
+            {"week_start": 7},
+            {"hour_cycle": 13},
+            {"email": "other@example.com"},
+        ],
+    )
+    async def test_rejects_bad_values(
+        self, client: httpx.AsyncClient, tokens: dict[str, str], body: dict[str, object]
+    ) -> None:
+        response = await client.patch("/auth/me", json=body)
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "validation_error"
+
+    async def test_password_change_keeps_this_device_only(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        other = await client.post("/auth/login", json={"email": EMAIL, "password": PASSWORD})
+        other_headers = {"Authorization": f"Bearer {other.json()['tokens']['access_token']}"}
+        assert (await client.get("/auth/me", headers=other_headers)).status_code == 200
+
+        changed = await client.post(
+            "/auth/me/password",
+            json={"current_password": PASSWORD, "new_password": "new-horse-battery"},
+        )
+        assert changed.status_code == 204
+
+        assert (await client.get("/auth/me")).status_code == 200
+        assert (await client.get("/auth/me", headers=other_headers)).status_code == 401
+
+        old = await client.post("/auth/login", json={"email": EMAIL, "password": PASSWORD})
+        assert old.status_code == 401
+        new = await client.post(
+            "/auth/login", json={"email": EMAIL, "password": "new-horse-battery"}
+        )
+        assert new.status_code == 200
+
+    async def test_wrong_current_password_is_not_a_401(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        """A 401 would make the client refresh its tokens instead of showing the error."""
+        response = await client.post(
+            "/auth/me/password",
+            json={"current_password": "not-the-password", "new_password": "new-horse-battery"},
+        )
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "invalid_current_password"
+
+
 class TestProjectEndpoints:
     async def test_crud_round_trip(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
         created = await client.post("/projects", json={"name": "Website", "color": "#A1B2C3"})

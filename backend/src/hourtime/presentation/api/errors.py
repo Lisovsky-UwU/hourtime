@@ -17,6 +17,7 @@ from hourtime.domain.errors import (
     DomainError,
     EmailAlreadyUsed,
     InvalidCredentials,
+    InvalidCurrentPassword,
     InvalidToken,
     NotFound,
     PermissionDenied,
@@ -29,6 +30,7 @@ from hourtime.domain.errors import (
 # Keyed by plain `type` because lookups walk the MRO, which includes Exception.
 _STATUS_BY_ERROR: dict[type, int] = {
     ValidationError: status.HTTP_400_BAD_REQUEST,
+    InvalidCurrentPassword: status.HTTP_400_BAD_REQUEST,
     InvalidCredentials: status.HTTP_401_UNAUTHORIZED,
     InvalidToken: status.HTTP_401_UNAUTHORIZED,
     AccountDisabled: status.HTTP_403_FORBIDDEN,

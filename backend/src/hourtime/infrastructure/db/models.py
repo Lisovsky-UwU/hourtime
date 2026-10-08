@@ -29,6 +29,13 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column(sa.String(320), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(sa.String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, default=True)
+    display_name: Mapped[str | None] = mapped_column(sa.String(100))
+    timezone: Mapped[str | None] = mapped_column(sa.String(64))
+    week_start: Mapped[int] = mapped_column(sa.SmallInteger, nullable=False, server_default="1")
+    duration_format: Mapped[str] = mapped_column(
+        sa.String(16), nullable=False, server_default="classic"
+    )
+    hour_cycle: Mapped[int] = mapped_column(sa.SmallInteger, nullable=False, server_default="24")
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
 

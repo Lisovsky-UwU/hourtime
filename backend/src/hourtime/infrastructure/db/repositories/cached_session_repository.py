@@ -72,9 +72,11 @@ class CachedSessionRepository(SessionRepository):
         )
         return stored
 
-    async def revoke_all_for_user(self, user_id: UUID, at: datetime) -> int:
-        hashes = await self._inner.active_access_hashes(user_id)
-        revoked = await self._inner.revoke_all_for_user(user_id, at)
+    async def revoke_all_for_user(
+        self, user_id: UUID, at: datetime, *, keep: UUID | None = None
+    ) -> int:
+        hashes = await self._inner.active_access_hashes(user_id, keep=keep)
+        revoked = await self._inner.revoke_all_for_user(user_id, at, keep=keep)
         await self.invalidation.invalidate(
             *(CacheKey.session_by_access_token(digest) for digest in hashes)
         )

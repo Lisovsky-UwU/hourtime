@@ -58,21 +58,28 @@ class SqlSessionRepository(SessionRepository):
         await translating_integrity_errors(self._session.flush)
         return to_domain(model)
 
-    async def active_access_hashes(self, user_id: UUID) -> list[str]:
+    @staticmethod
+    def _live_of(user_id: UUID, keep: UUID | None) -> list[sa.ColumnElement[bool]]:
+        conditions = [SessionModel.user_id == user_id, SessionModel.revoked_at.is_(None)]
+        if keep is not None:
+            conditions.append(SessionModel.id != keep)
+        return conditions
+
+    async def active_access_hashes(self, user_id: UUID, *, keep: UUID | None = None) -> list[str]:
         """Access digests of the user's live sessions.
 
         Not part of `SessionRepository` — the caching decorator uses it to know
         which keys a bulk revoke invalidates.
         """
-        statement = sa.select(SessionModel.access_token_hash).where(
-            SessionModel.user_id == user_id, SessionModel.revoked_at.is_(None)
-        )
+        statement = sa.select(SessionModel.access_token_hash).where(*self._live_of(user_id, keep))
         return list((await self._session.execute(statement)).scalars().all())
 
-    async def revoke_all_for_user(self, user_id: UUID, at: datetime) -> int:
+    async def revoke_all_for_user(
+        self, user_id: UUID, at: datetime, *, keep: UUID | None = None
+    ) -> int:
         statement = (
             sa.update(SessionModel)
-            .where(SessionModel.user_id == user_id, SessionModel.revoked_at.is_(None))
+            .where(*self._live_of(user_id, keep))
             .values(revoked_at=at)
             .execution_options(synchronize_session=False)
         )

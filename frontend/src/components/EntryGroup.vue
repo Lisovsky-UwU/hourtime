@@ -4,11 +4,11 @@ import { useI18n } from 'vue-i18n'
 
 import EntryRow from '@/components/EntryRow.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
+import { useDuration } from '@/composables/useDuration'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
-import { formatClock } from '@/utils/duration'
 import { formatTimeOfDay, toTimeOfDay } from '@/utils/timeOfDay'
 
 /**
@@ -25,6 +25,7 @@ const emit = defineEmits<{ remove: [TimeEntry]; continue: [TimeEntry]; duplicate
 
 const { t } = useI18n()
 const timer = useTimerStore()
+const showDuration = useDuration()
 const projects = useProjectsStore()
 const preferences = usePreferencesStore()
 
@@ -34,7 +35,7 @@ const newest = computed(() => props.entries[0]!)
 const oldest = computed(() => props.entries.at(-1)!)
 const project = computed(() => projects.find(newest.value.project_id))
 const total = computed(() =>
-  formatClock(props.entries.reduce((sum, entry) => sum + timer.secondsOf(entry), 0)),
+  showDuration(props.entries.reduce((sum, entry) => sum + timer.secondsOf(entry), 0)),
 )
 
 /** From the first start to the last end; the gaps in between are not shown. */

@@ -5,21 +5,38 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from hourtime.presentation.api.deps import (
     AccessTokenDep,
     CurrentUserDep,
+    get_change_password,
     get_login_user,
     get_logout_user,
     get_refresh_session,
     get_register_user,
+    get_update_profile,
 )
 from hourtime.presentation.api.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     LoginResponse,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
+    UpdateProfileRequest,
     UserResponse,
 )
-from hourtime.use_cases.auth import LoginUser, LogoutUser, RefreshSession, RegisterUser
-from hourtime.use_cases.dto import LoginUserInput, RefreshSessionInput, RegisterUserInput
+from hourtime.use_cases.auth import (
+    ChangePassword,
+    LoginUser,
+    LogoutUser,
+    RefreshSession,
+    RegisterUser,
+    UpdateProfile,
+)
+from hourtime.use_cases.dto import (
+    ChangePasswordInput,
+    LoginUserInput,
+    RefreshSessionInput,
+    RegisterUserInput,
+    UpdateProfileInput,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -91,3 +108,32 @@ async def logout_all(
 @router.get("/me", response_model=UserResponse)
 async def me(current: CurrentUserDep) -> UserResponse:
     return UserResponse.of(current.user)
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    body: UpdateProfileRequest,
+    current: CurrentUserDep,
+    use_case: Annotated[UpdateProfile, Depends(get_update_profile)],
+) -> UserResponse:
+    user = await use_case.execute(
+        UpdateProfileInput(user_id=current.user.id, **body.model_dump(exclude_unset=True))
+    )
+    return UserResponse.of(user)
+
+
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    body: ChangePasswordRequest,
+    current: CurrentUserDep,
+    use_case: Annotated[ChangePassword, Depends(get_change_password)],
+) -> Response:
+    await use_case.execute(
+        ChangePasswordInput(
+            user_id=current.user.id,
+            session_id=current.session_id,
+            current_password=body.current_password,
+            new_password=body.new_password,
+        )
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -10,10 +10,10 @@ import type { MenuEntry } from '@/components/ui/UiDropdownMenu.vue'
 import UiDropdownMenu from '@/components/ui/UiDropdownMenu.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import { messageFor } from '@/composables/useApiError'
+import { useDuration } from '@/composables/useDuration'
 import { useEntriesStore } from '@/stores/entries'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
-import { formatClock } from '@/utils/duration'
 import type { TimeOfDay } from '@/utils/timeOfDay'
 import { combine, combineEnd, toDateInput, toTimeOfDay } from '@/utils/timeOfDay'
 
@@ -32,6 +32,7 @@ const emit = defineEmits<{ remove: [TimeEntry]; continue: [TimeEntry]; duplicate
 const { t } = useI18n()
 const entries = useEntriesStore()
 const timer = useTimerStore()
+const showDuration = useDuration()
 
 const description = ref('')
 const projectId = ref<string | null>(null)
@@ -41,7 +42,7 @@ const endTime = ref<TimeOfDay | null>(null)
 const error = ref<string | null>(null)
 
 const isRunning = computed(() => props.entry.stopped_at === null)
-const duration = computed(() => formatClock(timer.secondsOf(props.entry)))
+const duration = computed(() => showDuration(timer.secondsOf(props.entry)))
 
 function adopt(entry: TimeEntry) {
   description.value = entry.description

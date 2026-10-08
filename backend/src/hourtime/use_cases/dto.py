@@ -10,6 +10,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from hourtime.domain.entities import Session, TimeEntry, User
+from hourtime.domain.entities.user import DurationFormat, HourCycle
 
 
 class PatchInput(BaseModel):
@@ -66,6 +67,23 @@ class LoginResult(BaseModel):
 class AuthenticatedUser(BaseModel):
     user: User
     session_id: UUID
+
+
+class UpdateProfileInput(PatchInput):
+    user_id: UUID
+    display_name: str | None = None
+    timezone: str | None = None
+    week_start: int | None = None
+    duration_format: DurationFormat | None = None
+    hour_cycle: HourCycle | None = None
+
+
+class ChangePasswordInput(BaseModel):
+    user_id: UUID
+    # The session that asked for the change stays signed in; the rest are revoked.
+    session_id: UUID
+    current_password: str
+    new_password: str
 
 
 # --- projects ---------------------------------------------------------------

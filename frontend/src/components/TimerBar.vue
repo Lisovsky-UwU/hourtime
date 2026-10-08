@@ -8,18 +8,19 @@ import ProjectPicker from '@/components/ProjectPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import { toast } from '@/components/ui/toast'
 import { useAsyncAction } from '@/composables/useApiError'
+import { useDuration } from '@/composables/useDuration'
 import { useHotkeys } from '@/composables/useHotkeys'
 import { useEntriesStore } from '@/stores/entries'
 import { useProjectsStore } from '@/stores/projects'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntrySuggestion } from '@/types'
-import { formatClock } from '@/utils/duration'
 import { serverNow, serverNowIso } from '@/utils/serverTime'
 import type { TimeOfDay } from '@/utils/timeOfDay'
 import { combine, toDateInput, toTimeOfDay } from '@/utils/timeOfDay'
 
 const { t } = useI18n()
 const timer = useTimerStore()
+const showDuration = useDuration()
 // Every timer write returns the saved entry, so the list is folded in directly
 // rather than refetched.
 const entries = useEntriesStore()
@@ -160,7 +161,7 @@ function commitStart() {
       </span>
 
       <span class="clock num" role="timer">
-        {{ formatClock(timer.elapsed) }}
+        {{ showDuration(timer.elapsed) }}
       </span>
 
       <button

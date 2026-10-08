@@ -14,6 +14,8 @@ defineProps<{
   options: { value: T; label: string; icon?: IconName }[]
   /** Accessible name of the group. */
   label: string
+  /** The labels are samples of numbers or times, set in `.num`. */
+  numeric?: boolean
 }>()
 </script>
 
@@ -31,6 +33,7 @@ defineProps<{
       :key="option.value"
       :value="option.value"
       class="ui-segmented-item"
+      :class="{ num: numeric }"
     >
       <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
       {{ option.label }}

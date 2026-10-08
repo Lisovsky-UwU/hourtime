@@ -6,6 +6,7 @@ from hourtime.domain.errors import (
     AccountDisabled,
     EmailAlreadyUsed,
     InvalidCredentials,
+    InvalidCurrentPassword,
     InvalidToken,
     RegistrationDisabled,
     SessionExpired,
@@ -13,17 +14,22 @@ from hourtime.domain.errors import (
 )
 from hourtime.use_cases.auth import (
     AuthenticateAccessToken,
+    ChangePassword,
     LoginUser,
     LogoutUser,
     PurgeExpiredSessions,
     RefreshSession,
     RegisterUser,
     SessionIssuer,
+    UpdateProfile,
 )
 from hourtime.use_cases.dto import (
+    ChangePasswordInput,
+    LoginResult,
     LoginUserInput,
     RefreshSessionInput,
     RegisterUserInput,
+    UpdateProfileInput,
 )
 from tests.factories import make_user
 from tests.fakes import (
@@ -67,6 +73,15 @@ class AuthWorld:
         self.logout = LogoutUser(self.sessions, self.tokens, self.clock, self.uow)
         self.authenticate = AuthenticateAccessToken(
             self.sessions, self.users, self.tokens, self.clock
+        )
+        self.update_profile = UpdateProfile(self.users, self.clock, self.uow)
+        self.change_password = ChangePassword(
+            self.users,
+            self.sessions,
+            self.hasher,
+            self.clock,
+            self.uow,
+            password_min_length=10,
         )
 
     async def signed_up(self, email: str = "owner@example.com", password: str = "correct-horse"):
@@ -235,6 +250,99 @@ class TestRetention:
         world.clock.advance(REFRESH_TTL + timedelta(days=91))
         assert await purge.execute() == 1
         assert world.sessions.items == {}
+
+
+class TestUpdateProfile:
+    async def test_changes_only_the_provided_fields(self, world: AuthWorld) -> None:
+        login = await world.signed_up()
+        world.clock.advance(timedelta(minutes=5))
+
+        updated = await world.update_profile.execute(
+            UpdateProfileInput(user_id=login.user.id, timezone="Europe/Moscow", week_start=0)
+        )
+
+        assert updated.timezone == "Europe/Moscow"
+        assert updated.week_start == 0
+        assert updated.duration_format == "classic"
+        assert updated.updated_at == world.clock.now()
+        assert await world.users.get_by_id(login.user.id) == updated
+
+    async def test_display_name_can_be_cleared(self, world: AuthWorld) -> None:
+        login = await world.signed_up()
+        await world.update_profile.execute(
+            UpdateProfileInput(user_id=login.user.id, display_name="Ann")
+        )
+        cleared = await world.update_profile.execute(
+            UpdateProfileInput(user_id=login.user.id, display_name=None)
+        )
+        assert cleared.display_name is None
+
+    async def test_settings_cannot_be_nulled(self, world: AuthWorld) -> None:
+        login = await world.signed_up()
+        with pytest.raises(ValidationError):
+            await world.update_profile.execute(
+                UpdateProfileInput(user_id=login.user.id, hour_cycle=None)
+            )
+
+    async def test_rejects_unknown_timezone(self, world: AuthWorld) -> None:
+        login = await world.signed_up()
+        with pytest.raises(ValidationError):
+            await world.update_profile.execute(
+                UpdateProfileInput(user_id=login.user.id, timezone="Europe/Atlantis")
+            )
+
+    async def test_empty_patch_writes_nothing(self, world: AuthWorld) -> None:
+        login = await world.signed_up()
+        commits = world.uow.commits
+        await world.update_profile.execute(UpdateProfileInput(user_id=login.user.id))
+        assert world.uow.commits == commits
+
+
+class TestChangePassword:
+    async def change(self, world: AuthWorld, login: LoginResult, current: str, new: str) -> None:
+        here = await world.authenticate.execute(login.tokens.access_token)
+        await world.change_password.execute(
+            ChangePasswordInput(
+                user_id=login.user.id,
+                session_id=here.session_id,
+                current_password=current,
+                new_password=new,
+            )
+        )
+
+    async def test_replaces_the_password(self, world: AuthWorld) -> None:
+        login = await world.signed_up(password="correct-horse")
+        await self.change(world, login, "correct-horse", "battery-staple")
+
+        with pytest.raises(InvalidCredentials):
+            await world.login.execute(
+                LoginUserInput(email="owner@example.com", password="correct-horse")
+            )
+        await world.login.execute(
+            LoginUserInput(email="owner@example.com", password="battery-staple")
+        )
+
+    async def test_signs_out_other_devices_only(self, world: AuthWorld) -> None:
+        here = await world.signed_up(password="correct-horse")
+        elsewhere = await world.login.execute(
+            LoginUserInput(email="owner@example.com", password="correct-horse")
+        )
+
+        await self.change(world, here, "correct-horse", "battery-staple")
+
+        await world.authenticate.execute(here.tokens.access_token)
+        with pytest.raises(InvalidToken):
+            await world.authenticate.execute(elsewhere.tokens.access_token)
+
+    async def test_rejects_wrong_current_password(self, world: AuthWorld) -> None:
+        login = await world.signed_up(password="correct-horse")
+        with pytest.raises(InvalidCurrentPassword):
+            await self.change(world, login, "wrong-password", "battery-staple")
+
+    async def test_rejects_short_new_password(self, world: AuthWorld) -> None:
+        login = await world.signed_up(password="correct-horse")
+        with pytest.raises(ValidationError):
+            await self.change(world, login, "correct-horse", "short")
 
 
 async def test_password_is_rehashed_when_parameters_age(world: AuthWorld) -> None:

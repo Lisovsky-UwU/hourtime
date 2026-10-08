@@ -41,6 +41,14 @@ class InvalidCredentials(DomainError):
     default_message = "Invalid email or password"
 
 
+class InvalidCurrentPassword(DomainError):
+    """Not `InvalidCredentials`: that one is a 401, and the client answers a 401
+    by refreshing its tokens instead of showing the error."""
+
+    code = "invalid_current_password"
+    default_message = "The current password is incorrect"
+
+
 class RegistrationDisabled(DomainError):
     code = "registration_disabled"
     default_message = "Registration is disabled on this instance"

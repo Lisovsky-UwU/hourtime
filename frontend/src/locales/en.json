@@ -163,7 +163,31 @@
     "sessions": "Sessions",
     "signOutEverywhere": "Sign out on all devices",
     "signOutEverywhereHint": "Ends every session, including this one.",
-    "signOutEverywhereTitle": "Sign out on all devices?"
+    "signOutEverywhereTitle": "Sign out on all devices?",
+    "profile": "Profile",
+    "tracking": "Time tracking",
+    "synced": "Same on all your devices",
+    "local": "Only in this browser",
+    "displayName": "Name",
+    "displayNameHint": "Shown in the menu instead of your email.",
+    "timezone": "Time zone",
+    "timezoneHint": "Reports split time into days and weeks in this zone.",
+    "timezoneUnset": "Not set",
+    "deviceZone": "This device: {zone}",
+    "useDeviceZone": "Use it",
+    "weekStart": "Week starts on",
+    "weekStartHint": "For the weekly total on the timer page and for reports.",
+    "durationFormat": "Durations",
+    "durationFormatHint": "How durations and totals are written. The sample is one hour five minutes: hours and minutes, decimal hours, or with seconds.",
+    "saveFailed": "Setting not saved",
+    "password": "Password",
+    "passwordChangeHint": "Changing it signs out your other devices.",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "passwordHint": "Other devices will be signed out; this one stays.",
+    "passwordChanged": "Password changed",
+    "passwordChangedHint": "Other devices have been signed out."
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -184,6 +208,7 @@
     "invalid_token": "Your session has ended. Please sign in again.",
     "session_expired": "Your session has expired. Please sign in again.",
     "network_error": "Cannot reach the server. Check your connection.",
-    "unknown": "Something went wrong. Try again."
+    "unknown": "Something went wrong. Try again.",
+    "invalid_current_password": "The current password is wrong."
   }
 }

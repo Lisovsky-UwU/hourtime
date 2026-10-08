@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 from pydantic import ValidationError as PydanticValidationError
@@ -80,6 +81,33 @@ class TestUser:
     def test_rejects_malformed_email(self) -> None:
         with pytest.raises(ValidationError):
             make_user(email="not-an-email")
+
+    def test_profile_defaults(self) -> None:
+        user = make_user()
+        assert user.timezone is None
+        assert (user.week_start, user.duration_format, user.hour_cycle) == (1, "classic", 24)
+
+    def test_blank_display_name_is_none(self) -> None:
+        assert make_user(display_name="   ").display_name is None
+        assert make_user(display_name=" Ann ").display_name == "Ann"
+
+    def test_accepts_iana_timezone(self) -> None:
+        assert make_user(timezone="Europe/Moscow").timezone == "Europe/Moscow"
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"timezone": "Mars/Olympus"},
+            {"timezone": "+03:00"},
+            {"week_start": 7},
+            {"week_start": -1},
+            {"duration_format": "verbose"},
+            {"hour_cycle": 13},
+        ],
+    )
+    def test_rejects_bad_profile_values(self, overrides: dict[str, Any]) -> None:
+        with pytest.raises(ValidationError):
+            make_user(**overrides)
 
 
 def test_entity_is_frozen() -> None:

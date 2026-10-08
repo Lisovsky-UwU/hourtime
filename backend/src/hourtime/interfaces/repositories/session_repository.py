@@ -25,8 +25,10 @@ class SessionRepository(ABC):
     async def update(self, session: Session) -> Session: ...
 
     @abstractmethod
-    async def revoke_all_for_user(self, user_id: UUID, at: datetime) -> int:
-        """Revoke every live session of a user; returns how many were affected."""
+    async def revoke_all_for_user(
+        self, user_id: UUID, at: datetime, *, keep: UUID | None = None
+    ) -> int:
+        """Revoke every live session of a user except `keep`; returns how many were affected."""
 
     @abstractmethod
     async def delete_expired_before(self, cutoff: datetime) -> int:

@@ -20,7 +20,7 @@ def make_user(
         "updated_at": NOW,
     }
     values.update(overrides)
-    return User(**values)
+    return User.model_validate(values)
 
 
 def make_project(user_id: UUID, *, name: str = "Website", **overrides: object) -> Project:

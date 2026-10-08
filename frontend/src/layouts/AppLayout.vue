@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -32,6 +32,8 @@ import { useTimerStore } from '@/stores/timer'
  */
 const { t } = useI18n()
 const auth = useAuthStore()
+// The name if the profile has one; the email is always in the tooltip.
+const accountName = computed(() => auth.user?.display_name ?? auth.user?.email)
 const timer = useTimerStore()
 const projects = useProjectsStore()
 const entries = useEntriesStore()
@@ -150,7 +152,7 @@ async function signOut() {
         </UiTooltip>
 
         <div class="account">
-          <span class="email" :title="auth.user?.email">{{ auth.user?.email }}</span>
+          <span class="email" :title="auth.user?.email">{{ accountName }}</span>
           <UiIconButton
             icon="keyboard"
             size="sm"
@@ -194,7 +196,7 @@ async function signOut() {
             </RouterLink>
           </nav>
           <div class="account drawer-account">
-            <span class="email">{{ auth.user?.email }}</span>
+            <span class="email">{{ accountName }}</span>
             <UiIconButton icon="sign-out" :label="t('nav.signOut')" @click="signOut" />
           </div>
         </DialogContent>

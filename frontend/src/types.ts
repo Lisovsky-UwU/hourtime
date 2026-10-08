@@ -1,10 +1,24 @@
 /** Shapes returned by the Hourtime API. */
 
+/** `classic` - 1:05, `decimal` - 1.08, `improved` - 1:05:00. */
+export type DurationFormat = 'classic' | 'decimal' | 'improved'
+
 export interface User {
   id: string
   email: string
+  display_name: string | null
+  /** IANA name; null until a client reports its zone. */
+  timezone: string | null
+  /** 0 = Sunday ... 6 = Saturday, as `Date.getDay()`. */
+  week_start: number
+  duration_format: DurationFormat
+  hour_cycle: 12 | 24
   created_at: string
 }
+
+export type ProfilePatch = Partial<
+  Pick<User, 'display_name' | 'timezone' | 'week_start' | 'duration_format' | 'hour_cycle'>
+>
 
 export interface Tokens {
   access_token: string

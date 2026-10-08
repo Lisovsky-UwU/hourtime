@@ -2,15 +2,16 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useDuration } from '@/composables/useDuration'
 import { useProjectsStore } from '@/stores/projects'
 import { useTimerStore } from '@/stores/timer'
-import { formatClock } from '@/utils/duration'
 
 /** The running timer, visible from every screen; a link back to it. */
 withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 const { t } = useI18n()
 const timer = useTimerStore()
+const showDuration = useDuration()
 const projects = useProjectsStore()
 
 const project = computed(() => projects.find(timer.entry?.project_id ?? null))
@@ -28,7 +29,7 @@ const title = computed(
     :aria-label="`${t('timer.running')}: ${title}`"
   >
     <span class="live-dot" aria-hidden="true" />
-    <span class="num clock">{{ formatClock(timer.elapsed) }}</span>
+    <span class="num clock">{{ showDuration(timer.elapsed) }}</span>
     <span v-if="!compact" class="title">
       <span v-if="project" class="project-dot" :style="{ background: project.color }" />
       <span class="title-text">{{ title }}</span>

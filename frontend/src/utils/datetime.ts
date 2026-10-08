@@ -48,13 +48,10 @@ export function startOfLocalDay(offsetDays = 0): Date {
   return date
 }
 
-/**
- * Monday 00:00 of the current week, local time. Always Monday until the week
- * start becomes a profile setting (stage 5 of the plan).
- */
-export function startOfLocalWeek(): Date {
+/** 00:00 local time of the current week's first day; `weekStart` numbered as `getDay()`. */
+export function startOfLocalWeek(weekStart: number): Date {
   const date = startOfLocalDay()
-  const sinceMonday = (date.getDay() + 6) % 7
-  date.setDate(date.getDate() - sinceMonday)
+  const sinceStart = (date.getDay() - weekStart + 7) % 7
+  date.setDate(date.getDate() - sinceStart)
   return date
 }
