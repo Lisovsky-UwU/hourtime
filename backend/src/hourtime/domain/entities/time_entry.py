@@ -13,7 +13,10 @@ class TimeEntry(Entity):
     """A tracked interval. `stopped_at is None` means the timer is still running."""
 
     id: UUID
+    # Who tracked it. Within a shared workspace this is what keeps one member's
+    # entries apart from another's.
     user_id: UUID
+    workspace_id: UUID
     project_id: UUID | None = None
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
     started_at: UtcDatetime

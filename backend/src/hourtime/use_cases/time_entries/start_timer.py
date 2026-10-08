@@ -33,7 +33,7 @@ class StartTimer:
         reject_future(started_at, now, START_TIME)
         started_at = min(started_at, now)
 
-        project_id = await resolve_project(self._projects, data.user_id, data.project_id)
+        project_id = await resolve_project(self._projects, data.workspace_id, data.project_id)
 
         running = await self._entries.get_running(data.user_id)
         if running is not None:
@@ -49,6 +49,7 @@ class StartTimer:
         entry = TimeEntry(
             id=uuid4(),
             user_id=data.user_id,
+            workspace_id=data.workspace_id,
             project_id=project_id,
             description=data.description,
             started_at=started_at,

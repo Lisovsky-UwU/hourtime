@@ -34,13 +34,15 @@ class UpdateTimeEntry:
         self._uow = uow
 
     async def execute(self, data: UpdateTimeEntryInput) -> TimeEntry:
-        entry = await get_owned_time_entry(self._entries, data.user_id, data.entry_id)
+        entry = await get_owned_time_entry(
+            self._entries, data.user_id, data.workspace_id, data.entry_id
+        )
         now = self._clock.now()
         changes: dict[str, Any] = {}
 
         if data.provided("project_id"):
             changes["project_id"] = await resolve_project(
-                self._projects, data.user_id, data.project_id
+                self._projects, data.workspace_id, data.project_id
             )
 
         if data.provided("description"):

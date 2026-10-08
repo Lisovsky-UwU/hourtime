@@ -26,10 +26,14 @@ from hourtime.infrastructure.db.repositories.project_repository import SqlProjec
 from hourtime.infrastructure.db.repositories.session_repository import SqlSessionRepository
 from hourtime.infrastructure.db.repositories.time_entry_repository import SqlTimeEntryRepository
 from hourtime.infrastructure.db.repositories.user_repository import SqlUserRepository
+from hourtime.infrastructure.db.repositories.workspace_repository import (
+    SqlWorkspaceRepository,
+)
 from hourtime.infrastructure.security.token_generator import OpaqueTokenGenerator
 from hourtime.interfaces.repositories import (
     ProjectRepository,
     TimeEntryRepository,
+    WorkspaceRepository,
 )
 from hourtime.interfaces.services import Clock, PasswordHasher, TokenGenerator, UnitOfWork
 from hourtime.use_cases.auth import (
@@ -133,6 +137,13 @@ def get_user_repository(
 UsersDep = Annotated[CachedUserRepository, Depends(get_user_repository)]
 
 
+def get_workspace_repository(session: DbSessionDep) -> WorkspaceRepository:
+    return SqlWorkspaceRepository(session)
+
+
+WorkspacesDep = Annotated[WorkspaceRepository, Depends(get_workspace_repository)]
+
+
 def get_project_repository(session: DbSessionDep) -> ProjectRepository:
     return SqlProjectRepository(session)
 
@@ -194,10 +205,16 @@ IssuerDep = Annotated[SessionIssuer, Depends(get_session_issuer)]
 
 
 def get_register_user(
-    users: UsersDep, hasher: HasherDep, clock: ClockDep, uow: UowDep, settings: SettingsDep
+    users: UsersDep,
+    workspaces: WorkspacesDep,
+    hasher: HasherDep,
+    clock: ClockDep,
+    uow: UowDep,
+    settings: SettingsDep,
 ) -> RegisterUser:
     return RegisterUser(
         users,
+        workspaces,
         hasher,
         clock,
         uow,

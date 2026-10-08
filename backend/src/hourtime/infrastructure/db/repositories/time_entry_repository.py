@@ -16,6 +16,7 @@ def to_domain(model: TimeEntryModel) -> TimeEntry:
     return TimeEntry(
         id=model.id,
         user_id=model.user_id,
+        workspace_id=model.workspace_id,
         project_id=model.project_id,
         description=model.description,
         started_at=model.started_at,
@@ -48,11 +49,15 @@ class SqlTimeEntryRepository(TimeEntryRepository):
     def _filters(
         self,
         user_id: UUID,
+        workspace_id: UUID,
         started_from: datetime | None,
         started_to: datetime | None,
         project_id: UUID | None,
     ) -> list[ColumnElement[bool]]:
-        conditions: list[ColumnElement[bool]] = [TimeEntryModel.user_id == user_id]
+        conditions: list[ColumnElement[bool]] = [
+            TimeEntryModel.user_id == user_id,
+            TimeEntryModel.workspace_id == workspace_id,
+        ]
         if started_from is not None:
             conditions.append(TimeEntryModel.started_at >= started_from)
         if started_to is not None:
@@ -64,6 +69,7 @@ class SqlTimeEntryRepository(TimeEntryRepository):
     async def list_for_user(
         self,
         user_id: UUID,
+        workspace_id: UUID,
         *,
         started_from: datetime | None = None,
         started_to: datetime | None = None,
@@ -73,7 +79,9 @@ class SqlTimeEntryRepository(TimeEntryRepository):
     ) -> list[TimeEntry]:
         statement = (
             sa.select(TimeEntryModel)
-            .where(*self._filters(user_id, started_from, started_to, project_id))
+            .where(
+                *self._filters(user_id, workspace_id, started_from, started_to, project_id)
+            )
             .order_by(TimeEntryModel.started_at.desc(), TimeEntryModel.id.desc())
             .limit(limit)
             .offset(offset)
@@ -82,7 +90,7 @@ class SqlTimeEntryRepository(TimeEntryRepository):
         return [to_domain(model) for model in models]
 
     async def suggest(
-        self, user_id: UUID, *, query: str = "", limit: int = 10
+        self, user_id: UUID, workspace_id: UUID, *, query: str = "", limit: int = 10
     ) -> list[TimeEntrySuggestion]:
         last_used = sa.func.max(TimeEntryModel.started_at).label("last_used_at")
         statement = (
@@ -90,6 +98,7 @@ class SqlTimeEntryRepository(TimeEntryRepository):
             .outerjoin(ProjectModel, ProjectModel.id == TimeEntryModel.project_id)
             .where(
                 TimeEntryModel.user_id == user_id,
+                TimeEntryModel.workspace_id == workspace_id,
                 TimeEntryModel.description != "",
                 ProjectModel.archived_at.is_(None),
             )

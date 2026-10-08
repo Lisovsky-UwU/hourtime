@@ -17,7 +17,7 @@ from hourtime.domain.errors import (
 
 _BY_CONSTRAINT: dict[str, type[DomainError]] = {
     "users_email_key": EmailAlreadyUsed,
-    "uq_projects_user_active_name": ProjectNameTaken,
+    "uq_projects_workspace_active_name": ProjectNameTaken,
     "uq_time_entries_one_running": TimerAlreadyRunning,
 }
 

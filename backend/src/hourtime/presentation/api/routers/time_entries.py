@@ -59,6 +59,7 @@ async def list_time_entries(
     page = await use_case.execute(
         ListTimeEntriesInput(
             user_id=current.user.id,
+            workspace_id=current.workspace_id,
             started_from=started_from,
             started_to=started_to,
             project_id=project_id,
@@ -77,7 +78,9 @@ async def suggest_time_entries(
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> list[TimeEntrySuggestionResponse]:
     found = await use_case.execute(
-        SuggestTimeEntriesInput(user_id=current.user.id, query=q, limit=limit)
+        SuggestTimeEntriesInput(
+            user_id=current.user.id, workspace_id=current.workspace_id, query=q, limit=limit
+        )
     )
     return [TimeEntrySuggestionResponse.of(suggestion) for suggestion in found]
 
@@ -100,6 +103,7 @@ async def start_timer(
     entry = await use_case.execute(
         StartTimerInput(
             user_id=current.user.id,
+            workspace_id=current.workspace_id,
             project_id=body.project_id,
             description=body.description,
             started_at=body.started_at,
@@ -116,7 +120,12 @@ async def stop_timer(
     use_case: Annotated[StopTimer, Depends(get_stop_timer)],
 ) -> TimeEntryResponse:
     entry = await use_case.execute(
-        StopTimerInput(user_id=current.user.id, entry_id=entry_id, stopped_at=body.stopped_at)
+        StopTimerInput(
+            user_id=current.user.id,
+            workspace_id=current.workspace_id,
+            entry_id=entry_id,
+            stopped_at=body.stopped_at,
+        )
     )
     return TimeEntryResponse.of(entry)
 
@@ -130,6 +139,7 @@ async def create_time_entry(
     entry = await use_case.execute(
         CreateTimeEntryInput(
             user_id=current.user.id,
+            workspace_id=current.workspace_id,
             project_id=body.project_id,
             description=body.description,
             started_at=body.started_at,
@@ -148,7 +158,10 @@ async def update_time_entry(
 ) -> TimeEntryResponse:
     entry = await use_case.execute(
         UpdateTimeEntryInput(
-            user_id=current.user.id, entry_id=entry_id, **body.model_dump(exclude_unset=True)
+            user_id=current.user.id,
+            workspace_id=current.workspace_id,
+            entry_id=entry_id,
+            **body.model_dump(exclude_unset=True),
         )
     )
     return TimeEntryResponse.of(entry)
@@ -160,5 +173,5 @@ async def delete_time_entry(
     current: CurrentUserDep,
     use_case: Annotated[DeleteTimeEntry, Depends(get_delete_time_entry)],
 ) -> Response:
-    await use_case.execute(current.user.id, entry_id)
+    await use_case.execute(current.user.id, current.workspace_id, entry_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

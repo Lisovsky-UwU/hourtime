@@ -68,6 +68,11 @@ class AuthenticatedUser(BaseModel):
     user: User
     session_id: UUID
 
+    @property
+    def workspace_id(self) -> UUID:
+        """The workspace every request works in until the API lets one be picked."""
+        return self.user.default_workspace_id
+
 
 class UpdateProfileInput(PatchInput):
     user_id: UUID
@@ -90,13 +95,13 @@ class ChangePasswordInput(BaseModel):
 
 
 class CreateProjectInput(BaseModel):
-    user_id: UUID
+    workspace_id: UUID
     name: str
     color: str | None = None
 
 
 class UpdateProjectInput(PatchInput):
-    user_id: UUID
+    workspace_id: UUID
     project_id: UUID
     name: str | None = None
     color: str | None = None
@@ -108,6 +113,7 @@ class UpdateProjectInput(PatchInput):
 
 class StartTimerInput(BaseModel):
     user_id: UUID
+    workspace_id: UUID
     project_id: UUID | None = None
     description: str = ""
     started_at: datetime | None = None
@@ -115,12 +121,14 @@ class StartTimerInput(BaseModel):
 
 class StopTimerInput(BaseModel):
     user_id: UUID
+    workspace_id: UUID
     entry_id: UUID | None = None
     stopped_at: datetime | None = None
 
 
 class CreateTimeEntryInput(BaseModel):
     user_id: UUID
+    workspace_id: UUID
     project_id: UUID | None = None
     description: str = ""
     started_at: datetime
@@ -129,6 +137,7 @@ class CreateTimeEntryInput(BaseModel):
 
 class UpdateTimeEntryInput(PatchInput):
     user_id: UUID
+    workspace_id: UUID
     entry_id: UUID
     project_id: UUID | None = None
     description: str | None = None
@@ -138,6 +147,7 @@ class UpdateTimeEntryInput(PatchInput):
 
 class ListTimeEntriesInput(BaseModel):
     user_id: UUID
+    workspace_id: UUID
     started_from: datetime | None = None
     started_to: datetime | None = None
     project_id: UUID | None = None
@@ -147,6 +157,7 @@ class ListTimeEntriesInput(BaseModel):
 
 class SuggestTimeEntriesInput(BaseModel):
     user_id: UUID
+    workspace_id: UUID
     query: str = ""
     limit: int = 10
 

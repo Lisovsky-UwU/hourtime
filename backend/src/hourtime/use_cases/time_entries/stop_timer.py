@@ -21,7 +21,9 @@ class StopTimer:
             if entry is None:
                 raise NotFound("No timer is running")
         else:
-            entry = await get_owned_time_entry(self._entries, data.user_id, data.entry_id)
+            entry = await get_owned_time_entry(
+                self._entries, data.user_id, data.workspace_id, data.entry_id
+            )
             if not entry.is_running:
                 raise ValidationError("This entry is already stopped")
 

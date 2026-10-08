@@ -26,6 +26,8 @@ class User(Entity):
     email: EmailStr
     password_hash: str
     is_active: bool = True
+    # Where the API puts projects and entries until workspaces can be picked.
+    default_workspace_id: UUID
     display_name: str | None = Field(default=None, max_length=DISPLAY_NAME_MAX_LENGTH)
     # IANA name. None until the first client reports its zone: a default of UTC
     # could not be told apart from a deliberate choice of UTC.

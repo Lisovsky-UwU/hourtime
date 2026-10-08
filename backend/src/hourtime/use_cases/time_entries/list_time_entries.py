@@ -30,6 +30,7 @@ class ListTimeEntries:
 
         found = await self._entries.list_for_user(
             data.user_id,
+            data.workspace_id,
             started_from=data.started_from,
             started_to=data.started_to,
             project_id=data.project_id,

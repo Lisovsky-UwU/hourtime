@@ -39,6 +39,7 @@ from tests.fakes import (
     FakeUnitOfWork,
     InMemorySessionRepository,
     InMemoryUserRepository,
+    InMemoryWorkspaceRepository,
 )
 
 ACCESS_TTL = timedelta(minutes=30)
@@ -51,6 +52,7 @@ class AuthWorld:
     def __init__(self, *, allow_registration: bool = True) -> None:
         self.clock = FakeClock()
         self.users = InMemoryUserRepository()
+        self.workspaces = InMemoryWorkspaceRepository()
         self.sessions = InMemorySessionRepository()
         self.hasher = FakePasswordHasher()
         self.tokens = FakeTokenGenerator()
@@ -60,6 +62,7 @@ class AuthWorld:
         )
         self.register = RegisterUser(
             self.users,
+            self.workspaces,
             self.hasher,
             self.clock,
             self.uow,
@@ -102,6 +105,14 @@ class TestRegister:
         assert user.email == "owner@example.com"
         assert user.password_hash == "hashed:correct-horse"
         assert world.uow.commits == 1
+
+    async def test_creates_a_personal_workspace(self, world: AuthWorld) -> None:
+        user = await world.register.execute(
+            RegisterUserInput(email="owner@example.com", password="correct-horse")
+        )
+        workspace = world.workspaces.items[user.default_workspace_id]
+        assert workspace.owner_id == user.id
+        assert workspace.name == "Personal"
 
     async def test_rejects_duplicate_email(self, world: AuthWorld) -> None:
         await world.register.execute(

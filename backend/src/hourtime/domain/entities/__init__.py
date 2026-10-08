@@ -3,9 +3,11 @@ from hourtime.domain.entities.project import DEFAULT_COLOR, Project, normalise_c
 from hourtime.domain.entities.session import Session
 from hourtime.domain.entities.time_entry import TimeEntry, TimeEntrySuggestion
 from hourtime.domain.entities.user import User
+from hourtime.domain.entities.workspace import PERSONAL_WORKSPACE_NAME, Workspace
 
 __all__ = [
     "DEFAULT_COLOR",
+    "PERSONAL_WORKSPACE_NAME",
     "Entity",
     "Project",
     "Session",
@@ -13,5 +15,6 @@ __all__ = [
     "TimeEntrySuggestion",
     "User",
     "UtcDatetime",
+    "Workspace",
     "normalise_color",
 ]

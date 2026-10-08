@@ -18,6 +18,7 @@ def to_domain(model: UserModel) -> User:
         email=model.email,
         password_hash=model.password_hash,
         is_active=model.is_active,
+        default_workspace_id=model.default_workspace_id,
         display_name=model.display_name,
         timezone=model.timezone,
         week_start=model.week_start,

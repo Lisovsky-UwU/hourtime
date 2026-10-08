@@ -15,13 +15,13 @@ class CreateProject:
 
     async def execute(self, data: CreateProjectInput) -> Project:
         name = data.name.strip()
-        if await self._projects.find_by_name(data.user_id, name) is not None:
+        if await self._projects.find_by_name(data.workspace_id, name) is not None:
             raise ProjectNameTaken
 
         now = self._clock.now()
         project = Project(
             id=uuid4(),
-            user_id=data.user_id,
+            workspace_id=data.workspace_id,
             name=name,
             color=data.color or DEFAULT_COLOR,
             created_at=now,

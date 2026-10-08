@@ -13,7 +13,7 @@ from hourtime.interfaces.repositories import ProjectRepository
 def to_domain(model: ProjectModel) -> Project:
     return Project(
         id=model.id,
-        user_id=model.user_id,
+        workspace_id=model.workspace_id,
         name=model.name,
         color=model.color,
         archived_at=model.archived_at,
@@ -30,19 +30,19 @@ class SqlProjectRepository(ProjectRepository):
         model = await self._session.get(ProjectModel, project_id)
         return to_domain(model) if model else None
 
-    async def list_for_user(
-        self, user_id: UUID, *, include_archived: bool = False
+    async def list_for_workspace(
+        self, workspace_id: UUID, *, include_archived: bool = False
     ) -> list[Project]:
-        statement = sa.select(ProjectModel).where(ProjectModel.user_id == user_id)
+        statement = sa.select(ProjectModel).where(ProjectModel.workspace_id == workspace_id)
         if not include_archived:
             statement = statement.where(ProjectModel.archived_at.is_(None))
         statement = statement.order_by(sa.func.lower(ProjectModel.name))
         models = (await self._session.execute(statement)).scalars().all()
         return [to_domain(model) for model in models]
 
-    async def find_by_name(self, user_id: UUID, name: str) -> Project | None:
+    async def find_by_name(self, workspace_id: UUID, name: str) -> Project | None:
         statement = sa.select(ProjectModel).where(
-            ProjectModel.user_id == user_id,
+            ProjectModel.workspace_id == workspace_id,
             sa.func.lower(ProjectModel.name) == name.strip().lower(),
             ProjectModel.archived_at.is_(None),
         )

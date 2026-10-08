@@ -15,4 +15,6 @@ class SuggestTimeEntries:
     async def execute(self, data: SuggestTimeEntriesInput) -> list[TimeEntrySuggestion]:
         if data.limit < 1 or data.limit > MAX_LIMIT:
             raise ValidationError(f"limit must be between 1 and {MAX_LIMIT}")
-        return await self._entries.suggest(data.user_id, query=data.query.strip(), limit=data.limit)
+        return await self._entries.suggest(
+            data.user_id, data.workspace_id, query=data.query.strip(), limit=data.limit
+        )

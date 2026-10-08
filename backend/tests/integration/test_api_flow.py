@@ -413,6 +413,24 @@ class TestIsolationBetweenUsers:
         )
         assert peek.status_code == 404
 
+    async def test_project_names_repeat_across_workspaces(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        await client.post("/projects", json={"name": "Website"})
+
+        await client.post(
+            "/auth/register", json={"email": "other@example.com", "password": PASSWORD}
+        )
+        other_login = await client.post(
+            "/auth/login", json={"email": "other@example.com", "password": PASSWORD}
+        )
+        other_headers = {
+            "Authorization": f"Bearer {other_login.json()['tokens']['access_token']}"
+        }
+
+        created = await client.post("/projects", json={"name": "Website"}, headers=other_headers)
+        assert created.status_code == 201
+
 
 class TestSessionCache:
     @pytest.fixture
@@ -476,6 +494,33 @@ class TestDatabaseGuarantees:
                 sa.text("SELECT count(*) FROM time_entries WHERE stopped_at IS NULL")
             )
             assert running.scalar_one() == 1
+
+    async def test_data_lands_in_the_personal_workspace(
+        self, app: FastAPI, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        project = (await client.post("/projects", json={"name": "Website"})).json()
+        await client.post("/time-entries/start", json={"project_id": project["id"]})
+
+        async with app.state.sessionmaker() as session:
+            rows = await session.execute(
+                sa.text(
+                    """
+                    SELECT w.owner_id = u.id AS owned, w.name,
+                           p.workspace_id = w.id AS project_in, t.workspace_id = w.id AS entry_in
+                    FROM users u
+                    JOIN workspaces w ON w.id = u.default_workspace_id
+                    JOIN projects p ON p.id = :project_id
+                    JOIN time_entries t ON t.user_id = u.id
+                    """
+                ),
+                {"project_id": project["id"]},
+            )
+            assert rows.one()._asdict() == {
+                "owned": True,
+                "name": "Personal",
+                "project_in": True,
+                "entry_in": True,
+            }
 
     async def test_responses_carry_the_server_clock(self, client: httpx.AsyncClient) -> None:
         response = await client.get("/health")

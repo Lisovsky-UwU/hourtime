@@ -16,6 +16,7 @@ def make_user(
         "email": email,
         "password_hash": password_hash,
         "is_active": True,
+        "default_workspace_id": uuid4(),
         "created_at": NOW,
         "updated_at": NOW,
     }
@@ -23,10 +24,10 @@ def make_user(
     return User.model_validate(values)
 
 
-def make_project(user_id: UUID, *, name: str = "Website", **overrides: object) -> Project:
+def make_project(workspace_id: UUID, *, name: str = "Website", **overrides: object) -> Project:
     values: dict[str, object] = {
         "id": uuid4(),
-        "user_id": user_id,
+        "workspace_id": workspace_id,
         "name": name,
         "color": "#4285f4",
         "archived_at": None,
@@ -37,10 +38,12 @@ def make_project(user_id: UUID, *, name: str = "Website", **overrides: object) -
     return Project(**values)
 
 
-def make_entry(user_id: UUID, *, started_at: datetime = NOW, **overrides: object) -> TimeEntry:
+def make_entry(user: User, *, started_at: datetime = NOW, **overrides: object) -> TimeEntry:
+    """An entry the user tracked in their default workspace."""
     values: dict[str, object] = {
         "id": uuid4(),
-        "user_id": user_id,
+        "user_id": user.id,
+        "workspace_id": user.default_workspace_id,
         "project_id": None,
         "description": "",
         "started_at": started_at,

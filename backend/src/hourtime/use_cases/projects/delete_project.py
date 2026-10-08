@@ -2,7 +2,7 @@ from uuid import UUID
 
 from hourtime.interfaces.repositories import ProjectRepository
 from hourtime.interfaces.services import UnitOfWork
-from hourtime.use_cases.access import get_owned_project
+from hourtime.use_cases.access import get_workspace_project
 
 
 class DeleteProject:
@@ -12,7 +12,7 @@ class DeleteProject:
         self._projects = projects
         self._uow = uow
 
-    async def execute(self, user_id: UUID, project_id: UUID) -> None:
-        project = await get_owned_project(self._projects, user_id, project_id)
+    async def execute(self, workspace_id: UUID, project_id: UUID) -> None:
+        project = await get_workspace_project(self._projects, workspace_id, project_id)
         await self._projects.delete(project.id)
         await self._uow.commit()

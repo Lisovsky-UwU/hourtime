@@ -57,27 +57,43 @@ def world() -> TimerWorld:
 
 class TestStart:
     async def test_starts_at_now_by_default(self, world: TimerWorld) -> None:
-        entry = await world.start.execute(StartTimerInput(user_id=world.user.id))
+        entry = await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         assert entry.started_at == world.clock.now()
         assert entry.is_running
 
     async def test_accepts_a_backdated_start(self, world: TimerWorld) -> None:
         earlier = world.clock.now() - timedelta(hours=2)
         entry = await world.start.execute(
-            StartTimerInput(user_id=world.user.id, started_at=earlier)
+            StartTimerInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                started_at=earlier,
+            )
         )
         assert entry.started_at == earlier
 
     async def test_rejects_a_start_in_the_future(self, world: TimerWorld) -> None:
         later = world.clock.now() + timedelta(hours=1)
         with pytest.raises(ValidationError):
-            await world.start.execute(StartTimerInput(user_id=world.user.id, started_at=later))
+            await world.start.execute(
+                StartTimerInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    started_at=later,
+                )
+            )
 
     async def test_stops_the_previous_timer(self, world: TimerWorld) -> None:
-        first = await world.start.execute(StartTimerInput(user_id=world.user.id))
+        first = await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         world.clock.advance(timedelta(minutes=25))
 
-        second = await world.start.execute(StartTimerInput(user_id=world.user.id))
+        second = await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
 
         closed = await world.entries.get_by_id(first.id)
         assert closed is not None
@@ -87,60 +103,88 @@ class TestStart:
     async def test_backdated_start_closes_the_previous_entry_without_overlap(
         self, world: TimerWorld
     ) -> None:
-        first = await world.start.execute(StartTimerInput(user_id=world.user.id))
+        first = await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         world.clock.advance(timedelta(hours=1))
         boundary = world.clock.now() - timedelta(minutes=20)
 
         second = await world.start.execute(
-            StartTimerInput(user_id=world.user.id, started_at=boundary)
+            StartTimerInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                started_at=boundary,
+            )
         )
 
         closed = await world.entries.get_by_id(first.id)
         assert closed is not None
         assert closed.stopped_at == boundary == second.started_at
 
-    async def test_rejects_a_start_that_predates_the_running_entry(
-        self, world: TimerWorld
-    ) -> None:
-        await world.start.execute(StartTimerInput(user_id=world.user.id))
+    async def test_rejects_a_start_that_predates_the_running_entry(self, world: TimerWorld) -> None:
+        await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         world.clock.advance(timedelta(minutes=10))
         with pytest.raises(ValidationError):
             await world.start.execute(
                 StartTimerInput(
-                    user_id=world.user.id, started_at=world.clock.now() - timedelta(hours=1)
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    started_at=world.clock.now() - timedelta(hours=1),
                 )
             )
 
     async def test_rejects_someone_elses_project(self, world: TimerWorld) -> None:
-        theirs = await world.projects.add(make_project(world.other_user.id))
+        theirs = await world.projects.add(make_project(world.other_user.default_workspace_id))
         with pytest.raises(NotFound):
             await world.start.execute(
-                StartTimerInput(user_id=world.user.id, project_id=theirs.id)
+                StartTimerInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    project_id=theirs.id,
+                )
             )
 
     async def test_rejects_an_archived_project(self, world: TimerWorld) -> None:
         archived = await world.projects.add(
-            make_project(world.user.id, archived_at=world.clock.now())
+            make_project(world.user.default_workspace_id, archived_at=world.clock.now())
         )
         with pytest.raises(ValidationError):
             await world.start.execute(
-                StartTimerInput(user_id=world.user.id, project_id=archived.id)
+                StartTimerInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    project_id=archived.id,
+                )
             )
 
     async def test_timers_of_different_users_do_not_interfere(self, world: TimerWorld) -> None:
-        mine = await world.start.execute(StartTimerInput(user_id=world.user.id))
-        theirs = await world.start.execute(StartTimerInput(user_id=world.other_user.id))
+        mine = await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
+        theirs = await world.start.execute(
+            StartTimerInput(
+                user_id=world.other_user.id, workspace_id=world.other_user.default_workspace_id
+            )
+        )
         assert await world.running.execute(world.user.id) == mine
         assert await world.running.execute(world.other_user.id) == theirs
 
 
 class TestStop:
     async def test_stops_at_now_by_default(self, world: TimerWorld) -> None:
-        entry = await world.start.execute(StartTimerInput(user_id=world.user.id))
+        entry = await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         world.clock.advance(timedelta(minutes=45))
 
         stopped = await world.stop.execute(
-            StopTimerInput(user_id=world.user.id, entry_id=entry.id)
+            StopTimerInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                entry_id=entry.id,
+            )
         )
 
         assert stopped.stopped_at == world.clock.now()
@@ -148,32 +192,55 @@ class TestStop:
         assert await world.running.execute(world.user.id) is None
 
     async def test_stops_the_current_timer_without_an_id(self, world: TimerWorld) -> None:
-        await world.start.execute(StartTimerInput(user_id=world.user.id))
+        await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         world.clock.advance(timedelta(minutes=5))
-        stopped = await world.stop.execute(StopTimerInput(user_id=world.user.id))
+        stopped = await world.stop.execute(
+            StopTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         assert not stopped.is_running
 
     async def test_complains_when_nothing_runs(self, world: TimerWorld) -> None:
         with pytest.raises(NotFound):
-            await world.stop.execute(StopTimerInput(user_id=world.user.id))
+            await world.stop.execute(
+                StopTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+            )
 
     async def test_rejects_stopping_before_the_start(self, world: TimerWorld) -> None:
-        entry = await world.start.execute(StartTimerInput(user_id=world.user.id))
+        entry = await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         with pytest.raises(ValidationError):
             await world.stop.execute(
                 StopTimerInput(
                     user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
                     entry_id=entry.id,
                     stopped_at=entry.started_at - timedelta(minutes=1),
                 )
             )
 
     async def test_rejects_stopping_twice(self, world: TimerWorld) -> None:
-        entry = await world.start.execute(StartTimerInput(user_id=world.user.id))
+        entry = await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
         world.clock.advance(timedelta(minutes=5))
-        await world.stop.execute(StopTimerInput(user_id=world.user.id, entry_id=entry.id))
+        await world.stop.execute(
+            StopTimerInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                entry_id=entry.id,
+            )
+        )
         with pytest.raises(ValidationError):
-            await world.stop.execute(StopTimerInput(user_id=world.user.id, entry_id=entry.id))
+            await world.stop.execute(
+                StopTimerInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    entry_id=entry.id,
+                )
+            )
 
 
 class TestManualEntry:
@@ -184,6 +251,7 @@ class TestManualEntry:
         entry = await world.create.execute(
             CreateTimeEntryInput(
                 user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
                 started_at=started,
                 stopped_at=stopped,
                 description="  Wrote the report  ",
@@ -198,6 +266,7 @@ class TestManualEntry:
             await world.create.execute(
                 CreateTimeEntryInput(
                     user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
                     started_at=world.clock.now(),
                     stopped_at=world.clock.now() - timedelta(hours=1),
                 )
@@ -206,15 +275,16 @@ class TestManualEntry:
 
 class TestUpdate:
     async def test_changes_comment_project_and_times(self, world: TimerWorld) -> None:
-        project = await world.projects.add(make_project(world.user.id))
+        project = await world.projects.add(make_project(world.user.default_workspace_id))
         entry = await world.entries.add(
-            make_entry(world.user.id, started_at=world.clock.now() - timedelta(hours=2))
+            make_entry(world.user, started_at=world.clock.now() - timedelta(hours=2))
         )
         new_stop = world.clock.now() - timedelta(minutes=30)
 
         updated = await world.update.execute(
             UpdateTimeEntryInput(
                 user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
                 entry_id=entry.id,
                 project_id=project.id,
                 description="Refactoring",
@@ -227,68 +297,85 @@ class TestUpdate:
         assert updated.stopped_at == new_stop
 
     async def test_omitted_fields_are_untouched(self, world: TimerWorld) -> None:
-        project = await world.projects.add(make_project(world.user.id))
+        project = await world.projects.add(make_project(world.user.default_workspace_id))
         entry = await world.entries.add(
-            make_entry(world.user.id, project_id=project.id, description="Kept")
+            make_entry(world.user, project_id=project.id, description="Kept")
         )
 
         updated = await world.update.execute(
-            UpdateTimeEntryInput(user_id=world.user.id, entry_id=entry.id, description="Changed")
+            UpdateTimeEntryInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                entry_id=entry.id,
+                description="Changed",
+            )
         )
 
         assert updated.project_id == project.id
         assert updated.description == "Changed"
 
     async def test_explicit_null_detaches_the_project(self, world: TimerWorld) -> None:
-        project = await world.projects.add(make_project(world.user.id))
-        entry = await world.entries.add(make_entry(world.user.id, project_id=project.id))
+        project = await world.projects.add(make_project(world.user.default_workspace_id))
+        entry = await world.entries.add(make_entry(world.user, project_id=project.id))
 
         # Passing None explicitly lands in `model_fields_set`, which is how the
         # use case tells "detach the project" from "field not sent".
         updated = await world.update.execute(
-            UpdateTimeEntryInput(user_id=world.user.id, entry_id=entry.id, project_id=None)
+            UpdateTimeEntryInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                entry_id=entry.id,
+                project_id=None,
+            )
         )
 
         assert updated.project_id is None
 
     async def test_rejects_someone_elses_entry(self, world: TimerWorld) -> None:
-        theirs = await world.entries.add(make_entry(world.other_user.id))
+        theirs = await world.entries.add(make_entry(world.other_user))
         with pytest.raises(NotFound):
             await world.update.execute(
                 UpdateTimeEntryInput(
-                    user_id=world.user.id, entry_id=theirs.id, description="mine now"
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    entry_id=theirs.id,
+                    description="mine now",
                 )
             )
 
     async def test_rejects_an_inverted_interval(self, world: TimerWorld) -> None:
         entry = await world.entries.add(
-            make_entry(world.user.id, started_at=world.clock.now() - timedelta(hours=2))
+            make_entry(world.user, started_at=world.clock.now() - timedelta(hours=2))
         )
         with pytest.raises(ValidationError):
             await world.update.execute(
                 UpdateTimeEntryInput(
                     user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
                     entry_id=entry.id,
                     stopped_at=world.clock.now() - timedelta(hours=3),
                 )
             )
 
-    async def test_refuses_to_reopen_an_entry_while_another_runs(
-        self, world: TimerWorld
-    ) -> None:
+    async def test_refuses_to_reopen_an_entry_while_another_runs(self, world: TimerWorld) -> None:
         finished = await world.entries.add(
             make_entry(
-                world.user.id,
+                world.user,
                 started_at=world.clock.now() - timedelta(hours=2),
                 stopped_at=world.clock.now() - timedelta(hours=1),
             )
         )
-        await world.start.execute(StartTimerInput(user_id=world.user.id))
+        await world.start.execute(
+            StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
+        )
 
         with pytest.raises(ValidationError):
             await world.update.execute(
                 UpdateTimeEntryInput(
-                    user_id=world.user.id, entry_id=finished.id, stopped_at=None
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    entry_id=finished.id,
+                    stopped_at=None,
                 )
             )
 
@@ -299,14 +386,19 @@ class TestListing:
         for index in range(5):
             await world.entries.add(
                 make_entry(
-                    world.user.id,
+                    world.user,
                     started_at=base + timedelta(hours=index),
                     stopped_at=base + timedelta(hours=index, minutes=30),
                 )
             )
 
         page = await world.listing.execute(
-            ListTimeEntriesInput(user_id=world.user.id, limit=2, offset=0)
+            ListTimeEntriesInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                limit=2,
+                offset=0,
+            )
         )
 
         assert len(page.items) == 2
@@ -318,14 +410,19 @@ class TestListing:
         for index in range(3):
             await world.entries.add(
                 make_entry(
-                    world.user.id,
+                    world.user,
                     started_at=base + timedelta(hours=index),
                     stopped_at=base + timedelta(hours=index, minutes=30),
                 )
             )
 
         page = await world.listing.execute(
-            ListTimeEntriesInput(user_id=world.user.id, limit=3, offset=0)
+            ListTimeEntriesInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                limit=3,
+                offset=0,
+            )
         )
 
         # Exactly a full page and nothing beyond it.
@@ -333,14 +430,14 @@ class TestListing:
         assert not page.has_more
 
     async def test_filters_by_project_and_range(self, world: TimerWorld) -> None:
-        project = await world.projects.add(make_project(world.user.id))
+        project = await world.projects.add(make_project(world.user.default_workspace_id))
         base = world.clock.now() - timedelta(days=2)
         await world.entries.add(
-            make_entry(world.user.id, started_at=base, stopped_at=base + timedelta(hours=1))
+            make_entry(world.user, started_at=base, stopped_at=base + timedelta(hours=1))
         )
         await world.entries.add(
             make_entry(
-                world.user.id,
+                world.user,
                 project_id=project.id,
                 started_at=base + timedelta(days=1),
                 stopped_at=base + timedelta(days=1, hours=1),
@@ -348,21 +445,35 @@ class TestListing:
         )
 
         page = await world.listing.execute(
-            ListTimeEntriesInput(user_id=world.user.id, project_id=project.id)
+            ListTimeEntriesInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                project_id=project.id,
+            )
         )
 
         assert len(page.items) == 1
         assert page.items[0].project_id == project.id
 
     async def test_never_shows_another_users_entries(self, world: TimerWorld) -> None:
-        await world.entries.add(make_entry(world.other_user.id))
-        page = await world.listing.execute(ListTimeEntriesInput(user_id=world.user.id))
+        await world.entries.add(make_entry(world.other_user))
+        page = await world.listing.execute(
+            ListTimeEntriesInput(
+                user_id=world.user.id, workspace_id=world.user.default_workspace_id
+            )
+        )
         assert page.items == []
         assert not page.has_more
 
     async def test_rejects_an_oversized_page(self, world: TimerWorld) -> None:
         with pytest.raises(ValidationError):
-            await world.listing.execute(ListTimeEntriesInput(user_id=world.user.id, limit=10_000))
+            await world.listing.execute(
+                ListTimeEntriesInput(
+                    user_id=world.user.id,
+                    workspace_id=world.user.default_workspace_id,
+                    limit=10_000,
+                )
+            )
 
 
 class TestSuggestions:
@@ -370,7 +481,7 @@ class TestSuggestions:
         start = world.clock.now() - timedelta(hours=hours_ago)
         return await world.entries.add(
             make_entry(
-                world.user.id,
+                world.user,
                 description=description,
                 started_at=start,
                 stopped_at=start + timedelta(minutes=30),
@@ -379,14 +490,18 @@ class TestSuggestions:
         )
 
     async def test_distinct_pairs_newest_first(self, world: TimerWorld) -> None:
-        project = await world.projects.add(make_project(world.user.id))
+        project = await world.projects.add(make_project(world.user.default_workspace_id))
         await self._track(world, "Code review", hours_ago=5)
         await self._track(world, "Standup", hours_ago=4)
         await self._track(world, "Code review", hours_ago=3)
         await self._track(world, "Code review", hours_ago=2, project_id=project.id)
         await self._track(world, "", hours_ago=1)
 
-        found = await world.suggest.execute(SuggestTimeEntriesInput(user_id=world.user.id))
+        found = await world.suggest.execute(
+            SuggestTimeEntriesInput(
+                user_id=world.user.id, workspace_id=world.user.default_workspace_id
+            )
+        )
 
         assert [(item.description, item.project_id) for item in found] == [
             ("Code review", project.id),
@@ -400,7 +515,11 @@ class TestSuggestions:
         await self._track(world, "Standup", hours_ago=1)
 
         found = await world.suggest.execute(
-            SuggestTimeEntriesInput(user_id=world.user.id, query="  LOGIN ")
+            SuggestTimeEntriesInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                query="  LOGIN ",
+            )
         )
 
         assert [item.description for item in found] == ["Fix login redirect"]
@@ -409,32 +528,44 @@ class TestSuggestions:
         for index in range(5):
             await self._track(world, f"Task {index}", hours_ago=index + 1)
 
-        found = await world.suggest.execute(SuggestTimeEntriesInput(user_id=world.user.id, limit=2))
+        found = await world.suggest.execute(
+            SuggestTimeEntriesInput(
+                user_id=world.user.id, workspace_id=world.user.default_workspace_id, limit=2
+            )
+        )
 
         assert [item.description for item in found] == ["Task 0", "Task 1"]
 
     async def test_never_suggests_another_users_entries(self, world: TimerWorld) -> None:
-        await world.entries.add(make_entry(world.other_user.id, description="Secret"))
-        found = await world.suggest.execute(SuggestTimeEntriesInput(user_id=world.user.id))
+        await world.entries.add(make_entry(world.other_user, description="Secret"))
+        found = await world.suggest.execute(
+            SuggestTimeEntriesInput(
+                user_id=world.user.id, workspace_id=world.user.default_workspace_id
+            )
+        )
         assert found == []
 
     async def test_rejects_an_oversized_limit(self, world: TimerWorld) -> None:
         with pytest.raises(ValidationError):
-            await world.suggest.execute(SuggestTimeEntriesInput(user_id=world.user.id, limit=1_000))
+            await world.suggest.execute(
+                SuggestTimeEntriesInput(
+                    user_id=world.user.id, workspace_id=world.user.default_workspace_id, limit=1_000
+                )
+            )
 
 
 class TestDelete:
     async def test_removes_own_entry(self, world: TimerWorld) -> None:
-        entry = await world.entries.add(make_entry(world.user.id))
-        await world.delete.execute(world.user.id, entry.id)
+        entry = await world.entries.add(make_entry(world.user))
+        await world.delete.execute(world.user.id, world.user.default_workspace_id, entry.id)
         assert await world.entries.get_by_id(entry.id) is None
 
     async def test_rejects_someone_elses_entry(self, world: TimerWorld) -> None:
-        theirs = await world.entries.add(make_entry(world.other_user.id))
+        theirs = await world.entries.add(make_entry(world.other_user))
         with pytest.raises(NotFound):
-            await world.delete.execute(world.user.id, theirs.id)
+            await world.delete.execute(world.user.id, world.user.default_workspace_id, theirs.id)
         assert await world.entries.get_by_id(theirs.id) is not None
 
     async def test_reports_a_missing_entry_as_not_found(self, world: TimerWorld) -> None:
         with pytest.raises(NotFound):
-            await world.delete.execute(world.user.id, uuid4())
+            await world.delete.execute(world.user.id, world.user.default_workspace_id, uuid4())

@@ -9,12 +9,12 @@ class ProjectRepository(ABC):
     async def get_by_id(self, project_id: UUID) -> Project | None: ...
 
     @abstractmethod
-    async def list_for_user(
-        self, user_id: UUID, *, include_archived: bool = False
+    async def list_for_workspace(
+        self, workspace_id: UUID, *, include_archived: bool = False
     ) -> list[Project]: ...
 
     @abstractmethod
-    async def find_by_name(self, user_id: UUID, name: str) -> Project | None:
+    async def find_by_name(self, workspace_id: UUID, name: str) -> Project | None:
         """Look up an active project by name, case-insensitively."""
 
     @abstractmethod

@@ -4,7 +4,7 @@ from hourtime.domain.entities import Project
 from hourtime.domain.errors import ProjectNameTaken, ValidationError
 from hourtime.interfaces.repositories import ProjectRepository
 from hourtime.interfaces.services import Clock, UnitOfWork
-from hourtime.use_cases.access import get_owned_project
+from hourtime.use_cases.access import get_workspace_project
 from hourtime.use_cases.dto import UpdateProjectInput
 
 
@@ -17,7 +17,7 @@ class UpdateProject:
         self._uow = uow
 
     async def execute(self, data: UpdateProjectInput) -> Project:
-        project = await get_owned_project(self._projects, data.user_id, data.project_id)
+        project = await get_workspace_project(self._projects, data.workspace_id, data.project_id)
         now = self._clock.now()
         changes: dict[str, Any] = {}
 
@@ -25,7 +25,7 @@ class UpdateProject:
             if data.name is None:
                 raise ValidationError("The name is required")
             name = data.name.strip()
-            clash = await self._projects.find_by_name(data.user_id, name)
+            clash = await self._projects.find_by_name(data.workspace_id, name)
             if clash is not None and clash.id != project.id:
                 raise ProjectNameTaken
             changes["name"] = name

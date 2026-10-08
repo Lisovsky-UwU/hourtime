@@ -35,11 +35,12 @@ class CreateTimeEntry:
         if data.stopped_at <= data.started_at:
             raise ValidationError("The end time must be later than the start time")
 
-        project_id = await resolve_project(self._projects, data.user_id, data.project_id)
+        project_id = await resolve_project(self._projects, data.workspace_id, data.project_id)
 
         entry = TimeEntry(
             id=uuid4(),
             user_id=data.user_id,
+            workspace_id=data.workspace_id,
             project_id=project_id,
             description=data.description,
             started_at=data.started_at,

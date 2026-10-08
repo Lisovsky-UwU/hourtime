@@ -29,6 +29,20 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column(sa.String(320), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(sa.String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, default=True)
+    # Users and workspaces point at each other. Registration inserts the user
+    # first, so this check waits for the commit; `use_alter` breaks the cycle
+    # for metadata sorting.
+    default_workspace_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        sa.ForeignKey(
+            "workspaces.id",
+            name="fk_users_default_workspace_id",
+            use_alter=True,
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        nullable=False,
+    )
     display_name: Mapped[str | None] = mapped_column(sa.String(100))
     timezone: Mapped[str | None] = mapped_column(sa.String(64))
     week_start: Mapped[int] = mapped_column(sa.SmallInteger, nullable=False, server_default="1")
@@ -38,6 +52,20 @@ class UserModel(Base):
     hour_cycle: Mapped[int] = mapped_column(sa.SmallInteger, nullable=False, server_default="24")
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+
+
+class WorkspaceModel(Base):
+    __tablename__ = "workspaces"
+
+    id: Mapped[UUID] = _uuid_pk()
+    name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
+    owner_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (sa.Index("ix_workspaces_owner_id", "owner_id"),)
 
 
 class SessionModel(Base):
@@ -68,8 +96,8 @@ class ProjectModel(Base):
     __tablename__ = "projects"
 
     id: Mapped[UUID] = _uuid_pk()
-    user_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    workspace_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
     color: Mapped[str] = mapped_column(sa.String(7), nullable=False)
@@ -78,11 +106,11 @@ class ProjectModel(Base):
     updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
-        sa.Index("ix_projects_user_id", "user_id"),
-        # Names are unique per user among live projects; archived ones may repeat.
+        sa.Index("ix_projects_workspace_id", "workspace_id"),
+        # Names are unique per workspace among live projects; archived ones may repeat.
         sa.Index(
-            "uq_projects_user_active_name",
-            "user_id",
+            "uq_projects_workspace_active_name",
+            "workspace_id",
             sa.text("lower(name)"),
             unique=True,
             postgresql_where=sa.text("archived_at IS NULL"),
@@ -97,6 +125,9 @@ class TimeEntryModel(Base):
     user_id: Mapped[UUID] = mapped_column(
         PgUUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    workspace_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
     project_id: Mapped[UUID | None] = mapped_column(
         PgUUID(as_uuid=True), sa.ForeignKey("projects.id", ondelete="SET NULL")
     )
@@ -109,6 +140,7 @@ class TimeEntryModel(Base):
     __table_args__ = (
         sa.Index("ix_time_entries_user_started_at", "user_id", sa.text("started_at DESC")),
         sa.Index("ix_time_entries_project_id", "project_id"),
+        sa.Index("ix_time_entries_workspace_id", "workspace_id"),
         # One running timer per user. Lifting this constraint is all it takes to
         # allow parallel timers later.
         sa.Index(

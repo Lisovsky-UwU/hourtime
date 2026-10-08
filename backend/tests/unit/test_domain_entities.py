@@ -25,51 +25,51 @@ class TestColor:
     @pytest.mark.parametrize("given", ["", "#12345", "blue", "#gggggg"])
     def test_rejects_garbage(self, given: str) -> None:
         with pytest.raises(ValidationError):
-            make_project(make_user().id, color=given)
+            make_project(make_user().default_workspace_id, color=given)
 
 
 class TestProject:
     def test_trims_name(self) -> None:
-        assert make_project(make_user().id, name="  Website  ").name == "Website"
+        assert make_project(make_user().default_workspace_id, name="  Website  ").name == "Website"
 
     def test_rejects_blank_name(self) -> None:
         with pytest.raises(ValidationError):
-            make_project(make_user().id, name="   ")
+            make_project(make_user().default_workspace_id, name="   ")
 
     def test_archived_flag_follows_timestamp(self) -> None:
-        project = make_project(make_user().id)
+        project = make_project(make_user().default_workspace_id)
         assert not project.is_archived
         assert project.evolve(archived_at=NOW).is_archived
 
 
 class TestTimeEntry:
     def test_running_entry_has_no_stop(self) -> None:
-        assert make_entry(make_user().id).is_running
+        assert make_entry(make_user()).is_running
 
     def test_duration_of_running_entry_uses_now(self) -> None:
-        entry = make_entry(make_user().id)
+        entry = make_entry(make_user())
         assert entry.duration(NOW + timedelta(minutes=30)) == timedelta(minutes=30)
 
     def test_duration_of_stopped_entry_ignores_now(self) -> None:
-        entry = make_entry(make_user().id).stop(NOW + timedelta(hours=1))
+        entry = make_entry(make_user()).stop(NOW + timedelta(hours=1))
         assert entry.duration(NOW + timedelta(days=5)) == timedelta(hours=1)
 
     def test_rejects_stop_before_start(self) -> None:
         with pytest.raises(ValidationError):
-            make_entry(make_user().id).stop(NOW - timedelta(seconds=1))
+            make_entry(make_user()).stop(NOW - timedelta(seconds=1))
 
     def test_rejects_naive_datetimes(self) -> None:
         with pytest.raises(ValidationError):
-            make_entry(make_user().id, started_at=datetime(2026, 3, 1, 12, 0))
+            make_entry(make_user(), started_at=datetime(2026, 3, 1, 12, 0))
 
     def test_converts_other_zones_to_utc(self) -> None:
         moscow = datetime(2026, 3, 1, 15, 0, tzinfo=UTC).astimezone()
-        entry = make_entry(make_user().id, started_at=moscow)
+        entry = make_entry(make_user(), started_at=moscow)
         assert entry.started_at.tzinfo is UTC
 
     def test_evolve_revalidates(self) -> None:
         """`model_copy` would skip this check — `evolve` must not."""
-        entry = make_entry(make_user().id).stop(NOW + timedelta(hours=1))
+        entry = make_entry(make_user()).stop(NOW + timedelta(hours=1))
         with pytest.raises(ValidationError):
             entry.evolve(started_at=NOW + timedelta(hours=2))
 
@@ -111,7 +111,7 @@ class TestUser:
 
 
 def test_entity_is_frozen() -> None:
-    project = make_project(make_user().id)
+    project = make_project(make_user().default_workspace_id)
     # setattr, not `project.name = ...`, so the type checker does not reject the
     # very assignment this test exists to prove is refused at runtime.
     with pytest.raises(PydanticValidationError):

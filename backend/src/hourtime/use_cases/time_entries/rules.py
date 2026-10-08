@@ -5,7 +5,7 @@ from uuid import UUID
 
 from hourtime.domain.errors import ValidationError
 from hourtime.interfaces.repositories import ProjectRepository
-from hourtime.use_cases.access import get_owned_project
+from hourtime.use_cases.access import get_workspace_project
 
 # Browsers stop timers against their own clock, which drifts from the server's.
 # Anything inside this window is treated as "now" rather than rejected.
@@ -23,12 +23,12 @@ def reject_future(value: datetime, now: datetime, field: str) -> None:
 
 
 async def resolve_project(
-    projects: ProjectRepository, user_id: UUID, project_id: UUID | None
+    projects: ProjectRepository, workspace_id: UUID, project_id: UUID | None
 ) -> UUID | None:
-    """Verify the project is the caller's and still usable."""
+    """Verify the project is in the entry's workspace and still usable."""
     if project_id is None:
         return None
-    project = await get_owned_project(projects, user_id, project_id)
+    project = await get_workspace_project(projects, workspace_id, project_id)
     if project.is_archived:
         raise ValidationError("An archived project cannot be assigned")
     return project.id

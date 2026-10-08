@@ -3,13 +3,21 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from hourtime.domain.entities import Project, Session, TimeEntry, TimeEntrySuggestion, User
+from hourtime.domain.entities import (
+    Project,
+    Session,
+    TimeEntry,
+    TimeEntrySuggestion,
+    User,
+    Workspace,
+)
 from hourtime.domain.errors import NotFound, ProjectNameTaken, TimerAlreadyRunning
 from hourtime.interfaces.repositories import (
     ProjectRepository,
     SessionRepository,
     TimeEntryRepository,
     UserRepository,
+    WorkspaceRepository,
 )
 from hourtime.interfaces.services import Clock, PasswordHasher, TokenGenerator, UnitOfWork
 
@@ -100,6 +108,15 @@ class InMemoryUserRepository(UserRepository):
         return user
 
 
+class InMemoryWorkspaceRepository(WorkspaceRepository):
+    def __init__(self) -> None:
+        self.items: dict[UUID, Workspace] = {}
+
+    async def add(self, workspace: Workspace) -> Workspace:
+        self.items[workspace.id] = workspace
+        return workspace
+
+
 class InMemoryProjectRepository(ProjectRepository):
     def __init__(self, projects: list[Project] | None = None) -> None:
         self.items: dict[UUID, Project] = {project.id: project for project in projects or []}
@@ -107,21 +124,21 @@ class InMemoryProjectRepository(ProjectRepository):
     async def get_by_id(self, project_id: UUID) -> Project | None:
         return self.items.get(project_id)
 
-    async def list_for_user(
-        self, user_id: UUID, *, include_archived: bool = False
+    async def list_for_workspace(
+        self, workspace_id: UUID, *, include_archived: bool = False
     ) -> list[Project]:
-        found = [item for item in self.items.values() if item.user_id == user_id]
+        found = [item for item in self.items.values() if item.workspace_id == workspace_id]
         if not include_archived:
             found = [item for item in found if not item.is_archived]
         return sorted(found, key=lambda item: item.name.lower())
 
-    async def find_by_name(self, user_id: UUID, name: str) -> Project | None:
+    async def find_by_name(self, workspace_id: UUID, name: str) -> Project | None:
         wanted = name.strip().lower()
         return next(
             (
                 item
                 for item in self.items.values()
-                if item.user_id == user_id
+                if item.workspace_id == workspace_id
                 and item.name.lower() == wanted
                 and not item.is_archived
             ),
@@ -129,7 +146,7 @@ class InMemoryProjectRepository(ProjectRepository):
         )
 
     async def add(self, project: Project) -> Project:
-        if await self.find_by_name(project.user_id, project.name) is not None:
+        if await self.find_by_name(project.workspace_id, project.name) is not None:
             raise ProjectNameTaken
         self.items[project.id] = project
         return project
@@ -181,11 +198,16 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
     def _matching(
         self,
         user_id: UUID,
+        workspace_id: UUID,
         started_from: datetime | None,
         started_to: datetime | None,
         project_id: UUID | None,
     ) -> list[TimeEntry]:
-        found = [entry for entry in self.items.values() if entry.user_id == user_id]
+        found = [
+            entry
+            for entry in self.items.values()
+            if entry.user_id == user_id and entry.workspace_id == workspace_id
+        ]
         if started_from is not None:
             found = [entry for entry in found if entry.started_at >= started_from]
         if started_to is not None:
@@ -197,6 +219,7 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
     async def list_for_user(
         self,
         user_id: UUID,
+        workspace_id: UUID,
         *,
         started_from: datetime | None = None,
         started_to: datetime | None = None,
@@ -204,16 +227,16 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
         limit: int = 50,
         offset: int = 0,
     ) -> list[TimeEntry]:
-        found = self._matching(user_id, started_from, started_to, project_id)
+        found = self._matching(user_id, workspace_id, started_from, started_to, project_id)
         return found[offset : offset + limit]
 
     async def suggest(
-        self, user_id: UUID, *, query: str = "", limit: int = 10
+        self, user_id: UUID, workspace_id: UUID, *, query: str = "", limit: int = 10
     ) -> list[TimeEntrySuggestion]:
         """Archived projects are not filtered here: this fake knows no projects."""
         needle = query.casefold()
         found: dict[tuple[str, UUID | None], TimeEntrySuggestion] = {}
-        for entry in self._matching(user_id, None, None, None):
+        for entry in self._matching(user_id, workspace_id, None, None, None):
             key = (entry.description, entry.project_id)
             if not entry.description or key in found or needle not in entry.description.casefold():
                 continue

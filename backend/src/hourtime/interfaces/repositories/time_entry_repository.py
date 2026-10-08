@@ -11,12 +11,13 @@ class TimeEntryRepository(ABC):
 
     @abstractmethod
     async def get_running(self, user_id: UUID) -> TimeEntry | None:
-        """The entry without a stop time, if the user has one."""
+        """The entry without a stop time, if the user has one in any workspace."""
 
     @abstractmethod
     async def list_for_user(
         self,
         user_id: UUID,
+        workspace_id: UUID,
         *,
         started_from: datetime | None = None,
         started_to: datetime | None = None,
@@ -33,7 +34,7 @@ class TimeEntryRepository(ABC):
 
     @abstractmethod
     async def suggest(
-        self, user_id: UUID, *, query: str = "", limit: int = 10
+        self, user_id: UUID, workspace_id: UUID, *, query: str = "", limit: int = 10
     ) -> list[TimeEntrySuggestion]:
         """Distinct (description, project) pairs, most recently used first.
 

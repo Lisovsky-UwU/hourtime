@@ -10,7 +10,7 @@ class DeleteTimeEntry:
         self._entries = entries
         self._uow = uow
 
-    async def execute(self, user_id: UUID, entry_id: UUID) -> None:
-        entry = await get_owned_time_entry(self._entries, user_id, entry_id)
+    async def execute(self, user_id: UUID, workspace_id: UUID, entry_id: UUID) -> None:
+        entry = await get_owned_time_entry(self._entries, user_id, workspace_id, entry_id)
         await self._entries.delete(entry.id)
         await self._uow.commit()

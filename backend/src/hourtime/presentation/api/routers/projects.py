@@ -27,7 +27,7 @@ async def list_projects(
     use_case: Annotated[ListProjects, Depends(get_list_projects)],
     include_archived: Annotated[bool, Query()] = False,
 ) -> list[ProjectResponse]:
-    projects = await use_case.execute(current.user.id, include_archived=include_archived)
+    projects = await use_case.execute(current.workspace_id, include_archived=include_archived)
     return [ProjectResponse.of(project) for project in projects]
 
 
@@ -38,7 +38,7 @@ async def create_project(
     use_case: Annotated[CreateProject, Depends(get_create_project)],
 ) -> ProjectResponse:
     project = await use_case.execute(
-        CreateProjectInput(user_id=current.user.id, name=body.name, color=body.color)
+        CreateProjectInput(workspace_id=current.workspace_id, name=body.name, color=body.color)
     )
     return ProjectResponse.of(project)
 
@@ -53,7 +53,9 @@ async def update_project(
     # `exclude_unset` is what lets the use case tell "not sent" from "set to null".
     project = await use_case.execute(
         UpdateProjectInput(
-            user_id=current.user.id, project_id=project_id, **body.model_dump(exclude_unset=True)
+            workspace_id=current.workspace_id,
+            project_id=project_id,
+            **body.model_dump(exclude_unset=True),
         )
     )
     return ProjectResponse.of(project)
@@ -65,5 +67,5 @@ async def delete_project(
     current: CurrentUserDep,
     use_case: Annotated[DeleteProject, Depends(get_delete_project)],
 ) -> Response:
-    await use_case.execute(current.user.id, project_id)
+    await use_case.execute(current.workspace_id, project_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
