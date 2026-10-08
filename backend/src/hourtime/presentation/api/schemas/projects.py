@@ -1,8 +1,10 @@
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from hourtime.domain.billing import HourlyRate
 from hourtime.domain.entities import Project
 from hourtime.domain.entities.project import NAME_MAX_LENGTH
 
@@ -12,6 +14,9 @@ class ProjectResponse(BaseModel):
     name: str
     color: str
     client_id: UUID | None
+    billable: bool
+    # A decimal string such as "150.00"; null means the workspace rate applies.
+    hourly_rate: Decimal | None
     archived: bool
     created_at: datetime
     updated_at: datetime
@@ -23,6 +28,8 @@ class ProjectResponse(BaseModel):
             name=project.name,
             color=project.color,
             client_id=project.client_id,
+            billable=project.billable,
+            hourly_rate=project.hourly_rate,
             archived=project.is_archived,
             created_at=project.created_at,
             updated_at=project.updated_at,
@@ -33,10 +40,13 @@ class CreateProjectRequest(BaseModel):
     name: str = Field(min_length=1, max_length=NAME_MAX_LENGTH)
     color: str | None = None
     client_id: UUID | None = None
+    billable: bool = False
+    hourly_rate: HourlyRate | None = None
 
 
 class UpdateProjectRequest(BaseModel):
-    """Omitted fields are left untouched; `client_id: null` detaches the client."""
+    """Omitted fields are left untouched; `client_id: null` detaches the client,
+    `hourly_rate: null` falls back to the workspace rate."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -44,3 +54,5 @@ class UpdateProjectRequest(BaseModel):
     color: str | None = None
     archived: bool | None = None
     client_id: UUID | None = None
+    billable: bool | None = None
+    hourly_rate: HourlyRate | None = None

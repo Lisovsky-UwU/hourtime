@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from hourtime.domain.entities import Client, Project, Tag, TimeEntry, User
+from hourtime.domain.entities import Client, Project, Tag, TimeEntry, User, Workspace
 
 NOW = datetime(2026, 3, 1, 12, 0, tzinfo=UTC)
 
@@ -22,6 +22,19 @@ def make_user(
     }
     values.update(overrides)
     return User.model_validate(values)
+
+
+def make_workspace(owner: User, **overrides: object) -> Workspace:
+    """The user's default workspace, as registration creates it."""
+    values: dict[str, object] = {
+        "id": owner.default_workspace_id,
+        "name": "Personal",
+        "owner_id": owner.id,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+    values.update(overrides)
+    return Workspace.model_validate(values)
 
 
 def make_client(workspace_id: UUID, *, name: str = "Acme", **overrides: object) -> Client:

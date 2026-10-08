@@ -34,6 +34,8 @@ class CreateProject:
             client_id=client_id,
             name=name,
             color=data.color or DEFAULT_COLOR,
+            billable=data.billable,
+            hourly_rate=data.hourly_rate,
             created_at=now,
             updated_at=now,
         )

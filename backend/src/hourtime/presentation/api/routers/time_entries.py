@@ -114,6 +114,7 @@ async def start_timer(
             project_id=body.project_id,
             tag_ids=body.tag_ids,
             description=body.description,
+            billable=body.billable,
             started_at=body.started_at,
         )
     )
@@ -151,6 +152,7 @@ async def create_time_entry(
             project_id=body.project_id,
             tag_ids=body.tag_ids,
             description=body.description,
+            billable=body.billable,
             started_at=body.started_at,
             stopped_at=body.stopped_at,
         )

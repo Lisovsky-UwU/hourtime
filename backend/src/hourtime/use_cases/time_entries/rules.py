@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
+from hourtime.domain.entities import Project
 from hourtime.domain.errors import NotFound, ValidationError
 from hourtime.interfaces.repositories import ProjectRepository, TagRepository
 from hourtime.use_cases.access import get_workspace_project
@@ -24,14 +25,21 @@ def reject_future(value: datetime, now: datetime, field: str) -> None:
 
 async def resolve_project(
     projects: ProjectRepository, workspace_id: UUID, project_id: UUID | None
-) -> UUID | None:
+) -> Project | None:
     """Verify the project is in the entry's workspace and still usable."""
     if project_id is None:
         return None
     project = await get_workspace_project(projects, workspace_id, project_id)
     if project.is_archived:
         raise ValidationError("An archived project cannot be assigned")
-    return project.id
+    return project
+
+
+def resolve_billable(requested: bool | None, project: Project | None) -> bool:
+    """An explicit choice wins; otherwise the entry follows its project's default."""
+    if requested is not None:
+        return requested
+    return project.billable if project is not None else False
 
 
 async def resolve_tags(tags: TagRepository, workspace_id: UUID, tag_ids: list[UUID]) -> list[UUID]:

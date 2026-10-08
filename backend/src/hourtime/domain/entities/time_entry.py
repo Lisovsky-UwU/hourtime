@@ -22,6 +22,7 @@ class TimeEntry(Entity):
     # the same no matter how it was sent or stored.
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
+    billable: bool = False
     started_at: UtcDatetime
     stopped_at: UtcDatetime | None = None
     created_at: UtcDatetime

@@ -743,3 +743,98 @@ class TestListingFilters:
             await world.listing.execute(
                 self._query(world, without_project=True, **{other_filter: uuid4()})
             )
+
+
+class TestBillable:
+    async def _project(self, world: TimerWorld, *, billable: bool, name: str = "Website") -> UUID:
+        project = await world.projects.add(
+            make_project(world.user.default_workspace_id, name=name, billable=billable)
+        )
+        return project.id
+
+    def _start(self, world: TimerWorld, **fields: Any) -> StartTimerInput:
+        return StartTimerInput(
+            user_id=world.user.id, workspace_id=world.user.default_workspace_id, **fields
+        )
+
+    def _patch(self, world: TimerWorld, entry_id: UUID, **fields: Any) -> UpdateTimeEntryInput:
+        return UpdateTimeEntryInput(
+            user_id=world.user.id,
+            workspace_id=world.user.default_workspace_id,
+            entry_id=entry_id,
+            **fields,
+        )
+
+    async def test_start_follows_the_project_default(self, world: TimerWorld) -> None:
+        project_id = await self._project(world, billable=True)
+        entry = await world.start.execute(self._start(world, project_id=project_id))
+        assert entry.billable is True
+
+    async def test_without_a_project_an_entry_is_not_billable(self, world: TimerWorld) -> None:
+        entry = await world.start.execute(self._start(world))
+        assert entry.billable is False
+
+    async def test_an_explicit_choice_beats_the_project_default(self, world: TimerWorld) -> None:
+        project_id = await self._project(world, billable=True)
+        entry = await world.start.execute(
+            self._start(world, project_id=project_id, billable=False)
+        )
+        assert entry.billable is False
+
+    async def test_manual_entry_follows_the_project_default(self, world: TimerWorld) -> None:
+        project_id = await self._project(world, billable=True)
+        now = world.clock.now()
+        entry = await world.create.execute(
+            CreateTimeEntryInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                project_id=project_id,
+                started_at=now - timedelta(hours=1),
+                stopped_at=now,
+            )
+        )
+        assert entry.billable is True
+
+    async def test_moving_to_another_project_takes_its_default(self, world: TimerWorld) -> None:
+        paid = await self._project(world, billable=True, name="Paid")
+        free = await self._project(world, billable=False, name="Free")
+        entry = await world.entries.add(make_entry(world.user, project_id=free))
+
+        moved = await world.update.execute(self._patch(world, entry.id, project_id=paid))
+        assert moved.billable is True
+
+        back = await world.update.execute(self._patch(world, entry.id, project_id=free))
+        assert back.billable is False
+
+    async def test_resending_the_same_project_keeps_the_flag(self, world: TimerWorld) -> None:
+        paid = await self._project(world, billable=True)
+        entry = await world.entries.add(make_entry(world.user, project_id=paid, billable=False))
+
+        updated = await world.update.execute(self._patch(world, entry.id, project_id=paid))
+        assert updated.billable is False
+
+    async def test_detaching_the_project_keeps_the_flag(self, world: TimerWorld) -> None:
+        paid = await self._project(world, billable=True)
+        entry = await world.entries.add(make_entry(world.user, project_id=paid, billable=True))
+
+        updated = await world.update.execute(self._patch(world, entry.id, project_id=None))
+        assert updated.billable is True
+
+    async def test_explicit_flag_wins_over_a_project_change(self, world: TimerWorld) -> None:
+        paid = await self._project(world, billable=True)
+        entry = await world.entries.add(make_entry(world.user))
+
+        updated = await world.update.execute(
+            self._patch(world, entry.id, project_id=paid, billable=False)
+        )
+        assert updated.billable is False
+
+    async def test_toggles_the_flag(self, world: TimerWorld) -> None:
+        entry = await world.entries.add(make_entry(world.user))
+        updated = await world.update.execute(self._patch(world, entry.id, billable=True))
+        assert updated.billable is True
+
+    async def test_rejects_a_null_flag(self, world: TimerWorld) -> None:
+        entry = await world.entries.add(make_entry(world.user))
+        with pytest.raises(ValidationError):
+            await world.update.execute(self._patch(world, entry.id, billable=None))

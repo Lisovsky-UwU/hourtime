@@ -43,6 +43,8 @@ async def create_project(
             name=body.name,
             color=body.color,
             client_id=body.client_id,
+            billable=body.billable,
+            hourly_rate=body.hourly_rate,
         )
     )
     return ProjectResponse.of(project)

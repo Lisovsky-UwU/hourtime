@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import uuid4
 
 import pytest
@@ -264,3 +265,59 @@ class TestClientAssignment:
             UpdateProjectInput(workspace_id=workspace_id, project_id=project.id, client_id=None)
         )
         assert detached.client_id is None
+
+
+class TestBilling:
+    async def test_new_projects_are_not_billable_and_have_no_rate(
+        self, world: ProjectWorld
+    ) -> None:
+        project = await world.create.execute(
+            CreateProjectInput(workspace_id=world.user.default_workspace_id, name="Website")
+        )
+        assert (project.billable, project.hourly_rate) == (False, None)
+
+    async def test_creates_with_a_billable_default_and_rate(self, world: ProjectWorld) -> None:
+        project = await world.create.execute(
+            CreateProjectInput(
+                workspace_id=world.user.default_workspace_id,
+                name="Website",
+                billable=True,
+                hourly_rate=Decimal("150"),
+            )
+        )
+        assert (project.billable, project.hourly_rate) == (True, Decimal("150.00"))
+
+    async def test_null_rate_falls_back_to_the_workspace(self, world: ProjectWorld) -> None:
+        project = await world.projects.add(
+            make_project(world.user.default_workspace_id, hourly_rate=Decimal("150"))
+        )
+        updated = await world.update.execute(
+            UpdateProjectInput(
+                workspace_id=world.user.default_workspace_id,
+                project_id=project.id,
+                hourly_rate=None,
+            )
+        )
+        assert updated.hourly_rate is None
+
+    async def test_rejects_a_negative_rate(self, world: ProjectWorld) -> None:
+        project = await world.projects.add(make_project(world.user.default_workspace_id))
+        with pytest.raises(ValidationError):
+            await world.update.execute(
+                UpdateProjectInput(
+                    workspace_id=world.user.default_workspace_id,
+                    project_id=project.id,
+                    hourly_rate=Decimal("-5"),
+                )
+            )
+
+    async def test_rejects_a_null_billable_flag(self, world: ProjectWorld) -> None:
+        project = await world.projects.add(make_project(world.user.default_workspace_id))
+        with pytest.raises(ValidationError):
+            await world.update.execute(
+                UpdateProjectInput(
+                    workspace_id=world.user.default_workspace_id,
+                    project_id=project.id,
+                    billable=None,
+                )
+            )

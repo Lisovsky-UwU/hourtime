@@ -65,6 +65,7 @@ from hourtime.use_cases.time_entries import (
     SuggestTimeEntries,
     UpdateTimeEntry,
 )
+from hourtime.use_cases.workspaces import GetWorkspace, UpdateWorkspace
 
 # --- process-wide singletons -------------------------------------------------
 
@@ -336,6 +337,19 @@ async def get_current_user(
 
 
 CurrentUserDep = Annotated[AuthenticatedUser, Depends(get_current_user)]
+
+
+# --- workspace use cases -----------------------------------------------------
+
+
+def get_get_workspace(workspaces: WorkspacesDep) -> GetWorkspace:
+    return GetWorkspace(workspaces)
+
+
+def get_update_workspace(
+    workspaces: WorkspacesDep, clock: ClockDep, uow: UowDep
+) -> UpdateWorkspace:
+    return UpdateWorkspace(workspaces, clock, uow)
 
 
 # --- client use cases --------------------------------------------------------

@@ -119,10 +119,19 @@ class InMemoryUserRepository(UserRepository):
 
 
 class InMemoryWorkspaceRepository(WorkspaceRepository):
-    def __init__(self) -> None:
-        self.items: dict[UUID, Workspace] = {}
+    def __init__(self, workspaces: list[Workspace] | None = None) -> None:
+        self.items: dict[UUID, Workspace] = {item.id: item for item in workspaces or []}
+
+    async def get_by_id(self, workspace_id: UUID) -> Workspace | None:
+        return self.items.get(workspace_id)
 
     async def add(self, workspace: Workspace) -> Workspace:
+        self.items[workspace.id] = workspace
+        return workspace
+
+    async def update(self, workspace: Workspace) -> Workspace:
+        if workspace.id not in self.items:
+            raise NotFound("Workspace not found")
         self.items[workspace.id] = workspace
         return workspace
 

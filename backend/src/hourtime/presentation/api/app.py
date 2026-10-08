@@ -13,7 +13,14 @@ from hourtime.infrastructure.db.engine import build_engine, build_sessionmaker
 from hourtime.infrastructure.security.argon2_hasher import Argon2PasswordHasher
 from hourtime.presentation.api.deps import build_purge_expired_sessions
 from hourtime.presentation.api.errors import register_error_handlers
-from hourtime.presentation.api.routers import auth, clients, projects, tags, time_entries
+from hourtime.presentation.api.routers import (
+    auth,
+    clients,
+    projects,
+    tags,
+    time_entries,
+    workspaces,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +114,14 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok", "server_time": datetime.now(UTC).isoformat()}
 
-    for router in (auth.router, clients.router, projects.router, tags.router, time_entries.router):
+    for router in (
+        auth.router,
+        clients.router,
+        projects.router,
+        tags.router,
+        time_entries.router,
+        workspaces.router,
+    ):
         app.include_router(router, prefix=API_PREFIX)
 
     return app

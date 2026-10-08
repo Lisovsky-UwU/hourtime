@@ -5,6 +5,7 @@ Deliberately separate from the domain entities: the storage shape may drift
 """
 
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -62,6 +63,8 @@ class WorkspaceModel(Base):
     owner_id: Mapped[UUID] = mapped_column(
         PgUUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    default_hourly_rate: Mapped[Decimal | None] = mapped_column(sa.Numeric(12, 2))
+    currency: Mapped[str] = mapped_column(sa.String(3), nullable=False, server_default="USD")
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
 
@@ -129,6 +132,8 @@ class ProjectModel(Base):
     )
     name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
     color: Mapped[str] = mapped_column(sa.String(7), nullable=False)
+    billable: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default=sa.false())
+    hourly_rate: Mapped[Decimal | None] = mapped_column(sa.Numeric(12, 2))
     archived_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
@@ -178,6 +183,7 @@ class TimeEntryModel(Base):
         PgUUID(as_uuid=True), sa.ForeignKey("projects.id", ondelete="SET NULL")
     )
     description: Mapped[str] = mapped_column(sa.Text, nullable=False, default="")
+    billable: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default=sa.false())
     started_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     stopped_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)

@@ -14,6 +14,7 @@ class TimeEntryResponse(BaseModel):
     # Sorted by id, never null; an untagged entry has [].
     tag_ids: list[UUID]
     description: str
+    billable: bool
     started_at: datetime
     stopped_at: datetime | None
     # Null while the timer runs: the client ticks that number itself, using
@@ -34,6 +35,7 @@ class TimeEntryResponse(BaseModel):
             project_id=entry.project_id,
             tag_ids=entry.tag_ids,
             description=entry.description,
+            billable=entry.billable,
             started_at=entry.started_at,
             stopped_at=entry.stopped_at,
             duration_seconds=duration,
@@ -78,6 +80,8 @@ class StartTimerRequest(BaseModel):
     project_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
+    # Omitted: the project's default, or false without a project.
+    billable: bool | None = None
     # Defaults to the server's "now" when omitted.
     started_at: AwareDatetime | None = None
 
@@ -90,18 +94,22 @@ class CreateTimeEntryRequest(BaseModel):
     project_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
+    # Omitted: the project's default, or false without a project.
+    billable: bool | None = None
     started_at: AwareDatetime
     stopped_at: AwareDatetime
 
 
 class UpdateTimeEntryRequest(BaseModel):
     """Omitted fields are left untouched; `project_id: null` clears the project,
-    `tag_ids: []` clears the tags (`tag_ids: null` is rejected)."""
+    `tag_ids: []` clears the tags (`tag_ids: null` is rejected). A new project
+    brings its billable default unless `billable` is sent too."""
 
     model_config = ConfigDict(extra="forbid")
 
     project_id: UUID | None = None
     tag_ids: list[UUID] | None = None
     description: str | None = Field(default=None, max_length=DESCRIPTION_MAX_LENGTH)
+    billable: bool | None = None
     started_at: AwareDatetime | None = None
     stopped_at: AwareDatetime | None = None

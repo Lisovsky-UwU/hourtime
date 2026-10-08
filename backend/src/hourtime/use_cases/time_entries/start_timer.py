@@ -12,6 +12,7 @@ from hourtime.use_cases.dto import StartTimerInput
 from hourtime.use_cases.time_entries.rules import (
     START_TIME,
     reject_future,
+    resolve_billable,
     resolve_project,
     resolve_tags,
 )
@@ -44,7 +45,7 @@ class StartTimer:
         reject_future(started_at, now, START_TIME)
         started_at = min(started_at, now)
 
-        project_id = await resolve_project(self._projects, data.workspace_id, data.project_id)
+        project = await resolve_project(self._projects, data.workspace_id, data.project_id)
         tag_ids = await resolve_tags(self._tags, data.workspace_id, data.tag_ids)
 
         running = await self._entries.get_running(data.user_id)
@@ -62,9 +63,10 @@ class StartTimer:
             id=uuid4(),
             user_id=data.user_id,
             workspace_id=data.workspace_id,
-            project_id=project_id,
+            project_id=project.id if project else None,
             tag_ids=tag_ids,
             description=data.description,
+            billable=resolve_billable(data.billable, project),
             started_at=started_at,
             stopped_at=None,
             created_at=now,

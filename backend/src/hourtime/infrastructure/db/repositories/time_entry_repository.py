@@ -20,6 +20,7 @@ def to_domain(model: TimeEntryModel, tag_ids: list[UUID]) -> TimeEntry:
         project_id=model.project_id,
         tag_ids=tag_ids,
         description=model.description,
+        billable=model.billable,
         started_at=model.started_at,
         stopped_at=model.stopped_at,
         created_at=model.created_at,

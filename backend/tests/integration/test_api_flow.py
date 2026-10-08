@@ -823,3 +823,95 @@ class TestDatabaseGuarantees:
         response = await client.get("/health")
         stamped = datetime.fromisoformat(response.headers["x-server-time"])
         assert abs((datetime.now(UTC) - stamped).total_seconds()) < 5
+
+
+class TestBilling:
+    async def test_workspace_settings_round_trip(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        fresh = await client.get("/workspaces/current")
+        assert fresh.status_code == 200
+        assert fresh.json()["default_hourly_rate"] is None
+        assert fresh.json()["currency"] == "USD"
+
+        updated = await client.patch(
+            "/workspaces/current", json={"default_hourly_rate": 1500.5, "currency": "rub"}
+        )
+        assert updated.status_code == 200, updated.text
+        assert updated.json()["default_hourly_rate"] == "1500.50"
+        assert updated.json()["currency"] == "RUB"
+
+        cleared = await client.patch("/workspaces/current", json={"default_hourly_rate": None})
+        assert cleared.json()["default_hourly_rate"] is None
+        assert (await client.get("/workspaces/current")).json()["currency"] == "RUB"
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            {"currency": "R$"},
+            {"currency": None},
+            {"default_hourly_rate": -1},
+            {"default_hourly_rate": "10.555"},
+            {"name": "Team"},
+        ],
+    )
+    async def test_rejects_bad_workspace_settings(
+        self, client: httpx.AsyncClient, tokens: dict[str, str], body: dict[str, object]
+    ) -> None:
+        response = await client.patch("/workspaces/current", json=body)
+        assert response.status_code == 400, response.text
+
+    async def test_each_user_sees_their_own_workspace(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        await client.patch("/workspaces/current", json={"currency": "EUR"})
+        other = await other_user_headers(client)
+        theirs = await client.get("/workspaces/current", headers=other)
+        assert theirs.json()["currency"] == "USD"
+
+    async def test_project_rate_is_stored_to_the_cent(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        created = await client.post(
+            "/projects", json={"name": "Website", "billable": True, "hourly_rate": "150"}
+        )
+        assert created.status_code == 201, created.text
+        assert created.json()["billable"] is True
+        assert created.json()["hourly_rate"] == "150.00"
+
+        listed = (await client.get("/projects")).json()
+        assert listed[0]["hourly_rate"] == "150.00"
+
+        cleared = await client.patch(
+            f"/projects/{created.json()['id']}", json={"hourly_rate": None}
+        )
+        assert cleared.json()["hourly_rate"] is None
+        assert cleared.json()["billable"] is True
+
+    async def test_entries_follow_the_project_default(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        paid = (await client.post("/projects", json={"name": "Paid", "billable": True})).json()
+        free = (await client.post("/projects", json={"name": "Free"})).json()
+
+        started = await client.post("/time-entries/start", json={"project_id": paid["id"]})
+        assert started.json()["billable"] is True
+
+        moved = await client.patch(
+            f"/time-entries/{started.json()['id']}", json={"project_id": free["id"]}
+        )
+        assert moved.json()["billable"] is False
+
+        toggled = await client.patch(
+            f"/time-entries/{started.json()['id']}", json={"billable": True}
+        )
+        assert toggled.json()["billable"] is True
+
+        manual = await track(client, 3, project_id=paid["id"], billable=False)
+        assert manual["billable"] is False
+
+        listed = (await client.get("/time-entries")).json()["items"]
+        assert {item["id"]: item["billable"] for item in listed} == {
+            started.json()["id"]: True,
+            manual["id"]: False,
+        }

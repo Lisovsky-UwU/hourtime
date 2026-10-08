@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import Field, field_validator
 
+from hourtime.domain.billing import HourlyRate
 from hourtime.domain.entities.base import Entity, UtcDatetime
 
 NAME_MAX_LENGTH = 100
@@ -32,6 +33,10 @@ class Project(Entity):
     client_id: UUID | None = None
     name: str = Field(min_length=1, max_length=NAME_MAX_LENGTH)
     color: str = DEFAULT_COLOR
+    # What new entries on this project start as; each entry can still be switched.
+    billable: bool = False
+    # None falls back to the workspace's default rate.
+    hourly_rate: HourlyRate | None = None
     archived_at: UtcDatetime | None = None
     created_at: UtcDatetime
     updated_at: UtcDatetime

@@ -5,6 +5,7 @@ HTTP schemas stay in `presentation`, ORM models stay in `infrastructure`.
 """
 
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -91,6 +92,15 @@ class ChangePasswordInput(BaseModel):
     new_password: str
 
 
+# --- workspaces -------------------------------------------------------------
+
+
+class UpdateWorkspaceInput(PatchInput):
+    workspace_id: UUID
+    default_hourly_rate: Decimal | None = None
+    currency: str | None = None
+
+
 # --- clients ----------------------------------------------------------------
 
 
@@ -128,6 +138,8 @@ class CreateProjectInput(BaseModel):
     name: str
     color: str | None = None
     client_id: UUID | None = None
+    billable: bool = False
+    hourly_rate: Decimal | None = None
 
 
 class UpdateProjectInput(PatchInput):
@@ -137,6 +149,8 @@ class UpdateProjectInput(PatchInput):
     color: str | None = None
     archived: bool | None = None
     client_id: UUID | None = None
+    billable: bool | None = None
+    hourly_rate: Decimal | None = None
 
 
 # --- time entries -----------------------------------------------------------
@@ -148,6 +162,8 @@ class StartTimerInput(BaseModel):
     project_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = ""
+    # None follows the project's default.
+    billable: bool | None = None
     started_at: datetime | None = None
 
 
@@ -164,6 +180,8 @@ class CreateTimeEntryInput(BaseModel):
     project_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = ""
+    # None follows the project's default.
+    billable: bool | None = None
     started_at: datetime
     stopped_at: datetime
 
@@ -175,6 +193,7 @@ class UpdateTimeEntryInput(PatchInput):
     project_id: UUID | None = None
     tag_ids: list[UUID] | None = None
     description: str | None = None
+    billable: bool | None = None
     started_at: datetime | None = None
     stopped_at: datetime | None = None
 

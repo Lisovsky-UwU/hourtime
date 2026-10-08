@@ -17,6 +17,8 @@ def to_domain(model: ProjectModel) -> Project:
         client_id=model.client_id,
         name=model.name,
         color=model.color,
+        billable=model.billable,
+        hourly_rate=model.hourly_rate,
         archived_at=model.archived_at,
         created_at=model.created_at,
         updated_at=model.updated_at,

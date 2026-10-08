@@ -20,7 +20,7 @@ from hourtime.use_cases.time_entries.rules import (
 
 
 class UpdateTimeEntry:
-    """Edits an entry from the list: project, tags, comment, start and stop time.
+    """Edits an entry from the list: project, tags, comment, billable, start and stop time.
 
     A running entry stays running unless a stop time is supplied — sending
     `project_id: null` detaches the project, omitting the field leaves it be.
@@ -49,9 +49,18 @@ class UpdateTimeEntry:
         changes: dict[str, Any] = {}
 
         if data.provided("project_id"):
-            changes["project_id"] = await resolve_project(
-                self._projects, data.workspace_id, data.project_id
-            )
+            project = await resolve_project(self._projects, data.workspace_id, data.project_id)
+            changes["project_id"] = project.id if project else None
+            # Moving an entry to another project takes that project's billable
+            # default, as picking a project does for a new entry. Detaching the
+            # project leaves the flag as it was.
+            if project is not None and project.id != entry.project_id:
+                changes["billable"] = project.billable
+
+        if data.provided("billable"):
+            if data.billable is None:
+                raise ValidationError("billable must be true or false")
+            changes["billable"] = data.billable
 
         if data.provided("tag_ids"):
             if data.tag_ids is None:

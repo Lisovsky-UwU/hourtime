@@ -10,8 +10,9 @@ from hourtime.use_cases.projects.rules import resolve_client
 
 
 class UpdateProject:
-    """Renames, recolours, archives and (re)assigns the client - everything
-    PATCH /projects/{id} can do. `client_id: null` detaches the client."""
+    """Renames, recolours, archives, (re)assigns the client and sets billing -
+    everything PATCH /projects/{id} can do. `client_id: null` detaches the
+    client, `hourly_rate: null` falls back to the workspace rate."""
 
     def __init__(
         self,
@@ -53,6 +54,14 @@ class UpdateProject:
             changes["client_id"] = await resolve_client(
                 self._clients, data.workspace_id, data.client_id
             )
+
+        if data.provided("billable"):
+            if data.billable is None:
+                raise ValidationError("The billable flag is required")
+            changes["billable"] = data.billable
+
+        if data.provided("hourly_rate"):
+            changes["hourly_rate"] = data.hourly_rate
 
         if not changes:
             return project
