@@ -1,5 +1,7 @@
 """Reports over the real stack: the aggregates are SQL, so they are tested on Postgres."""
 
+import csv
+import io
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -710,6 +712,162 @@ class TestWeekly:
         )
         assert weekly["days"] == ["2025-02-04", "2025-02-05"]
         assert weekly["totals"]["days"] == [3600, 0]
+
+
+async def csv_rows(
+    client: httpx.AsyncClient, kind: str, params: Any = None
+) -> tuple[httpx.Response, list[list[str]]]:
+    response = await client.get(f"/reports/{kind}.csv", params=params)
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "text/csv; charset=utf-8"
+    # The BOM goes first so Excel reads the file as UTF-8.
+    assert response.content.startswith("﻿".encode())
+    text = response.content.decode("utf-8-sig")
+    return response, list(csv.reader(io.StringIO(text, newline="")))
+
+
+class TestCsv:
+    async def test_detailed(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
+        await set_timezone(client, "Europe/Moscow")
+        await client.patch("/workspaces/current", json={"default_hourly_rate": "1000"})
+        acme = await make(client, "/clients", name="Acme")
+        project = await make(
+            client, "/projects", name="Сайт", color="#2f6f4e", client_id=acme["id"]
+        )
+        zeta = await make(client, "/tags", name="zeta")
+        alpha = await make(client, "/tags", name="Alpha")
+        await add(
+            client,
+            "2025-02-05T21:30",
+            "2025-02-06T00:15",
+            project_id=project["id"],
+            tag_ids=[zeta["id"], alpha["id"]],
+            description='Fix, "quoted" и кириллица',
+            billable=True,
+        )
+        await add(client, "2025-02-04T09:00", "2025-02-04T09:01", description="=1+1")
+
+        response, rows = await csv_rows(client, "detailed", {**WEEK, "sort": "duration"})
+        assert response.headers["content-disposition"] == (
+            'attachment; filename="hourtime-detailed-2025-02-03_2025-02-09.csv"'
+        )
+        assert rows == [
+            [
+                "Description",
+                "Project",
+                "Client",
+                "Tags",
+                "Billable",
+                "Start date",
+                "Start time",
+                "End date",
+                "End time",
+                "Duration",
+                "Duration (hours)",
+                "Amount (USD)",
+            ],
+            # Times are in the profile's zone: 21:30 UTC is past midnight in Moscow.
+            [
+                'Fix, "quoted" и кириллица',
+                "Сайт",
+                "Acme",
+                "Alpha, zeta",
+                "Yes",
+                "2025-02-06",
+                "00:30:00",
+                "2025-02-06",
+                "03:15:00",
+                "2:45:00",
+                "2.75",
+                "2750.00",
+            ],
+            # A formula would run in a spreadsheet; the apostrophe keeps it text.
+            [
+                "'=1+1",
+                "",
+                "",
+                "",
+                "No",
+                "2025-02-04",
+                "12:00:00",
+                "2025-02-04",
+                "12:01:00",
+                "0:01:00",
+                "0.02",
+                "",
+            ],
+        ]
+
+    async def test_summary(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
+        acme = await make(client, "/clients", name="Acme")
+        project = await make(
+            client, "/projects", name="hourtime", color="#2f6f4e", client_id=acme["id"]
+        )
+        await add(
+            client,
+            "2025-02-03T09:00",
+            "2025-02-03T10:00",
+            project_id=project["id"],
+            description="Planning",
+        )
+        await add(
+            client,
+            "2025-02-04T09:00",
+            "2025-02-04T09:30",
+            project_id=project["id"],
+            description="Review",
+        )
+        await add(client, "2025-02-05T09:00", "2025-02-05T19:00")
+
+        response, rows = await csv_rows(client, "summary")
+        assert response.headers["content-disposition"] == (
+            'attachment; filename="hourtime-summary-all-time.csv"'
+        )
+        assert rows == [
+            [
+                "Project",
+                "Client",
+                "Duration",
+                "Duration (hours)",
+                "Billable duration",
+                "Amount (USD)",
+            ],
+            ["Without project", "", "10:00:00", "10.00", "0:00:00", "0.00"],
+            ["hourtime", "Acme", "1:30:00", "1.50", "0:00:00", "0.00"],
+        ]
+
+        _, split = await csv_rows(
+            client, "summary", {"group_by": "client", "subgroup_by": "description"}
+        )
+        assert split == [
+            [
+                "Client",
+                "Description",
+                "Duration",
+                "Duration (hours)",
+                "Billable duration",
+                "Amount (USD)",
+            ],
+            ["Without client", "Without description", "10:00:00", "10.00", "0:00:00", "0.00"],
+            ["Acme", "Planning", "1:00:00", "1.00", "0:00:00", "0.00"],
+            ["Acme", "Review", "0:30:00", "0.50", "0:00:00", "0.00"],
+        ]
+
+    async def test_bad_parameters_fail_before_the_file(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        for kind, params in (
+            ("detailed.csv", {"end_date": "2025-02-03"}),
+            ("detailed.csv", {"sort": "amount"}),
+            ("summary.csv", {"group_by": "client", "subgroup_by": "client"}),
+        ):
+            response = await client.get(f"/reports/{kind}", params=params)
+            assert response.status_code == 400, response.text
+            assert response.json()["error"]["code"] == "validation_error"
+
+    async def test_needs_a_token(self, client: httpx.AsyncClient) -> None:
+        for kind in ("summary.csv", "detailed.csv"):
+            assert (await client.get(f"/reports/{kind}")).status_code == 401
 
 
 class TestValidation:

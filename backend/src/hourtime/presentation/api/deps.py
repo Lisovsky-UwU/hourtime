@@ -56,7 +56,12 @@ from hourtime.use_cases.auth import (
 from hourtime.use_cases.clients import CreateClient, DeleteClient, ListClients, UpdateClient
 from hourtime.use_cases.dto import AuthenticatedUser
 from hourtime.use_cases.projects import CreateProject, DeleteProject, ListProjects, UpdateProject
-from hourtime.use_cases.reports import GetDetailedReport, GetSummaryReport, GetWeeklyReport
+from hourtime.use_cases.reports import (
+    ExportDetailedReport,
+    GetDetailedReport,
+    GetSummaryReport,
+    GetWeeklyReport,
+)
 from hourtime.use_cases.tags import CreateTag, DeleteTag, ListTags, UpdateTag
 from hourtime.use_cases.time_entries import (
     CreateTimeEntry,
@@ -206,9 +211,7 @@ def get_session_repository(
 SessionsDep = Annotated[CachedSessionRepository, Depends(get_session_repository)]
 
 
-def get_unit_of_work(
-    session: DbSessionDep, sessions: SessionsDep, users: UsersDep
-) -> UnitOfWork:
+def get_unit_of_work(session: DbSessionDep, sessions: SessionsDep, users: UsersDep) -> UnitOfWork:
     # FastAPI caches dependencies per request, so these are the very repository
     # instances the use cases got — their pending invalidations are the ones flushed.
     return CacheAwareUnitOfWork(session, sessions.invalidation, users.invalidation)
@@ -473,6 +476,12 @@ def get_get_summary_report(reports: ReportsDep, workspaces: WorkspacesDep) -> Ge
 
 def get_get_detailed_report(reports: ReportsDep, workspaces: WorkspacesDep) -> GetDetailedReport:
     return GetDetailedReport(reports, workspaces)
+
+
+def get_export_detailed_report(
+    reports: ReportsDep, workspaces: WorkspacesDep
+) -> ExportDetailedReport:
+    return ExportDetailedReport(reports, workspaces)
 
 
 def get_get_weekly_report(reports: ReportsDep, workspaces: WorkspacesDep) -> GetWeeklyReport:

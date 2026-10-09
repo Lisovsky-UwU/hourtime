@@ -15,12 +15,19 @@ from hourtime.domain.reports import (
     Totals,
 )
 from hourtime.use_cases.dto import (
+    DetailedExportInput,
     DetailedReportInput,
     ReportFiltersInput,
     SummaryReportInput,
     WeeklyReportInput,
 )
-from hourtime.use_cases.reports import GetDetailedReport, GetSummaryReport, GetWeeklyReport
+from hourtime.use_cases.reports import (
+    ExportDetailedReport,
+    GetDetailedReport,
+    GetSummaryReport,
+    GetWeeklyReport,
+    export_detailed_report,
+)
 from hourtime.use_cases.reports.rules import report_criteria
 from tests.factories import make_user, make_workspace
 from tests.fakes import CannedReportRepository, InMemoryWorkspaceRepository
@@ -60,6 +67,7 @@ class ReportWorld:
         self.summary = GetSummaryReport(self.reports, self.workspaces)
         self.detailed = GetDetailedReport(self.reports, self.workspaces)
         self.weekly = GetWeeklyReport(self.reports, self.workspaces)
+        self.export = ExportDetailedReport(self.reports, self.workspaces)
 
 
 @pytest.fixture
@@ -243,6 +251,31 @@ class TestDetailed:
             await world.detailed.execute(
                 DetailedReportInput(filters=filters(), limit=limit, offset=offset)
             )
+
+
+class TestExportDetailed:
+    @pytest.mark.parametrize(("count", "pages"), [(5, [2, 2, 1]), (4, [2, 2]), (0, [])])
+    async def test_reads_every_page(
+        self, world: ReportWorld, monkeypatch: pytest.MonkeyPatch, count: int, pages: list[int]
+    ) -> None:
+        monkeypatch.setattr(export_detailed_report, "PAGE_SIZE", 2)
+        world.reports.entries = [TestDetailed.entry(hour) for hour in range(9, 9 + count)]
+
+        export = await world.export.execute(
+            DetailedExportInput(filters=filters(timezone="Europe/Moscow"), sort="duration")
+        )
+        assert (export.currency, export.timezone) == ("RUB", "Europe/Moscow")
+        read = [page async for page in export.pages]
+        assert [len(page) for page in read] == pages
+        assert [entry for page in read for entry in page] == world.reports.entries
+        assert {request["sort"] for request in world.reports.page_requests} <= {"duration"}
+
+    async def test_checks_filters_before_reading(self, world: ReportWorld) -> None:
+        with pytest.raises(ValidationError):
+            await world.export.execute(
+                DetailedExportInput(filters=filters(start_date=date(2025, 2, 3)))
+            )
+        assert world.reports.page_requests == []
 
 
 class TestWeekly:

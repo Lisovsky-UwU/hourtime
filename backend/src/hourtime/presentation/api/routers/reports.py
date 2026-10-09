@@ -3,11 +3,14 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 
 from hourtime.domain.entities.time_entry import DESCRIPTION_MAX_LENGTH
 from hourtime.domain.reports import DetailedSort, ReportGrouping, SortOrder, WeeklyGrouping
+from hourtime.presentation.api.csv_export import csv_response, detailed_csv, summary_csv
 from hourtime.presentation.api.deps import (
     CurrentUserDep,
+    get_export_detailed_report,
     get_get_detailed_report,
     get_get_summary_report,
     get_get_weekly_report,
@@ -18,12 +21,18 @@ from hourtime.presentation.api.schemas.reports import (
     WeeklyReportResponse,
 )
 from hourtime.use_cases.dto import (
+    DetailedExportInput,
     DetailedReportInput,
     ReportFiltersInput,
     SummaryReportInput,
     WeeklyReportInput,
 )
-from hourtime.use_cases.reports import GetDetailedReport, GetSummaryReport, GetWeeklyReport
+from hourtime.use_cases.reports import (
+    ExportDetailedReport,
+    GetDetailedReport,
+    GetSummaryReport,
+    GetWeeklyReport,
+)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -90,6 +99,33 @@ async def detailed_report(
         DetailedReportInput(filters=filters, sort=sort, order=order, limit=limit, offset=offset)
     )
     return DetailedReportResponse.of(report)
+
+
+@router.get("/summary.csv", response_class=StreamingResponse)
+async def summary_report_csv(
+    filters: FiltersDep,
+    use_case: Annotated[GetSummaryReport, Depends(get_get_summary_report)],
+    group_by: Annotated[ReportGrouping, Query()] = "project",
+    subgroup_by: Annotated[ReportGrouping | None, Query()] = None,
+) -> StreamingResponse:
+    report = await use_case.execute(
+        SummaryReportInput(filters=filters, group_by=group_by, subgroup_by=subgroup_by)
+    )
+    content = summary_csv(report, group_by, subgroup_by)
+    return csv_response(content, "summary", filters.start_date, filters.end_date)
+
+
+@router.get("/detailed.csv", response_class=StreamingResponse)
+async def detailed_report_csv(
+    filters: FiltersDep,
+    use_case: Annotated[ExportDetailedReport, Depends(get_export_detailed_report)],
+    sort: Annotated[DetailedSort, Query()] = "started_at",
+    order: Annotated[SortOrder, Query()] = "desc",
+) -> StreamingResponse:
+    # The session behind the use case stays open while the response streams:
+    # FastAPI closes request-scoped dependencies only after the body is sent.
+    export = await use_case.execute(DetailedExportInput(filters=filters, sort=sort, order=order))
+    return csv_response(detailed_csv(export), "detailed", filters.start_date, filters.end_date)
 
 
 @router.get("/weekly", response_model=WeeklyReportResponse)

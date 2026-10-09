@@ -4,6 +4,8 @@ These are the only shapes the presentation layer is allowed to pass inwards —
 HTTP schemas stay in `presentation`, ORM models stay in `infrastructure`.
 """
 
+from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
@@ -277,6 +279,12 @@ class DetailedReportInput(BaseModel):
     offset: int = 0
 
 
+class DetailedExportInput(BaseModel):
+    filters: ReportFiltersInput
+    sort: DetailedSort = "started_at"
+    order: SortOrder = "desc"
+
+
 class WeeklyReportInput(BaseModel):
     filters: ReportFiltersInput
     group_by: WeeklyGrouping = "project"
@@ -310,6 +318,19 @@ class DetailedReport(BaseModel):
     has_more: bool
     limit: int
     offset: int
+
+
+@dataclass(frozen=True)
+class DetailedExport:
+    """Every entry of a detailed report, read page by page while it is written out.
+
+    A dataclass rather than a model: an async iterator is nothing to validate.
+    """
+
+    currency: str
+    # The zone the report's days are cut in; times are written out in it too.
+    timezone: str
+    pages: AsyncIterator[list[ReportEntry]]
 
 
 class WeeklyRow(BaseModel):
