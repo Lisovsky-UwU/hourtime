@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from 'reka-ui'
 
+import { REPOSITORY_URL } from '@/about'
 import AppIcon from '@/components/AppIcon.vue'
 import BrandMark from '@/components/BrandMark.vue'
 import type { IconName } from '@/components/AppIcon.vue'
@@ -168,6 +169,13 @@ async function signOut() {
           />
           <UiIconButton icon="sign-out" size="sm" :label="t('nav.signOut')" @click="signOut" />
         </div>
+
+        <UiTooltip :content="preferences.sidebarCollapsed ? t('about.source') : ''" side="right">
+          <a :href="REPOSITORY_URL" class="nav-link repo-link" target="_blank" rel="noopener">
+            <AppIcon name="code" :size="16" />
+            <span class="nav-label">{{ t('about.source') }}</span>
+          </a>
+        </UiTooltip>
       </div>
     </aside>
 
@@ -205,6 +213,10 @@ async function signOut() {
             <span class="email">{{ accountName }}</span>
             <UiIconButton icon="sign-out" :label="t('nav.signOut')" @click="signOut" />
           </div>
+          <a :href="REPOSITORY_URL" class="nav-link repo-link" target="_blank" rel="noopener">
+            <AppIcon name="code" :size="16" />
+            <span class="nav-label">{{ t('about.source') }}</span>
+          </a>
         </DialogContent>
       </DialogPortal>
     </DialogRoot>
@@ -326,6 +338,13 @@ async function signOut() {
   white-space: nowrap;
   color: var(--text-muted);
   font-size: var(--text-xs);
+}
+
+/* Quieter than navigation: it leaves the app. */
+.repo-link {
+  height: var(--control-h-sm);
+  font-size: var(--text-xs);
+  font-weight: 400;
 }
 
 /* Collapsed: icons only. */

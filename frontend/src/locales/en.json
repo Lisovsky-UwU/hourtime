@@ -369,5 +369,12 @@
     "invalid_current_password": "The current password is wrong.",
     "client_name_taken": "A client with this name already exists.",
     "tag_name_taken": "A tag with this name already exists."
+  },
+  "about": {
+    "title": "About",
+    "version": "Version",
+    "source": "Source code",
+    "license": "License",
+    "author": "Author"
   }
 }

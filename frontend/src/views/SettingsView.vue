@@ -3,6 +3,7 @@ import { computed, onMounted, ref, useId, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
+import { APP_VERSION, AUTHOR, AUTHOR_URL, LICENSE, LICENSE_URL, REPOSITORY_URL } from '@/about'
 import type { IconName } from '@/components/AppIcon.vue'
 import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -410,6 +411,35 @@ async function signOutEverywhere() {
       </div>
     </section>
 
+    <section class="section">
+      <header class="section-head">
+        <h2>{{ t('about.title') }}</h2>
+      </header>
+
+      <dl class="about">
+        <div class="about-row">
+          <dt>{{ t('about.version') }}</dt>
+          <dd class="num">{{ APP_VERSION }}</dd>
+        </div>
+        <div class="about-row">
+          <dt>{{ t('about.source') }}</dt>
+          <dd>
+            <a :href="REPOSITORY_URL" target="_blank" rel="noopener">
+              {{ REPOSITORY_URL.replace('https://', '') }}
+            </a>
+          </dd>
+        </div>
+        <div class="about-row">
+          <dt>{{ t('about.license') }}</dt>
+          <dd><a :href="LICENSE_URL" target="_blank" rel="noopener">{{ LICENSE }}</a></dd>
+        </div>
+        <div class="about-row">
+          <dt>{{ t('about.author') }}</dt>
+          <dd><a :href="AUTHOR_URL" target="_blank" rel="noopener">{{ AUTHOR }}</a></dd>
+        </div>
+      </dl>
+    </section>
+
     <ChangePasswordDialog :open="changingPassword" @close="changingPassword = false" />
 
     <ConfirmDialog
@@ -520,6 +550,34 @@ async function signOutEverywhere() {
   margin-top: 4px;
 }
 
+.about {
+  margin: 0;
+}
+
+.about-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.about-row:first-child {
+  border-top: none;
+}
+
+.about-row dt {
+  font-weight: 500;
+}
+
+.about-row dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+}
+
 .error {
   margin-top: 6px;
   color: var(--danger);
@@ -541,7 +599,8 @@ async function signOutEverywhere() {
     width: 100%;
   }
 
-  .section-head {
+  .section-head,
+  .about-row {
     padding-inline: 16px;
   }
 }
