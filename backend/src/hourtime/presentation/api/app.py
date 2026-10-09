@@ -3,6 +3,7 @@ import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
+from importlib.metadata import version
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -83,7 +84,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="Hourtime API",
-        version="0.1.0",
+        version=version("hourtime"),
         lifespan=lifespan,
         docs_url=f"{API_PREFIX}/docs",
         openapi_url=f"{API_PREFIX}/openapi.json",
