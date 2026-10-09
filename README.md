@@ -1,7 +1,18 @@
-# Hourtime
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+    <img src="docs/logo.svg" alt="Hourtime" width="96">
+  </picture>
+</p>
 
-A self-hosted time tracker: projects, a server-side timer, and an editable list
-of everything you have tracked.
+<h1 align="center">Hourtime</h1>
+
+<p align="center">
+  A self-hosted time tracker: projects, a server-side timer, and an editable list
+  of everything you have tracked.
+</p>
+
+---
 
 The timer lives on the backend, not in the browser tab. Reload the page, open a
 different browser, come back tomorrow — the running entry is still there, and it
@@ -174,3 +185,12 @@ HOURTIME_CORS_ORIGINS=https://hourtime.example.com
 Then `git pull && docker compose up -d --build` deploys a new version. The outer
 proxy must set `X-Real-IP` and `X-Forwarded-Proto`: the web container passes
 them to the API as the client address and scheme.
+
+## License
+
+[Apache License 2.0](LICENSE).
+
+The project is free to use, modify and include in closed products, commercial
+ones included. The license carries an explicit patent grant from contributors
+and protection against patent litigation. The name "Hourtime" and the logo are
+not covered by it — see `NOTICE` and section 6 of the license.
