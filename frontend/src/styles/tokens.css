@@ -52,6 +52,12 @@
   --control-h: 36px;
   --control-h-sm: 30px;
 
+  /* Forms and tables read best narrow; the timer list and reports carry many
+     columns plus free text, and squeezed into the narrow width the description
+     column was left with a third of the row. */
+  --page-width: 1040px;
+  --page-width-wide: 1440px;
+
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --dur: 140ms;
 }

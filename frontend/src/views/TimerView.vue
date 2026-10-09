@@ -386,7 +386,7 @@ onUnmounted(() => {
 
 <style scoped>
 .timer-page {
-  max-width: 1040px;
+  max-width: var(--page-width-wide);
   margin: 0 auto;
   padding: 0 24px 64px;
 }
