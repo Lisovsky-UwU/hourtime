@@ -28,7 +28,7 @@ def to_domain(model: TimeEntryModel, tag_ids: list[UUID]) -> TimeEntry:
     )
 
 
-def _escape_like(text: str) -> str:
+def escape_like(text: str) -> str:
     """Typed `%` and `_` are meant literally, not as wildcards."""
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
@@ -171,7 +171,7 @@ class SqlTimeEntryRepository(TimeEntryRepository):
         )
         if query:
             statement = statement.where(
-                TimeEntryModel.description.ilike(f"%{_escape_like(query)}%", escape="\\")
+                TimeEntryModel.description.ilike(f"%{escape_like(query)}%", escape="\\")
             )
         rows = (await self._session.execute(statement)).all()
         return [

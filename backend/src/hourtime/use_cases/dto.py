@@ -4,7 +4,7 @@ These are the only shapes the presentation layer is allowed to pass inwards —
 HTTP schemas stay in `presentation`, ORM models stay in `infrastructure`.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -12,6 +12,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from hourtime.domain.entities import Session, TimeEntry, User
 from hourtime.domain.entities.user import DurationFormat, HourCycle
+from hourtime.domain.reports import (
+    DetailedSort,
+    GroupKey,
+    ReportEntry,
+    ReportGrouping,
+    SortOrder,
+    Totals,
+    WeeklyGrouping,
+)
 
 
 class PatchInput(BaseModel):
@@ -225,3 +234,94 @@ class TimeEntryPage(BaseModel):
     has_more: bool
     limit: int
     offset: int
+
+
+# --- reports ----------------------------------------------------------------
+
+
+class ReportFiltersInput(BaseModel):
+    """Filters shared by every report.
+
+    Dates are local to `timezone` and both inclusive; give both or neither.
+    Each id list goes with a `without_*` flag, and an entry passes when it
+    matches the list OR the flag.
+    """
+
+    user_id: UUID
+    workspace_id: UUID
+    # The user's IANA zone; None means UTC.
+    timezone: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    project_ids: list[UUID] = Field(default_factory=list)
+    without_project: bool = False
+    client_ids: list[UUID] = Field(default_factory=list)
+    without_client: bool = False
+    tag_ids: list[UUID] = Field(default_factory=list)
+    without_tags: bool = False
+    billable: bool | None = None
+    description: str = ""
+
+
+class SummaryReportInput(BaseModel):
+    filters: ReportFiltersInput
+    group_by: ReportGrouping = "project"
+    subgroup_by: ReportGrouping | None = None
+
+
+class DetailedReportInput(BaseModel):
+    filters: ReportFiltersInput
+    sort: DetailedSort = "started_at"
+    order: SortOrder = "desc"
+    limit: int = 50
+    offset: int = 0
+
+
+class WeeklyReportInput(BaseModel):
+    filters: ReportFiltersInput
+    group_by: WeeklyGrouping = "project"
+
+
+class ReportDay(BaseModel):
+    day: date
+    totals: Totals
+
+
+class SummaryGroup(BaseModel):
+    key: GroupKey
+    totals: Totals
+    subgroups: list["SummaryGroup"] = Field(default_factory=list)
+
+
+class SummaryReport(BaseModel):
+    currency: str
+    totals: Totals
+    # Every day of the period in order, empty ones included; None without dates.
+    by_day: list[ReportDay] | None
+    # Longest first; with grouping by tag their sum can exceed `totals`.
+    groups: list[SummaryGroup]
+
+
+class DetailedReport(BaseModel):
+    currency: str
+    # Over every entry that passes the filters, not just this page.
+    totals: Totals
+    items: list[ReportEntry]
+    has_more: bool
+    limit: int
+    offset: int
+
+
+class WeeklyRow(BaseModel):
+    key: GroupKey
+    totals: Totals
+    # Seconds per day, aligned with `WeeklyReport.days`.
+    days: list[int]
+
+
+class WeeklyReport(BaseModel):
+    currency: str
+    days: list[date]
+    totals: Totals
+    day_totals: list[int]
+    rows: list[WeeklyRow]

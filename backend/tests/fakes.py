@@ -20,9 +20,22 @@ from hourtime.domain.errors import (
     TagNameTaken,
     TimerAlreadyRunning,
 )
+from hourtime.domain.reports import (
+    DayTotals,
+    DetailedSort,
+    GroupDayTotals,
+    GroupTotals,
+    ReportCriteria,
+    ReportEntry,
+    ReportGrouping,
+    SortOrder,
+    Totals,
+    WeeklyGrouping,
+)
 from hourtime.interfaces.repositories import (
     ClientRepository,
     ProjectRepository,
+    ReportRepository,
     SessionRepository,
     TagRepository,
     TimeEntryRepository,
@@ -449,3 +462,54 @@ class InMemorySessionRepository(SessionRepository):
         for key in doomed:
             del self.items[key]
         return len(doomed)
+
+
+class CannedReportRepository(ReportRepository):
+    """Answers with whatever a test put in; the real aggregates are SQL and are
+    tested against Postgres. Records every criteria it was asked with."""
+
+    def __init__(self) -> None:
+        self.total = Totals()
+        self.days: list[DayTotals] = []
+        self.groups: list[GroupTotals] = []
+        self.pairs: list[GroupTotals] = []
+        self.cells: list[GroupDayTotals] = []
+        self.entries: list[ReportEntry] = []
+        self.calls: list[tuple[str, ReportCriteria]] = []
+        self.page_requests: list[dict[str, object]] = []
+
+    async def totals(self, criteria: ReportCriteria) -> Totals:
+        self.calls.append(("totals", criteria))
+        return self.total
+
+    async def totals_by_day(self, criteria: ReportCriteria) -> list[DayTotals]:
+        self.calls.append(("totals_by_day", criteria))
+        return self.days
+
+    async def totals_by_group(
+        self,
+        criteria: ReportCriteria,
+        group_by: ReportGrouping,
+        subgroup_by: ReportGrouping | None = None,
+    ) -> list[GroupTotals]:
+        self.calls.append(("totals_by_group", criteria))
+        return self.pairs if subgroup_by is not None else self.groups
+
+    async def totals_by_group_and_day(
+        self, criteria: ReportCriteria, group_by: WeeklyGrouping
+    ) -> list[GroupDayTotals]:
+        self.calls.append(("totals_by_group_and_day", criteria))
+        return self.cells
+
+    async def list_entries(
+        self,
+        criteria: ReportCriteria,
+        *,
+        sort: DetailedSort = "started_at",
+        order: SortOrder = "desc",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[ReportEntry]:
+        self.calls.append(("list_entries", criteria))
+        self.page_requests.append({"sort": sort, "order": order, "limit": limit, "offset": offset})
+        return self.entries[offset : offset + limit]

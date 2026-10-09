@@ -24,6 +24,7 @@ from hourtime.infrastructure.db.repositories.cached_session_repository import (
 from hourtime.infrastructure.db.repositories.cached_user_repository import CachedUserRepository
 from hourtime.infrastructure.db.repositories.client_repository import SqlClientRepository
 from hourtime.infrastructure.db.repositories.project_repository import SqlProjectRepository
+from hourtime.infrastructure.db.repositories.report_repository import SqlReportRepository
 from hourtime.infrastructure.db.repositories.session_repository import SqlSessionRepository
 from hourtime.infrastructure.db.repositories.tag_repository import SqlTagRepository
 from hourtime.infrastructure.db.repositories.time_entry_repository import SqlTimeEntryRepository
@@ -35,6 +36,7 @@ from hourtime.infrastructure.security.token_generator import OpaqueTokenGenerato
 from hourtime.interfaces.repositories import (
     ClientRepository,
     ProjectRepository,
+    ReportRepository,
     TagRepository,
     TimeEntryRepository,
     WorkspaceRepository,
@@ -54,6 +56,7 @@ from hourtime.use_cases.auth import (
 from hourtime.use_cases.clients import CreateClient, DeleteClient, ListClients, UpdateClient
 from hourtime.use_cases.dto import AuthenticatedUser
 from hourtime.use_cases.projects import CreateProject, DeleteProject, ListProjects, UpdateProject
+from hourtime.use_cases.reports import GetDetailedReport, GetSummaryReport, GetWeeklyReport
 from hourtime.use_cases.tags import CreateTag, DeleteTag, ListTags, UpdateTag
 from hourtime.use_cases.time_entries import (
     CreateTimeEntry,
@@ -177,6 +180,13 @@ def get_time_entry_repository(session: DbSessionDep) -> TimeEntryRepository:
 
 
 EntriesDep = Annotated[TimeEntryRepository, Depends(get_time_entry_repository)]
+
+
+def get_report_repository(session: DbSessionDep) -> ReportRepository:
+    return SqlReportRepository(session)
+
+
+ReportsDep = Annotated[ReportRepository, Depends(get_report_repository)]
 
 
 def get_session_repository(
@@ -452,3 +462,18 @@ def get_update_time_entry(
 
 def get_delete_time_entry(entries: EntriesDep, uow: UowDep) -> DeleteTimeEntry:
     return DeleteTimeEntry(entries, uow)
+
+
+# --- report use cases --------------------------------------------------------
+
+
+def get_get_summary_report(reports: ReportsDep, workspaces: WorkspacesDep) -> GetSummaryReport:
+    return GetSummaryReport(reports, workspaces)
+
+
+def get_get_detailed_report(reports: ReportsDep, workspaces: WorkspacesDep) -> GetDetailedReport:
+    return GetDetailedReport(reports, workspaces)
+
+
+def get_get_weekly_report(reports: ReportsDep, workspaces: WorkspacesDep) -> GetWeeklyReport:
+    return GetWeeklyReport(reports, workspaces)
