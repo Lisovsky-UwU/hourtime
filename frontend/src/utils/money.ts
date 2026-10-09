@@ -67,3 +67,8 @@ export function currencyOptions(locale: string, extra: string | null = null): Cu
   const names = new Intl.DisplayNames([locale], { type: 'currency' })
   return [...codes].sort().map((code) => ({ value: code, label: `${code} - ${names.of(code) ?? code}` }))
 }
+
+/** An amount from a report (`"1503.33"`) in the report's currency. */
+export function formatAmount(amount: string, currency: string, locale: string): string {
+  return formatMoney(toCents(amount) ?? 0, currency, locale)
+}

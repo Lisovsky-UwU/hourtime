@@ -14,7 +14,8 @@
     "expand": "Expand sidebar",
     "skipToContent": "Skip to content",
     "clients": "Clients",
-    "tags": "Tags"
+    "tags": "Tags",
+    "reports": "Reports"
   },
   "common": {
     "saveChanges": "Save changes",
@@ -214,6 +215,87 @@
     "currency": "Currency",
     "currencyHint": "One currency for every rate and amount.",
     "loadFailed": "Could not load the billing settings."
+  },
+  "reports": {
+    "title": "Reports",
+    "views": "Report views",
+    "view": {
+      "summary": "Summary",
+      "detailed": "Detailed",
+      "weekly": "Weekly"
+    },
+    "loadFailed": "Could not load the report.",
+    "empty": "No time recorded for these filters.",
+    "share": "Share",
+    "duration": "Duration",
+    "loadMore": "Show more ({shown} of {total})",
+    "period": {
+      "label": "Period",
+      "previous": "Previous period",
+      "next": "Next period",
+      "all": "All time",
+      "this-week": "This week",
+      "last-week": "Last week",
+      "this-month": "This month",
+      "last-month": "Last month",
+      "this-year": "This year",
+      "last-year": "Last year",
+      "custom": "Custom range",
+      "weekOf": "Week of a date",
+      "from": "From",
+      "to": "To",
+      "apply": "Show"
+    },
+    "filters": {
+      "label": "Report filters",
+      "projects": "Projects",
+      "clients": "Clients",
+      "tags": "Tags",
+      "billable": "Billable",
+      "description": "Description",
+      "clear": "Clear filters",
+      "picked": "{count} selected | {count} selected"
+    },
+    "without": {
+      "project": "Without project",
+      "client": "Without client",
+      "tag": "Without tags",
+      "description": "Without description"
+    },
+    "group": {
+      "label": "Group by",
+      "project": "Project",
+      "client": "Client",
+      "tag": "Tag",
+      "description": "Description",
+      "then": "then",
+      "subgroupLabel": "Subgroup by",
+      "none": "No subgroups"
+    },
+    "totals": {
+      "label": "Totals",
+      "total": "Total",
+      "billable": "Billable",
+      "amount": "Amount",
+      "entries": "Entries",
+      "entriesCount": "{count} entry | {count} entries"
+    },
+    "chart": {
+      "per": {
+        "day": "Time per day",
+        "week": "Time per week",
+        "month": "Time per month"
+      },
+      "billableShort": "billable"
+    },
+    "columns": {
+      "date": "Date",
+      "description": "Description",
+      "project": "Project",
+      "tags": "Tags",
+      "time": "Time"
+    },
+    "spentColumn": "Tracked"
   },
   "settings": {
     "title": "Settings",

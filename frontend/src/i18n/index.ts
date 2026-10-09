@@ -28,6 +28,10 @@ const datetimeFormats = {
     weekday: { weekday: 'long', month: 'short', day: 'numeric' },
     weekdayYear: { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' },
     dayShort: { weekday: 'short', month: 'short', day: 'numeric' },
+    axisDay: { day: 'numeric' },
+    axisWeekday: { weekday: 'short', day: 'numeric' },
+    axisMonth: { month: 'short' },
+    month: { month: 'long', year: 'numeric' },
   },
   ru: {
     time: { hour: '2-digit', minute: '2-digit' },
@@ -35,6 +39,10 @@ const datetimeFormats = {
     weekday: { weekday: 'long', day: 'numeric', month: 'long' },
     weekdayYear: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
     dayShort: { weekday: 'short', day: 'numeric', month: 'short' },
+    axisDay: { day: 'numeric' },
+    axisWeekday: { weekday: 'short', day: 'numeric' },
+    axisMonth: { month: 'short' },
+    month: { month: 'long', year: 'numeric' },
   },
 } as const
 

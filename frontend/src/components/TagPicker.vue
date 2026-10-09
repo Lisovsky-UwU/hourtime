@@ -203,27 +203,3 @@ const triggerLabel = computed(() =>
   min-width: 1ch;
 }
 </style>
-
-<style>
-/* Global: the list lives in a portal. A checkbox drawn like the field borders. */
-.ui-combobox .box {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid var(--control-border);
-  border-radius: 4px;
-}
-
-.ui-combobox [data-state='checked'] > .box {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
-.ui-combobox .box-check {
-  display: inline-flex;
-}
-</style>

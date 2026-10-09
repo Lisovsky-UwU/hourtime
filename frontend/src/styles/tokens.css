@@ -15,6 +15,9 @@
   --border-strong: light-dark(#a6b3a1, #4d5c55);
   /* Outline of fields and toggles: at least 3:1 against the sheet (WCAG 1.4.11). */
   --control-border: light-dark(#7f8c7a, #6b7b74);
+  /* Report columns of non-billable time: a quiet gray-green beside --accent,
+     3:1 against the sheet like any other graphic. */
+  --chart-quiet: light-dark(#7e9182, #687b72);
   --text: light-dark(#1c2421, #e1e8e0);
   --text-muted: light-dark(#59655f, #98a49d);
 

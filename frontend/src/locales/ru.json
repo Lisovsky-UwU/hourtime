@@ -14,7 +14,8 @@
     "expand": "Развернуть меню",
     "skipToContent": "Перейти к содержимому",
     "clients": "Клиенты",
-    "tags": "Теги"
+    "tags": "Теги",
+    "reports": "Отчеты"
   },
   "common": {
     "saveChanges": "Сохранить",
@@ -214,6 +215,87 @@
     "currency": "Валюта",
     "currencyHint": "Одна на все ставки и суммы.",
     "loadFailed": "Не удалось загрузить настройки оплаты."
+  },
+  "reports": {
+    "title": "Отчеты",
+    "views": "Виды отчета",
+    "view": {
+      "summary": "Сводка",
+      "detailed": "Подробно",
+      "weekly": "Неделя"
+    },
+    "loadFailed": "Не удалось загрузить отчет.",
+    "empty": "С такими фильтрами времени нет.",
+    "share": "Доля",
+    "duration": "Длительность",
+    "loadMore": "Показать еще ({shown} из {total})",
+    "period": {
+      "label": "Период",
+      "previous": "Предыдущий период",
+      "next": "Следующий период",
+      "all": "Все время",
+      "this-week": "Эта неделя",
+      "last-week": "Прошлая неделя",
+      "this-month": "Этот месяц",
+      "last-month": "Прошлый месяц",
+      "this-year": "Этот год",
+      "last-year": "Прошлый год",
+      "custom": "Свой период",
+      "weekOf": "Неделя с датой",
+      "from": "С",
+      "to": "По",
+      "apply": "Показать"
+    },
+    "filters": {
+      "label": "Фильтры отчета",
+      "projects": "Проекты",
+      "clients": "Клиенты",
+      "tags": "Теги",
+      "billable": "Оплата",
+      "description": "Описание",
+      "clear": "Сбросить фильтры",
+      "picked": "выбран {count} | выбрано {count} | выбрано {count}"
+    },
+    "without": {
+      "project": "Без проекта",
+      "client": "Без клиента",
+      "tag": "Без тегов",
+      "description": "Без описания"
+    },
+    "group": {
+      "label": "Группировать",
+      "project": "Проект",
+      "client": "Клиент",
+      "tag": "Тег",
+      "description": "Описание",
+      "then": "затем",
+      "subgroupLabel": "Подгруппы",
+      "none": "Без подгрупп"
+    },
+    "totals": {
+      "label": "Итоги",
+      "total": "Всего",
+      "billable": "Оплачиваемое",
+      "amount": "Сумма",
+      "entries": "Записей",
+      "entriesCount": "{count} запись | {count} записи | {count} записей"
+    },
+    "chart": {
+      "per": {
+        "day": "Время по дням",
+        "week": "Время по неделям",
+        "month": "Время по месяцам"
+      },
+      "billableShort": "оплачиваемых"
+    },
+    "columns": {
+      "date": "Дата",
+      "description": "Описание",
+      "project": "Проект",
+      "tags": "Теги",
+      "time": "Время"
+    },
+    "spentColumn": "Затрачено"
   },
   "settings": {
     "title": "Настройки",

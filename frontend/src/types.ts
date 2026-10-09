@@ -103,6 +103,69 @@ export interface TimeEntryPage {
   offset: number
 }
 
+/** Durations in whole seconds, amounts as decimal strings (`"1503.33"`) in the workspace currency. */
+export interface ReportTotals {
+  duration: number
+  billable_duration: number
+  amount: string
+  entries: number
+}
+
+export interface ReportDay {
+  /** `YYYY-MM-DD` in the profile time zone. */
+  date: string
+  duration: number
+  billable_duration: number
+  amount: string
+}
+
+/** A project, client, tag or description; `id` and `name` are null for "without". */
+export interface ReportGroup extends ReportTotals {
+  id: string | null
+  name: string | null
+  color: string | null
+  client_name: string | null
+}
+
+export interface SummaryReport {
+  currency: string
+  totals: ReportTotals
+  /** Every day of the range in order, empty days as zeros; null without a range. */
+  by_day: ReportDay[] | null
+  groups: (ReportGroup & { subgroups: ReportGroup[] })[]
+}
+
+export interface DetailedReportItem {
+  id: string
+  description: string
+  project: { id: string; name: string; color: string } | null
+  client: { id: string; name: string } | null
+  tags: { id: string; name: string }[]
+  billable: boolean
+  started_at: string
+  stopped_at: string
+  duration: number
+  /** Null unless the entry is billable and has a rate. */
+  amount: string | null
+}
+
+export interface DetailedReport {
+  currency: string
+  /** Over everything the filters match, not just this page. */
+  totals: ReportTotals
+  items: DetailedReportItem[]
+  has_more: boolean
+  limit: number
+  offset: number
+}
+
+export interface WeeklyReport {
+  currency: string
+  days: string[]
+  totals: ReportTotals & { days: number[] }
+  rows: (ReportGroup & { days: number[] })[]
+}
+
 export interface ApiErrorBody {
   error: {
     code: string

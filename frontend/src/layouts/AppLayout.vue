@@ -52,6 +52,7 @@ interface NavItem {
 
 const main: NavItem[] = [
   { name: 'timer', icon: 'timer', label: 'nav.timer' },
+  { name: 'reports', icon: 'reports', label: 'nav.reports' },
   { name: 'projects', icon: 'projects', label: 'nav.projects' },
   { name: 'clients', icon: 'clients', label: 'nav.clients' },
   { name: 'tags', icon: 'tags', label: 'nav.tags' },

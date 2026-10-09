@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import * as reportsApi from '@/api/reports'
+
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ProjectDialog from '@/components/ProjectDialog.vue'
 import UiButton from '@/components/ui/UiButton.vue'
@@ -11,6 +13,7 @@ import UiSegmented from '@/components/ui/UiSegmented.vue'
 import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
 import { useBilling } from '@/composables/useBilling'
+import { useDuration } from '@/composables/useDuration'
 import { useClientsStore } from '@/stores/clients'
 import { useEntriesStore } from '@/stores/entries'
 import { useProjectsStore } from '@/stores/projects'
@@ -26,6 +29,24 @@ const clients = useClientsStore()
 const entries = useEntriesStore()
 const workspace = useWorkspaceStore()
 const billing = useBilling()
+const duration = useDuration()
+
+/**
+ * All-time tracked time per project from the summary report. Secondary: if it
+ * fails, the column stays empty instead of blocking the list.
+ */
+const spent = ref(new Map<string, number>())
+
+async function loadSpent() {
+  try {
+    const summary = await reportsApi.summary({}, 'project', null)
+    spent.value = new Map(
+      summary.groups.flatMap((group): [string, number][] => (group.id ? [[group.id, group.duration]] : [])),
+    )
+  } catch {
+    spent.value = new Map()
+  }
+}
 /** Only a failed load shows inline; failed actions go to a toast. */
 const loadError = ref<string | null>(null)
 const busy = ref(false)
@@ -118,7 +139,10 @@ function menuFor(project: Project): MenuEntry[] {
   ]
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  void loadSpent()
+})
 </script>
 
 <template>
@@ -161,6 +185,7 @@ onMounted(load)
         <tr>
           <th scope="col">{{ t('projects.form.name') }}</th>
           <th scope="col">{{ t('projects.form.client') }}</th>
+          <th scope="col" class="num-col spent">{{ t('reports.spentColumn') }}</th>
           <th scope="col" class="num-col">{{ t('billing.rateColumn') }}</th>
           <th scope="col" class="actions-col">
             <span class="visually-hidden">{{ t('ui.more') }}</span>
@@ -176,6 +201,7 @@ onMounted(load)
             </button>
           </td>
           <td class="client">{{ clients.find(project.client_id)?.name }}</td>
+          <td class="num-col num spent">{{ spent.has(project.id) ? duration(spent.get(project.id) ?? 0) : '' }}</td>
           <td class="num-col num rate" :data-inherited="rateOf(project)?.own === false ? '' : undefined">
             {{ rateOf(project)?.text }}
           </td>
@@ -209,6 +235,11 @@ onMounted(load)
   overflow-wrap: anywhere;
 }
 
+/* Tracked time is the project's own fact: ink, like durations elsewhere. */
+.data-table .spent {
+  color: var(--text);
+}
+
 /* Own rate in ink; .num-col alone would pencil it. */
 .data-table .rate {
   color: var(--text);
@@ -217,5 +248,12 @@ onMounted(load)
 /* The workspace rate, not the project's own: pencil, as everything inherited. */
 .data-table .rate[data-inherited] {
   color: var(--text-muted);
+}
+
+/* A phone has room for name, client and rate; the tracked time is in Reports. */
+@media (width < 600px) {
+  .data-table .spent {
+    display: none;
+  }
 }
 </style>

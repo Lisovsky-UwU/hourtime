@@ -30,7 +30,8 @@ export class ApiError extends Error {
   }
 }
 
-type QueryValue = string | number | boolean | null | undefined
+/** An array is sent as a repeated key: `?tag_ids=a&tag_ids=b`. */
+type QueryValue = string | number | boolean | string[] | null | undefined
 
 export interface RequestOptions {
   method?: string
@@ -78,7 +79,9 @@ export function onTokensChanged(listener: (next: Tokens | null) => void): () => 
 function buildUrl(path: string, query?: Record<string, QueryValue>): string {
   const url = new URL(`${BASE_URL}${path}`, window.location.origin)
   for (const [key, value] of Object.entries(query ?? {})) {
-    if (value !== null && value !== undefined && value !== '') {
+    if (Array.isArray(value)) {
+      for (const item of value) url.searchParams.append(key, item)
+    } else if (value !== null && value !== undefined && value !== '') {
       url.searchParams.set(key, String(value))
     }
   }
