@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import AppIcon from '@/components/AppIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
+import UiDatePicker from '@/components/ui/UiDatePicker.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiPopover from '@/components/ui/UiPopover.vue'
 import { usePreferencesStore } from '@/stores/preferences'
@@ -143,22 +144,10 @@ function step(direction: -1 | 1) {
           {{ weeks ? t('reports.period.weekOf') : t('reports.period.custom') }}
         </p>
         <div class="custom-fields">
-          <label class="custom-field">
-            <span class="visually-hidden">{{ t('reports.period.from') }}</span>
-            <input v-model="customFrom" type="date" class="custom-input num" required />
-          </label>
+          <UiDatePicker v-model="customFrom" :label="t('reports.period.from')" />
           <template v-if="!weeks">
             <span class="muted" aria-hidden="true">-</span>
-            <label class="custom-field">
-              <span class="visually-hidden">{{ t('reports.period.to') }}</span>
-              <input
-                v-model="customTo"
-                type="date"
-                class="custom-input num"
-                :min="customFrom"
-                required
-              />
-            </label>
+            <UiDatePicker v-model="customTo" :label="t('reports.period.to')" :min="customFrom" />
           </template>
         </div>
         <UiButton type="submit" size="sm" :disabled="weeks ? customFrom === '' : !customValid">
@@ -270,17 +259,6 @@ function step(direction: -1 | 1) {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.custom-input {
-  height: var(--control-h-sm);
-  padding: 0 6px;
-  border: 1px solid var(--control-border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--text-sm);
 }
 
 @media (width < 600px) {

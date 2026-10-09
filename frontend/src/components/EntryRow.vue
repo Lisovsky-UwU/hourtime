@@ -9,6 +9,7 @@ import ProjectPicker from '@/components/ProjectPicker.vue'
 import TagPicker from '@/components/TagPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import type { MenuEntry } from '@/components/ui/UiDropdownMenu.vue'
+import UiDatePicker from '@/components/ui/UiDatePicker.vue'
 import UiDropdownMenu from '@/components/ui/UiDropdownMenu.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import { messageFor } from '@/composables/useApiError'
@@ -128,24 +129,15 @@ watch(billable, (value) => {
   void commit({ billable: value })
 })
 
-const dateInput = ref<HTMLInputElement | null>(null)
+const datePickerOpen = ref(false)
 
 /**
- * On phones the date field is hidden for room; the menu opens its picker.
+ * On phones the date field is hidden for room; the menu opens its calendar.
  * Waits for the menu to close first: closing hands focus back to the menu
- * button, which would shut a picker opened any earlier.
+ * button, which would shut a calendar opened any earlier.
  */
 function pickDate() {
-  window.setTimeout(() => {
-    const input = dateInput.value
-    if (!input) return
-    input.focus()
-    try {
-      input.showPicker()
-    } catch {
-      // No picker API or no user activation left: the focused field still works.
-    }
-  }, 150)
+  window.setTimeout(() => (datePickerOpen.value = true), 150)
 }
 
 const menu = computed<MenuEntry[]>(() => [
@@ -188,12 +180,12 @@ const menu = computed<MenuEntry[]>(() => [
     </span>
 
     <span class="when">
-      <input
-        ref="dateInput"
+      <UiDatePicker
         v-model="startDate"
-        type="date"
-        class="date num"
-        :aria-label="t('entries.edit.date')"
+        v-model:open="datePickerOpen"
+        class="date"
+        :data-open="datePickerOpen ? '' : undefined"
+        :label="t('entries.edit.date')"
         @change="commitTimes"
       />
       <span class="times">
@@ -347,13 +339,15 @@ const menu = computed<MenuEntry[]>(() => [
 }
 
 .entry:hover .date,
-.date:focus {
+.date:focus-within,
+.date[data-open] {
   opacity: 1;
 }
 
 @media (width < 900px) {
   /* Brought back on screen while in use from the menu. */
-  .entry .date:focus {
+  .entry .date:focus-within,
+  .entry .date[data-open] {
     position: static;
     width: auto;
     height: var(--control-h-sm);
@@ -363,11 +357,6 @@ const menu = computed<MenuEntry[]>(() => [
 
 .date:hover {
   border-color: var(--border);
-}
-
-.date:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -1px;
 }
 
 .duration {

@@ -376,5 +376,10 @@
     "source": "Source code",
     "license": "License",
     "author": "Author"
+  },
+  "datePicker": {
+    "open": "Open calendar",
+    "previous": "Previous month",
+    "next": "Next month"
   }
 }

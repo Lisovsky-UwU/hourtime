@@ -72,7 +72,7 @@ export function sameTimeOfDay(a: TimeOfDay, b: TimeOfDay): boolean {
   )
 }
 
-/** `YYYY-MM-DD` in local time, the value an `<input type="date">` expects. */
+/** `YYYY-MM-DD` in local time, the value `UiDatePicker` works with. */
 export function toDateInput(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''
