@@ -81,3 +81,11 @@ a:hover {
     scroll-behavior: auto !important;
   }
 }
+
+@media print {
+  body {
+    background: none;
+    /* Bars and swatches are backgrounds, which browsers drop from print by default. */
+    print-color-adjust: exact;
+  }
+}

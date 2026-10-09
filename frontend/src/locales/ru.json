@@ -295,7 +295,13 @@
       "tags": "Теги",
       "time": "Время"
     },
-    "spentColumn": "Затрачено"
+    "spentColumn": "Затрачено",
+    "export": {
+      "label": "Экспорт",
+      "csv": "Скачать CSV",
+      "print": "Печать или PDF",
+      "failed": "Не удалось скачать отчет."
+    }
   },
   "settings": {
     "title": "Настройки",

@@ -154,7 +154,8 @@ function refreshTokens(): Promise<Tokens> {
   return refreshInFlight
 }
 
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+/** Sends with the access token, refreshing it once on a 401; throws on any error status. */
+async function authorized(path: string, options: RequestOptions): Promise<Response> {
   const needsAuth = options.auth !== false
   if (needsAuth && !tokens) {
     throw new ApiError(401, 'invalid_token', 'Not signed in')
@@ -168,8 +169,31 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   if (!response.ok) throw await toApiError(response)
+  return response
+}
+
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const response = await authorized(path, options)
   if (response.status === 204) return undefined as T
 
   const text = await response.text()
   return (text ? JSON.parse(text) : null) as T
+}
+
+/**
+ * Saves a file the API sends as an attachment. A plain link cannot carry the
+ * bearer token, so the file is fetched here and handed to the browser.
+ */
+export async function download(path: string, options: RequestOptions = {}): Promise<void> {
+  const response = await authorized(path, options)
+  const disposition = response.headers.get('Content-Disposition') ?? ''
+  const name = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'download'
+
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  link.click()
+  // Revoked on the next tick: the click only starts the download.
+  window.setTimeout(() => URL.revokeObjectURL(url))
 }

@@ -80,3 +80,11 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 }
+
+/* Paper is white whatever the screen shows. */
+@media print {
+  :root,
+  :root[data-theme] {
+    color-scheme: light;
+  }
+}

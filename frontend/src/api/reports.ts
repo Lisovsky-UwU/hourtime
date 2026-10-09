@@ -1,4 +1,4 @@
-import { request } from '@/api/client'
+import { download, request } from '@/api/client'
 import type { DetailedReport, SummaryReport, WeeklyReport } from '@/types'
 
 export type SummaryGrouping = 'project' | 'client' | 'tag' | 'description'
@@ -42,6 +42,25 @@ export function detailed(
   return request<DetailedReport>('/reports/detailed', {
     query: { ...filters, sort, order, limit, offset },
   })
+}
+
+export function summaryCsv(
+  filters: ReportFilters,
+  groupBy: SummaryGrouping,
+  subgroupBy: SummaryGrouping | null,
+): Promise<void> {
+  return download('/reports/summary.csv', {
+    query: { ...filters, group_by: groupBy, subgroup_by: subgroupBy },
+  })
+}
+
+/** Every entry the filters let through, not just the loaded pages. */
+export function detailedCsv(
+  filters: ReportFilters,
+  sort: DetailedSort,
+  order: 'asc' | 'desc',
+): Promise<void> {
+  return download('/reports/detailed.csv', { query: { ...filters, sort, order } })
 }
 
 /** At most 7 days; the caller aligns them to the profile's first day of the week. */

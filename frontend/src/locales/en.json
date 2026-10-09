@@ -295,7 +295,13 @@
       "tags": "Tags",
       "time": "Time"
     },
-    "spentColumn": "Tracked"
+    "spentColumn": "Tracked",
+    "export": {
+      "label": "Export",
+      "csv": "Download CSV",
+      "print": "Print or save as PDF",
+      "failed": "Could not download the report."
+    }
   },
   "settings": {
     "title": "Settings",

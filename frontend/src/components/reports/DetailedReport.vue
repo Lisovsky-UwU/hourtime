@@ -335,4 +335,10 @@ const columns = computed(() => [
   display: flex;
   justify-content: center;
 }
+
+@media print {
+  .more {
+    display: none;
+  }
+}
 </style>

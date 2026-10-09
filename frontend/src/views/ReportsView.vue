@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import * as reportsApi from '@/api/reports'
 import AppIcon from '@/components/AppIcon.vue'
 import DetailedReport from '@/components/reports/DetailedReport.vue'
 import FilterSelect from '@/components/reports/FilterSelect.vue'
@@ -10,18 +11,23 @@ import SummaryReport from '@/components/reports/SummaryReport.vue'
 import WeeklyReport from '@/components/reports/WeeklyReport.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import type { ComboboxItem } from '@/components/ui/UiCombobox.vue'
-import { useReportQuery } from '@/composables/useReportQuery'
+import type { MenuEntry } from '@/components/ui/UiDropdownMenu.vue'
+import UiDropdownMenu from '@/components/ui/UiDropdownMenu.vue'
+import { toast } from '@/components/ui/toast'
+import { messageFor } from '@/composables/useApiError'
+import { NONE, useReportQuery } from '@/composables/useReportQuery'
 import type { ReportView } from '@/composables/useReportQuery'
 import { useClientsStore } from '@/stores/clients'
 import { useProjectsStore } from '@/stores/projects'
 import { useTagsStore } from '@/stores/tags'
 import type { Period } from '@/utils/period'
+import { formatPeriod } from '@/utils/period'
 
 /**
  * Reports: one filter row scopes all three views, and the whole report lives
  * in the URL (see useReportQuery), so switching views keeps the filters.
  */
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const report = useReportQuery()
 const projects = useProjectsStore()
 const clients = useClientsStore()
@@ -100,6 +106,56 @@ onUnmounted(() => {
   if (typing !== null) window.clearTimeout(typing)
 })
 
+async function downloadCsv() {
+  const { filters, state } = report
+  try {
+    if (report.view.value === 'summary') {
+      await reportsApi.summaryCsv(filters.value, state.value.groupBy, state.value.subgroupBy)
+    } else {
+      await reportsApi.detailedCsv(filters.value, state.value.sort, state.value.order)
+    }
+  } catch (cause) {
+    toast.error(t('reports.export.failed'), messageFor(cause))
+  }
+}
+
+/** Waits for the menu to close, or the print would catch it still open. */
+function print() {
+  window.setTimeout(() => window.print(), 150)
+}
+
+const exportItems = computed<MenuEntry[]>(() => [
+  // The weekly table is one screen already; a file of it adds nothing to print.
+  ...(report.view.value === 'weekly'
+    ? []
+    : [{ label: t('reports.export.csv'), icon: 'download' as const, select: downloadCsv }]),
+  { label: t('reports.export.print'), icon: 'print', select: print },
+])
+
+/** The filters spelled out on paper, where the controls are not printed. */
+const printedFilters = computed(() => {
+  const state = report.state.value
+  const names = (picked: string[], items: ComboboxItem[], none: string) =>
+    picked
+      .map((id) => (id === NONE ? none : items.find((item) => item.value === id)?.label))
+      .filter(Boolean)
+      .join(', ')
+
+  return [
+    [t('reports.filters.projects'), names(state.projects, projectItems.value, t('reports.without.project'))],
+    [t('reports.filters.clients'), names(state.clients, clientItems.value, t('reports.without.client'))],
+    [t('reports.filters.tags'), names(state.tags, tagItems.value, t('reports.without.tag'))],
+    [t('reports.filters.billable'), names(state.billable ? [state.billable] : [], billableItems.value, '')],
+    [t('reports.filters.description'), state.description],
+  ].filter(([, value]) => value)
+})
+
+const printedPeriod = computed(() =>
+  report.state.value.period
+    ? formatPeriod(report.state.value.period, locale.value)
+    : t('reports.period.all'),
+)
+
 function clear() {
   if (typing !== null) window.clearTimeout(typing)
   typing = null
@@ -123,7 +179,24 @@ function clear() {
           {{ t(`reports.view.${view}`) }}
         </RouterLink>
       </nav>
+
+      <UiDropdownMenu :items="exportItems" :label="t('reports.export.label')">
+        <template #trigger>
+          <UiButton icon="download" size="sm" class="export">{{ t('reports.export.label') }}</UiButton>
+        </template>
+      </UiDropdownMenu>
     </header>
+
+    <dl class="print-summary">
+      <div>
+        <dt>{{ t(`reports.view.${report.view.value}`) }}</dt>
+        <dd>{{ printedPeriod }}</dd>
+      </div>
+      <div v-for="[name, value] in printedFilters" :key="name">
+        <dt>{{ name }}</dt>
+        <dd>{{ value }}</dd>
+      </div>
+    </dl>
 
     <div class="filters" role="group" :aria-label="t('reports.filters.label')">
       <PeriodPicker
@@ -284,6 +357,46 @@ function clear() {
 .search input::placeholder {
   color: var(--text-muted);
   opacity: 1;
+}
+
+/* Only on paper: the screen has the controls themselves. */
+.print-summary {
+  display: none;
+}
+
+.export {
+  margin-left: auto;
+}
+
+@media print {
+  .reports-page {
+    padding: 0;
+  }
+
+  .views,
+  .export,
+  .filters {
+    display: none;
+  }
+
+  .print-summary {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 2px 12px;
+    margin: 0;
+  }
+
+  .print-summary div {
+    display: contents;
+  }
+
+  .print-summary dt {
+    color: var(--text-muted);
+  }
+
+  .print-summary dd {
+    margin: 0;
+  }
 }
 
 @media (width < 768px) {

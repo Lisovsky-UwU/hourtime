@@ -508,5 +508,17 @@ async function signOut() {
     padding-left: 0;
   }
 }
+
+@media print {
+  .shell {
+    display: block;
+  }
+
+  .sidebar,
+  .topbar,
+  .skip-link {
+    display: none;
+  }
+}
 </style>
 
