@@ -15,7 +15,8 @@
     "skipToContent": "Skip to content",
     "clients": "Clients",
     "tags": "Tags",
-    "reports": "Reports"
+    "reports": "Reports",
+    "calendar": "Calendar"
   },
   "common": {
     "saveChanges": "Save changes",
@@ -302,6 +303,25 @@
       "print": "Print or save as PDF",
       "failed": "Could not download the report."
     }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "views": "Calendar view",
+    "view": {
+      "week": "Week",
+      "day": "Day"
+    },
+    "previous": {
+      "week": "Previous week",
+      "day": "Previous day"
+    },
+    "next": {
+      "week": "Next week",
+      "day": "Next day"
+    },
+    "loadFailed": "Could not load the entries.",
+    "runningLimit": "A running entry cannot reach past the current time.",
+    "editEntry": "Edit entry"
   },
   "settings": {
     "title": "Settings",

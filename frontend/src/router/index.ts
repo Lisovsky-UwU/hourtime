@@ -23,6 +23,13 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.timer' },
   },
   {
+    // View and date are in the query, as with the reports.
+    path: '/calendar',
+    name: 'calendar',
+    component: () => import('@/views/CalendarView.vue'),
+    meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.calendar' },
+  },
+  {
     // The view is part of the path, the filters are in the query.
     path: '/reports/:view(summary|detailed|weekly)?',
     name: 'reports',
