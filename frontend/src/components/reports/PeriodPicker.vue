@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppIcon from '@/components/AppIcon.vue'
-import UiButton from '@/components/ui/UiButton.vue'
-import UiDatePicker from '@/components/ui/UiDatePicker.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiPopover from '@/components/ui/UiPopover.vue'
+import UiRangeCalendar from '@/components/ui/UiRangeCalendar.vue'
+import UiWeekCalendar from '@/components/ui/UiWeekCalendar.vue'
 import { usePreferencesStore } from '@/stores/preferences'
 import type { Period, PresetKey } from '@/utils/period'
 import {
@@ -15,13 +15,14 @@ import {
   matchPreset,
   presetPeriod,
   shiftPeriod,
+  toDateKey,
   weekOf,
 } from '@/utils/period'
 
 /**
  * The report period: arrows step to the previous or next period of the same
- * kind, the button opens presets as plain rows and a custom range under a
- * rule. `null` is all time.
+ * kind, the button opens presets as plain rows and, under a rule, a month
+ * calendar for a custom range (or, in weeks mode, any week). `null` is all time.
  */
 const model = defineModel<Period | null>({ required: true })
 
@@ -39,14 +40,6 @@ const { t, locale } = useI18n()
 const preferences = usePreferencesStore()
 
 const open = ref(false)
-const customFrom = ref('')
-const customTo = ref('')
-
-watch(open, (value) => {
-  if (!value) return
-  customFrom.value = model.value?.from ?? ''
-  customTo.value = model.value?.to ?? ''
-})
 
 const presets = computed<PresetKey[]>(() => (props.weeks ? ['this-week', 'last-week'] : PRESETS))
 
@@ -71,18 +64,7 @@ function pick(period: Period | null) {
   open.value = false
 }
 
-const customValid = computed(
-  () => customFrom.value !== '' && customTo.value !== '' && customFrom.value <= customTo.value,
-)
-
-function applyCustom() {
-  if (!customValid.value) return
-  pick(
-    props.weeks
-      ? weekOf(customFrom.value, preferences.weekStart)
-      : { from: customFrom.value, to: customTo.value },
-  )
-}
+const today = toDateKey(new Date())
 
 function step(direction: -1 | 1) {
   if (model.value) model.value = shiftPeriod(model.value, direction)
@@ -139,21 +121,17 @@ function step(direction: -1 | 1) {
         </button>
       </div>
 
-      <form class="custom" @submit.prevent="applyCustom">
+      <div class="custom">
         <p class="custom-title">
           {{ weeks ? t('reports.period.weekOf') : t('reports.period.custom') }}
         </p>
-        <div class="custom-fields">
-          <UiDatePicker v-model="customFrom" :label="t('reports.period.from')" />
-          <template v-if="!weeks">
-            <span class="muted" aria-hidden="true">-</span>
-            <UiDatePicker v-model="customTo" :label="t('reports.period.to')" :min="customFrom" />
-          </template>
-        </div>
-        <UiButton type="submit" size="sm" :disabled="weeks ? customFrom === '' : !customValid">
-          {{ t('reports.period.apply') }}
-        </UiButton>
-      </form>
+        <UiWeekCalendar
+          v-if="weeks"
+          :date="model?.from ?? today"
+          @select="pick(weekOf($event, preferences.weekStart))"
+        />
+        <UiRangeCalendar v-else :initial="model" @select="pick" />
+      </div>
     </UiPopover>
 
     <UiIconButton
@@ -253,12 +231,6 @@ function step(direction: -1 | 1) {
 .custom-title {
   color: var(--text-muted);
   font-size: var(--text-xs);
-}
-
-.custom-fields {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 @media (width < 600px) {

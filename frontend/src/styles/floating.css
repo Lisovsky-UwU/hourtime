@@ -229,3 +229,142 @@
 .ui-combobox .box-check {
   display: inline-flex;
 }
+
+/*
+ * Month calendars: the date picker's popup, the report's custom range and the
+ * week pickers. Here rather than in one component, so a page that loads only
+ * one of them still gets the look.
+ */
+.ui-floating.ui-calendar {
+  min-width: 0;
+  padding: 10px;
+}
+
+.ui-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.ui-calendar-heading {
+  font-weight: 600;
+}
+
+/* Russian month names come lowercase from Intl. */
+.ui-calendar-heading::first-letter {
+  text-transform: uppercase;
+}
+
+.ui-calendar-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ui-calendar-nav:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.ui-calendar-nav:focus-visible,
+.ui-calendar-day:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.ui-calendar-grid {
+  border-collapse: collapse;
+}
+
+.ui-calendar-weekday {
+  width: 34px;
+  height: 28px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 400;
+}
+
+.ui-calendar-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  outline: none;
+}
+
+.ui-calendar-day:hover {
+  background: var(--surface-muted);
+}
+
+.ui-calendar-day[data-outside-view] {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Today keeps a quiet ring, so it still reads as today once selected elsewhere. */
+.ui-calendar-day[data-today] {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  font-weight: 600;
+}
+
+.ui-calendar-day[data-selected] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  box-shadow: none;
+}
+
+.ui-calendar-day[data-disabled],
+.ui-calendar-day[data-unavailable] {
+  color: var(--text-muted);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* A range: its ends in the form's ink, the days between on the soft tint. */
+.ui-range-calendar .ui-calendar-day[data-selection-start],
+.ui-range-calendar .ui-calendar-day[data-selection-end],
+.ui-week-calendar .ui-calendar-day[data-week-start],
+.ui-week-calendar .ui-calendar-day[data-week-end] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  box-shadow: none;
+}
+
+.ui-range-calendar .ui-calendar-day[data-selected]:not([data-selection-start], [data-selection-end]),
+.ui-range-calendar .ui-calendar-day[data-highlighted]:not([data-selection-start], [data-selection-end]),
+.ui-week-calendar .ui-calendar-day[data-in-week]:not([data-week-start], [data-week-end]) {
+  border-radius: 0;
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: none;
+}
+
+/* The whole week under the pointer, since a click picks the week. */
+.ui-week-calendar .ui-calendar-row:hover .ui-calendar-day:not([data-in-week]) {
+  background: var(--surface-muted);
+}
+
+
+/* A band, not a row of pills: only its outer corners are round. */
+.ui-range-calendar .ui-calendar-day[data-selection-start]:not([data-selection-end]),
+.ui-week-calendar .ui-calendar-day[data-week-start] {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.ui-range-calendar .ui-calendar-day[data-selection-end]:not([data-selection-start]),
+.ui-week-calendar .ui-calendar-day[data-week-end] {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}

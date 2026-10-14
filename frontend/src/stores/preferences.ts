@@ -11,6 +11,7 @@ export type Theme = 'auto' | 'light' | 'dark'
 // The inline script in index.html reads the same key before the app loads.
 const THEME_KEY = 'hourtime.theme'
 const SIDEBAR_KEY = 'hourtime.sidebarCollapsed'
+const CALENDAR_ZOOM_KEY = 'hourtime.calendarZoom'
 
 function read(key: string): string | null {
   try {
@@ -51,6 +52,8 @@ export const usePreferencesStore = defineStore('preferences', () => {
 
   const theme = ref<Theme>(storedTheme())
   const sidebarCollapsed = ref(read(SIDEBAR_KEY) === '1')
+  /** Step of the calendar's hour height; the view clamps it to its own scale. */
+  const calendarZoom = ref(Number(read(CALENDAR_ZOOM_KEY) ?? 0) || 0)
 
   const hourCycle = computed<HourCycle>(() =>
     auth.user ? (String(auth.user.hour_cycle) as HourCycle) : detectHourCycle(),
@@ -59,6 +62,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const durationFormat = computed<DurationFormat>(() => auth.user?.duration_format ?? 'classic')
 
   watch(sidebarCollapsed, (value) => write(SIDEBAR_KEY, value ? '1' : '0'))
+  watch(calendarZoom, (value) => write(CALENDAR_ZOOM_KEY, String(value)))
 
   watch(
     theme,
@@ -69,5 +73,5 @@ export const usePreferencesStore = defineStore('preferences', () => {
     { immediate: true },
   )
 
-  return { theme, sidebarCollapsed, hourCycle, weekStart, durationFormat }
+  return { theme, sidebarCollapsed, calendarZoom, hourCycle, weekStart, durationFormat }
 })

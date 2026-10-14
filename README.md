@@ -86,6 +86,7 @@ uv run ty check
 
 cd ../frontend
 npm run typecheck
+npm test                      # pure helpers, Node's own test runner
 npm run build
 ```
 

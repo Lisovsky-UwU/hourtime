@@ -24,6 +24,7 @@ import type { EntryPatch } from '@/api/timeEntries'
 import CalendarEntryBlock from '@/components/calendar/CalendarEntryBlock.vue'
 import CalendarEntryEditor from '@/components/calendar/CalendarEntryEditor.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import TimerBar from '@/components/TimerBar.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiSegmented from '@/components/ui/UiSegmented.vue'
@@ -53,6 +54,8 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const PLUGINS = [timeGridPlugin, interactionPlugin]
 const LOCALES = [ruLocale]
 const FC_VIEWS: Record<Mode, string> = { week: 'timeGridWeek', day: 'timeGridDay' }
+/** Hour heights in px. Not below 48: the grid will not draw a row under ~22 px. */
+const HOUR_HEIGHTS = [48, 72, 96, 144]
 
 const { t, d, locale } = useI18n()
 const route = useRoute()
@@ -427,6 +430,20 @@ async function continueEntry(entry: TimeEntry) {
 
 // ---------------------------------------------------------------- grid
 
+const zoom = computed(() =>
+  Math.min(Math.max(preferences.calendarZoom, 0), HOUR_HEIGHTS.length - 1),
+)
+const slotHeight = computed(() => `${(HOUR_HEIGHTS[zoom.value] ?? 48) / 2}px`)
+
+/** The zoom the grid has measured; it follows once the new slot height is on the page. */
+const measuredZoom = ref(zoom.value)
+
+async function setZoom(step: -1 | 1) {
+  preferences.calendarZoom = zoom.value + step
+  await nextTick()
+  measuredZoom.value = zoom.value
+}
+
 const calendar = ref<InstanceType<typeof FullCalendar> | null>(null)
 
 watch([mode, anchorDate], ([nextMode, nextDate]) => {
@@ -484,6 +501,9 @@ const options = computed<CalendarOptions>(() => ({
   slotDuration: '00:30:00',
   snapDuration: '00:15:00',
   slotLabelFormat: slotLabelFormat.value,
+  // The grid places blocks by slot heights it measured when the slots last
+  // rendered; a class that changes with the zoom makes it render and measure again.
+  slotLaneClassNames: [`cal-zoom-${measuredZoom.value}`],
   slotEventOverlap: false,
   eventMinHeight: 18,
   editable: true,
@@ -508,6 +528,8 @@ const options = computed<CalendarOptions>(() => ({
 
 <template>
   <div class="calendar-page">
+    <TimerBar />
+
     <header class="calendar-head">
       <h1>{{ t('calendar.title') }}</h1>
 
@@ -525,6 +547,21 @@ const options = computed<CalendarOptions>(() => ({
 
       <p class="calendar-title" aria-live="polite">{{ title }}</p>
 
+      <div class="calendar-zoom">
+        <UiIconButton
+          icon="zoom-out"
+          :label="t('calendar.zoomOut')"
+          :disabled="zoom === 0"
+          @click="setZoom(-1)"
+        />
+        <UiIconButton
+          icon="zoom-in"
+          :label="t('calendar.zoomIn')"
+          :disabled="zoom === HOUR_HEIGHTS.length - 1"
+          @click="setZoom(1)"
+        />
+      </div>
+
       <UiSegmented
         v-model="modeModel"
         :label="t('calendar.views')"
@@ -535,7 +572,11 @@ const options = computed<CalendarOptions>(() => ({
       />
     </header>
 
-    <div class="sheet calendar-sheet" :data-stale="stale ? '' : undefined">
+    <div
+      class="sheet calendar-sheet"
+      :data-stale="stale ? '' : undefined"
+      :style="{ '--cal-slot-h': slotHeight }"
+    >
       <FullCalendar ref="calendar" class="cal-grid" :options="options">
         <template #dayHeaderContent="arg">
           <span class="cal-day" :data-today="arg.isToday ? '' : undefined">
@@ -603,9 +644,7 @@ const options = computed<CalendarOptions>(() => ({
   gap: 16px;
   height: calc(100dvh - var(--topbar-h, 0px));
   min-height: 480px;
-  max-width: var(--page-width-wide);
-  margin: 0 auto;
-  padding: 28px 24px 24px;
+  padding: 20px 24px 24px;
 }
 
 .calendar-head {
@@ -622,6 +661,11 @@ const options = computed<CalendarOptions>(() => ({
 .calendar-nav {
   display: inline-flex;
   align-items: center;
+  gap: 2px;
+}
+
+.calendar-zoom {
+  display: inline-flex;
   gap: 2px;
 }
 
@@ -737,9 +781,10 @@ const options = computed<CalendarOptions>(() => ({
   font-weight: 600;
 }
 
-/* 48 px an hour: a quarter-hour entry still holds one line of text. */
+/* 48 px an hour by default: a quarter-hour entry still holds one line of
+   text. The zoom buttons change it through the sheet's variable. */
 .cal-grid .fc-timegrid-slot {
-  height: 24px;
+  height: var(--cal-slot-h, 24px);
 }
 
 /* Half-hours are a fainter rule than hours. */

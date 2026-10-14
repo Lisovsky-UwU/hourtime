@@ -16,7 +16,8 @@
     "clients": "Clients",
     "tags": "Tags",
     "reports": "Reports",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "timesheet": "Timesheet"
   },
   "common": {
     "saveChanges": "Save changes",
@@ -241,11 +242,8 @@
       "last-month": "Last month",
       "this-year": "This year",
       "last-year": "Last year",
-      "custom": "Custom range",
-      "weekOf": "Week of a date",
-      "from": "From",
-      "to": "To",
-      "apply": "Show"
+      "custom": "Custom range: pick the first and last day",
+      "weekOf": "Another week: pick any day of it"
     },
     "filters": {
       "label": "Report filters",
@@ -321,7 +319,26 @@
     },
     "loadFailed": "Could not load the entries.",
     "runningLimit": "A running entry cannot reach past the current time.",
-    "editEntry": "Edit entry"
+    "editEntry": "Edit entry",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out"
+  },
+  "timesheet": {
+    "title": "Timesheet",
+    "thisWeek": "This week",
+    "pickWeek": "Pick a week",
+    "clientHint": "Rows by client are for reading. To change time, group by project or description.",
+    "empty": "No time this week. Add a row and type hours into a day.",
+    "emptyReadonly": "No time this week.",
+    "addRow": "Add row",
+    "cellLabel": "{row}, {day}",
+    "hint": "Type a day's total as 1:30 or 1.5. More time adds an entry for the difference; less time is taken off the latest entries.",
+    "noRoom": "That much time does not fit into the day before now.",
+    "loadFailed": "Could not load the entries.",
+    "saveFailed": "Could not save the time.",
+    "deleteTitle": "Delete entries?",
+    "deleteConfirm": "{n} entry will be removed for good. | {n} entries will be removed for good.",
+    "deleteAction": "Delete entries"
   },
   "settings": {
     "title": "Settings",
