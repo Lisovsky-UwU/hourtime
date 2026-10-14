@@ -24,7 +24,6 @@ const showDuration = useDuration()
 
 const running = computed(() => props.entry.stopped_at === null)
 const project = computed(() => projects.find(props.entry.project_id))
-const minutes = computed(() => (props.end.getTime() - props.start.getTime()) / 60_000)
 
 const times = computed(() => {
   const startIso = props.start.toISOString()
@@ -44,11 +43,7 @@ const duration = computed(() =>
 </script>
 
 <template>
-  <div
-    class="cal-block"
-    :data-entry-id="entry.id"
-    :data-size="minutes < 40 ? 'short' : minutes < 75 ? 'medium' : undefined"
-  >
+  <div class="cal-block" :data-entry-id="entry.id">
     <span class="cal-block-description" :data-empty="entry.description ? undefined : ''">
       {{ entry.description || t('timer.noDescription') }}
     </span>
@@ -62,8 +57,10 @@ const duration = computed(() =>
 </template>
 
 <style scoped>
-/* Tall blocks stack description, project and time; the calendar clips
-   whatever does not fit, so the description is the line that always shows. */
+/* The layout follows the height the block really gets (the calendar makes
+   .fc-event-main a size container), not the entry's length: a block cut at
+   midnight is shorter than its entry. Tall blocks stack description, project
+   and time; only the description gives way, and only by whole lines. */
 .cal-block {
   display: flex;
   flex-direction: column;
@@ -77,10 +74,17 @@ const duration = computed(() =>
   line-height: 1.3;
 }
 
+.cal-block > * {
+  flex-shrink: 0;
+}
+
 .cal-block-description {
+  overflow: hidden;
   font-size: var(--text-sm);
   font-weight: 500;
   overflow-wrap: anywhere;
+  /* 40px: padding plus the project and time rows below. */
+  max-height: round(down, 100cqh - 40px, 1lh);
 }
 
 .cal-block-description[data-empty] {
@@ -109,31 +113,38 @@ const duration = computed(() =>
   font-weight: 600;
 }
 
-/* Up to half an hour or so: one line, description and duration side by side. */
-.cal-block[data-size='short'] {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 6px;
-  padding-block: 1px;
+/* No room for a line of description over project and time: two rows,
+   one line of description and the time. */
+@container (height < 59px) {
+  .cal-block-project {
+    display: none;
+  }
+
+  .cal-block-description {
+    max-height: none;
+    font-size: var(--text-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
-.cal-block[data-size='short'] .cal-block-description {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  font-size: var(--text-xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* No room for two rows: one line, description and duration side by side. */
+@container (height < 39px) {
+  .cal-block {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+    padding-block: 1px;
+  }
 
-.cal-block[data-size='short'] :is(.cal-block-project, .cal-block-range) {
-  display: none;
-}
+  .cal-block-description {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 
-.cal-block[data-size='medium'] .cal-block-description {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  .cal-block-range {
+    display: none;
+  }
 }
 
 .live-dot {

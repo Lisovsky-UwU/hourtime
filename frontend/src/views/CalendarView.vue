@@ -769,8 +769,10 @@ const options = computed<CalendarOptions>(() => ({
   cursor: pointer;
 }
 
+/* A size container: the block inside lays itself out by the height it gets. */
 .cal-grid .fc-timegrid-event .fc-event-main {
   padding: 0;
+  container-type: size;
 }
 
 /* Running: the bottom edge is still open, so it is drawn dashed. */
