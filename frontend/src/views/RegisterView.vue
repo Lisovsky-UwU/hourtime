@@ -8,6 +8,7 @@ import UiField from '@/components/ui/UiField.vue'
 import UiInput from '@/components/ui/UiInput.vue'
 import { useAsyncAction } from '@/composables/useApiError'
 import { useAuthStore } from '@/stores/auth'
+import { clearPendingInvite, pendingInvite } from '@/utils/invite'
 
 const PASSWORD_MIN_LENGTH = 10
 
@@ -23,7 +24,9 @@ const password = ref('')
 async function submit() {
   // Registration signs the new account in, so there is nothing else to do here.
   const done = await run(async () => {
-    await auth.signUp(email.value, password.value)
+    // Came from an invite link: the account joins that workspace and opens in it.
+    await auth.signUp(email.value, password.value, pendingInvite())
+    clearPendingInvite()
     return true
   })
   if (done) await router.replace({ name: 'timer' })

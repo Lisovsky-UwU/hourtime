@@ -18,6 +18,7 @@ from hourtime.domain.entities import (
     TimeEntry,
     User,
     Workspace,
+    WorkspaceInvite,
     WorkspaceMember,
 )
 from hourtime.domain.entities.user import DurationFormat, HourCycle
@@ -51,6 +52,8 @@ class PatchInput(BaseModel):
 class RegisterUserInput(BaseModel):
     email: str
     password: str
+    # Lets the account in even with registration closed, and joins that workspace.
+    invite_token: str | None = None
 
 
 class LoginUserInput(BaseModel):
@@ -122,6 +125,26 @@ class ChangePasswordInput(BaseModel):
 class MemberWorkspace(BaseModel):
     workspace: Workspace
     role: MemberRole
+
+
+class IssuedInvite(BaseModel):
+    invite: WorkspaceInvite
+    # Shown once: only its digest is stored.
+    token: str
+
+
+class InvitePreview(BaseModel):
+    """What the invite page shows before anyone signs in."""
+
+    workspace_name: str
+    invited_by: str
+    role: MemberRole
+
+
+class MemberAccount(BaseModel):
+    member: WorkspaceMember
+    user: User
+    is_owner: bool
 
 
 class UpdateWorkspaceInput(PatchInput):

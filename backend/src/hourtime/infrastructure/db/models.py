@@ -89,6 +89,25 @@ class WorkspaceMemberModel(Base):
     __table_args__ = (sa.Index("ix_workspace_members_user_id", "user_id"),)
 
 
+class WorkspaceInviteModel(Base):
+    __tablename__ = "workspace_invites"
+
+    id: Mapped[UUID] = _uuid_pk()
+    workspace_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(sa.String(64), nullable=False, unique=True)
+    role: Mapped[str] = mapped_column(sa.String(16), nullable=False)
+    created_by: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+    __table_args__ = (sa.Index("ix_workspace_invites_workspace_id", "workspace_id"),)
+
+
 class SessionModel(Base):
     __tablename__ = "sessions"
 

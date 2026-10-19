@@ -1,5 +1,6 @@
 from uuid import UUID
 
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from hourtime.domain.entities import Workspace
@@ -26,6 +27,16 @@ class SqlWorkspaceRepository(WorkspaceRepository):
 
     async def get_by_id(self, workspace_id: UUID) -> Workspace | None:
         model = await self._session.get(WorkspaceModel, workspace_id)
+        return to_domain(model) if model else None
+
+    async def first_owned(self, user_id: UUID) -> Workspace | None:
+        statement = (
+            sa.select(WorkspaceModel)
+            .where(WorkspaceModel.owner_id == user_id)
+            .order_by(WorkspaceModel.created_at)
+            .limit(1)
+        )
+        model = (await self._session.execute(statement)).scalar_one_or_none()
         return to_domain(model) if model else None
 
     async def add(self, workspace: Workspace) -> Workspace:

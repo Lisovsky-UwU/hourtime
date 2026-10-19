@@ -30,6 +30,9 @@ from hourtime.infrastructure.db.repositories.session_repository import SqlSessio
 from hourtime.infrastructure.db.repositories.tag_repository import SqlTagRepository
 from hourtime.infrastructure.db.repositories.time_entry_repository import SqlTimeEntryRepository
 from hourtime.infrastructure.db.repositories.user_repository import SqlUserRepository
+from hourtime.infrastructure.db.repositories.workspace_invite_repository import (
+    SqlWorkspaceInviteRepository,
+)
 from hourtime.infrastructure.db.repositories.workspace_member_repository import (
     SqlWorkspaceMemberRepository,
 )
@@ -43,6 +46,7 @@ from hourtime.interfaces.repositories import (
     ReportRepository,
     TagRepository,
     TimeEntryRepository,
+    WorkspaceInviteRepository,
     WorkspaceMemberRepository,
     WorkspaceRepository,
 )
@@ -79,7 +83,19 @@ from hourtime.use_cases.time_entries import (
     SuggestTimeEntries,
     UpdateTimeEntry,
 )
-from hourtime.use_cases.workspaces import GetWorkspace, ListWorkspaces, UpdateWorkspace
+from hourtime.use_cases.workspaces import (
+    AcceptInvite,
+    CreateInvite,
+    GetWorkspace,
+    ListInvites,
+    ListMembers,
+    ListWorkspaces,
+    PreviewInvite,
+    RemoveMember,
+    RevokeInvite,
+    UpdateMember,
+    UpdateWorkspace,
+)
 
 # --- process-wide singletons -------------------------------------------------
 
@@ -172,6 +188,13 @@ def get_workspace_member_repository(session: DbSessionDep) -> WorkspaceMemberRep
 MembersDep = Annotated[WorkspaceMemberRepository, Depends(get_workspace_member_repository)]
 
 
+def get_workspace_invite_repository(session: DbSessionDep) -> WorkspaceInviteRepository:
+    return SqlWorkspaceInviteRepository(session)
+
+
+InvitesDep = Annotated[WorkspaceInviteRepository, Depends(get_workspace_invite_repository)]
+
+
 def get_client_repository(session: DbSessionDep) -> ClientRepository:
     return SqlClientRepository(session)
 
@@ -255,6 +278,8 @@ def get_register_user(
     users: UsersDep,
     workspaces: WorkspacesDep,
     members: MembersDep,
+    invites: InvitesDep,
+    tokens: TokensDep,
     hasher: HasherDep,
     clock: ClockDep,
     uow: UowDep,
@@ -264,6 +289,8 @@ def get_register_user(
         users,
         workspaces,
         members,
+        invites,
+        tokens,
         hasher,
         clock,
         uow,
@@ -393,6 +420,56 @@ def get_update_workspace(
     workspaces: WorkspacesDep, clock: ClockDep, uow: UowDep
 ) -> UpdateWorkspace:
     return UpdateWorkspace(workspaces, clock, uow)
+
+
+def get_list_members(members: MembersDep, workspaces: WorkspacesDep) -> ListMembers:
+    return ListMembers(members, workspaces)
+
+
+def get_update_member(members: MembersDep, workspaces: WorkspacesDep, uow: UowDep) -> UpdateMember:
+    return UpdateMember(members, workspaces, uow)
+
+
+def get_remove_member(
+    members: MembersDep, workspaces: WorkspacesDep, users: UsersDep, clock: ClockDep, uow: UowDep
+) -> RemoveMember:
+    return RemoveMember(members, workspaces, users, clock, uow)
+
+
+def get_create_invite(
+    invites: InvitesDep, tokens: TokensDep, clock: ClockDep, uow: UowDep
+) -> CreateInvite:
+    return CreateInvite(invites, tokens, clock, uow)
+
+
+def get_list_invites(invites: InvitesDep, clock: ClockDep) -> ListInvites:
+    return ListInvites(invites, clock)
+
+
+def get_revoke_invite(invites: InvitesDep, uow: UowDep) -> RevokeInvite:
+    return RevokeInvite(invites, uow)
+
+
+def get_preview_invite(
+    invites: InvitesDep,
+    workspaces: WorkspacesDep,
+    users: UsersDep,
+    tokens: TokensDep,
+    clock: ClockDep,
+) -> PreviewInvite:
+    return PreviewInvite(invites, workspaces, users, tokens, clock)
+
+
+def get_accept_invite(
+    invites: InvitesDep,
+    members: MembersDep,
+    workspaces: WorkspacesDep,
+    users: UsersDep,
+    tokens: TokensDep,
+    clock: ClockDep,
+    uow: UowDep,
+) -> AcceptInvite:
+    return AcceptInvite(invites, members, workspaces, users, tokens, clock, uow)
 
 
 # --- client use cases --------------------------------------------------------

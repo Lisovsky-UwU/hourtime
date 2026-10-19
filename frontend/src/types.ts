@@ -43,7 +43,37 @@ export interface Workspace {
   /** ISO 4217 code: one currency for every rate and amount. */
   currency: string
   /** The caller's role here: members create, admins also change and remove. */
-  role: 'admin' | 'member'
+  role: MemberRole
+}
+
+export type MemberRole = 'admin' | 'member'
+
+export interface Member {
+  user_id: string
+  email: string
+  display_name: string | null
+  role: MemberRole
+  /** The owner is always an admin and cannot be removed. */
+  is_owner: boolean
+  joined_at: string
+}
+
+export interface Invite {
+  id: string
+  role: MemberRole
+  created_at: string
+  expires_at: string
+}
+
+/** Only in the response that creates the link: the server keeps a digest. */
+export interface IssuedInvite extends Invite {
+  token: string
+}
+
+export interface InvitePreview {
+  workspace_name: string
+  invited_by: string
+  role: MemberRole
 }
 
 export type WorkspacePatch = Partial<Pick<Workspace, 'default_hourly_rate' | 'currency'>>

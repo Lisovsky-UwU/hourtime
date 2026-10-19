@@ -17,6 +17,7 @@ from hourtime.presentation.api.errors import register_error_handlers
 from hourtime.presentation.api.routers import (
     auth,
     clients,
+    invites,
     projects,
     reports,
     tags,
@@ -119,6 +120,7 @@ def create_app() -> FastAPI:
     for router in (
         auth.router,
         clients.router,
+        invites.router,
         projects.router,
         reports.router,
         tags.router,

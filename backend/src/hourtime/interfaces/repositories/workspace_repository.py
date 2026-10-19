@@ -9,6 +9,10 @@ class WorkspaceRepository(ABC):
     async def get_by_id(self, workspace_id: UUID) -> Workspace | None: ...
 
     @abstractmethod
+    async def first_owned(self, user_id: UUID) -> Workspace | None:
+        """The oldest workspace the user owns: the personal one made at registration."""
+
+    @abstractmethod
     async def add(self, workspace: Workspace) -> Workspace: ...
 
     @abstractmethod

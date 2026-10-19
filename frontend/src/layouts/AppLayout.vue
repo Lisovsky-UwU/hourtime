@@ -59,6 +59,7 @@ const main: NavItem[] = [
   { name: 'projects', icon: 'projects', label: 'nav.projects' },
   { name: 'clients', icon: 'clients', label: 'nav.clients' },
   { name: 'tags', icon: 'tags', label: 'nav.tags' },
+  { name: 'members', icon: 'members', label: 'nav.members' },
 ]
 const secondary: NavItem[] = [{ name: 'settings', icon: 'settings', label: 'nav.settings' }]
 

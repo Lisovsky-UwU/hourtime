@@ -43,6 +43,7 @@ import {
   Sun,
   Timer,
   Trash2,
+  Users,
   X,
 } from '@lucide/vue'
 
@@ -91,6 +92,7 @@ const ICONS = {
   'zoom-out': ZoomOut,
   stop: Square,
   timer: Timer,
+  members: Users,
   trash: Trash2,
   close: X,
 } satisfies Record<string, Component>

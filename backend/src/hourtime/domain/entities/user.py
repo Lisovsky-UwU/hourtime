@@ -26,7 +26,7 @@ class User(Entity):
     email: EmailStr
     password_hash: str
     is_active: bool = True
-    # Where the API puts projects and entries until workspaces can be picked.
+    # The workspace the frontend opens: the one the user picked last.
     default_workspace_id: UUID
     display_name: str | None = Field(default=None, max_length=DISPLAY_NAME_MAX_LENGTH)
     # IANA name. None until the first client reports its zone: a default of UTC

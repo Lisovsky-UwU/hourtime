@@ -18,6 +18,8 @@ class RegisterRequest(BaseModel):
     # The real length rule comes from HOURTIME_PASSWORD_MIN_LENGTH; this only
     # keeps empty strings out.
     password: str = Field(min_length=1, max_length=128)
+    # The token from an invite link: registers even with registration closed.
+    invite_token: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class LoginRequest(BaseModel):

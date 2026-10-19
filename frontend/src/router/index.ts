@@ -62,6 +62,19 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.tags' },
   },
   {
+    path: '/members',
+    name: 'members',
+    component: () => import('@/views/MembersView.vue'),
+    meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.members' },
+  },
+  {
+    // Open to guests and members alike: the token is in the fragment, see utils/invite.ts.
+    path: '/invite',
+    name: 'invite',
+    component: () => import('@/views/InviteView.vue'),
+    meta: { layout: 'auth', titleKey: 'invite.title' },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/SettingsView.vue'),

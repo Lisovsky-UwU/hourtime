@@ -13,6 +13,7 @@ from hourtime.domain.entities import (
     TimeEntrySuggestion,
     User,
     Workspace,
+    WorkspaceInvite,
     WorkspaceMember,
 )
 from hourtime.domain.errors import (
@@ -42,6 +43,7 @@ from hourtime.interfaces.repositories import (
     TagRepository,
     TimeEntryRepository,
     UserRepository,
+    WorkspaceInviteRepository,
     WorkspaceMemberRepository,
     WorkspaceRepository,
 )
@@ -141,6 +143,10 @@ class InMemoryWorkspaceRepository(WorkspaceRepository):
     async def get_by_id(self, workspace_id: UUID) -> Workspace | None:
         return self.items.get(workspace_id)
 
+    async def first_owned(self, user_id: UUID) -> Workspace | None:
+        owned = [item for item in self.items.values() if item.owner_id == user_id]
+        return min(owned, key=lambda item: item.created_at) if owned else None
+
     async def add(self, workspace: Workspace) -> Workspace:
         self.items[workspace.id] = workspace
         return workspace
@@ -153,8 +159,11 @@ class InMemoryWorkspaceRepository(WorkspaceRepository):
 
 
 class InMemoryWorkspaceMemberRepository(WorkspaceMemberRepository):
-    def __init__(self, workspaces: InMemoryWorkspaceRepository) -> None:
+    def __init__(
+        self, workspaces: InMemoryWorkspaceRepository, users: InMemoryUserRepository
+    ) -> None:
         self.workspaces = workspaces
+        self.users = users
         self.items: dict[tuple[UUID, UUID], WorkspaceMember] = {}
 
     async def get(self, workspace_id: UUID, user_id: UUID) -> WorkspaceMember | None:
@@ -168,9 +177,49 @@ class InMemoryWorkspaceMemberRepository(WorkspaceMemberRepository):
         ]
         return sorted(found, key=lambda pair: pair[0].name.lower())
 
+    async def list_for_workspace(self, workspace_id: UUID) -> list[tuple[WorkspaceMember, User]]:
+        found = [m for m in self.items.values() if m.workspace_id == workspace_id]
+        found.sort(key=lambda member: member.created_at)
+        return [(member, self.users.items[member.user_id]) for member in found]
+
     async def add(self, member: WorkspaceMember) -> WorkspaceMember:
         self.items[(member.workspace_id, member.user_id)] = member
         return member
+
+    async def update(self, member: WorkspaceMember) -> WorkspaceMember:
+        if (member.workspace_id, member.user_id) not in self.items:
+            raise NotFound("Member not found")
+        return await self.add(member)
+
+    async def remove(self, workspace_id: UUID, user_id: UUID) -> None:
+        self.items.pop((workspace_id, user_id), None)
+
+
+class InMemoryWorkspaceInviteRepository(WorkspaceInviteRepository):
+    def __init__(self) -> None:
+        self.items: dict[UUID, WorkspaceInvite] = {}
+
+    async def get_by_id(self, invite_id: UUID) -> WorkspaceInvite | None:
+        return self.items.get(invite_id)
+
+    async def get_by_token_hash(self, token_hash: str) -> WorkspaceInvite | None:
+        return next((i for i in self.items.values() if i.token_hash == token_hash), None)
+
+    async def list_open(self, workspace_id: UUID, now: datetime) -> list[WorkspaceInvite]:
+        found = [
+            i for i in self.items.values() if i.workspace_id == workspace_id and i.is_open(now)
+        ]
+        return sorted(found, key=lambda invite: invite.created_at, reverse=True)
+
+    async def add(self, invite: WorkspaceInvite) -> WorkspaceInvite:
+        self.items[invite.id] = invite
+        return invite
+
+    async def update(self, invite: WorkspaceInvite) -> WorkspaceInvite:
+        return await self.add(invite)
+
+    async def delete(self, invite_id: UUID) -> None:
+        self.items.pop(invite_id, None)
 
 
 class InMemoryClientRepository(ClientRepository):

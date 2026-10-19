@@ -952,22 +952,12 @@ class TestWorkspaceMembership:
 
 class TestMemberRole:
     async def test_member_creates_but_does_not_change(
-        self, app: FastAPI, client: httpx.AsyncClient, tokens: dict[str, str]
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
     ) -> None:
         workspace = (await client.get("/auth/me")).json()["default_workspace_id"]
         project = (await client.post("/projects", json={"name": "Website"})).json()
         member = await other_user_headers(client)
-        member_id = (await client.get("/auth/me", headers=member)).json()["id"]
-        # Invites arrive with the next stage; until then a member is added by hand.
-        async with app.state.sessionmaker() as session:
-            await session.execute(
-                sa.text(
-                    "INSERT INTO workspace_members (workspace_id, user_id, role, created_at)"
-                    " VALUES (:workspace, :user, 'member', now())"
-                ),
-                {"workspace": workspace, "user": member_id},
-            )
-            await session.commit()
+        await join(client, workspace, member)
 
         prefix = f"/workspaces/{workspace}"
         seen = await client.get(prefix, headers=member)
@@ -985,3 +975,71 @@ class TestMemberRole:
             response = await client.request(method, prefix + path, json=body, headers=member)
             assert response.status_code == 403, (method, path, response.text)
             assert response.json()["error"]["code"] == "permission_denied"
+
+
+async def join(client: httpx.AsyncClient, workspace: str, headers: dict[str, str]) -> None:
+    """The caller's admin invites whoever `headers` sign in as into `workspace`."""
+    issued = await client.post(f"/workspaces/{workspace}/invites", json={})
+    assert issued.status_code == 201, issued.text
+    accepted = await client.post(
+        "/invites/accept", json={"token": issued.json()["token"]}, headers=headers
+    )
+    assert accepted.status_code == 200, accepted.text
+
+
+class TestInvites:
+    async def test_join_by_link_then_get_removed(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        workspace = (await client.get("/auth/me")).json()["default_workspace_id"]
+        other = await other_user_headers(client)
+        issued = (await client.post(f"/workspaces/{workspace}/invites", json={})).json()
+        assert [i["id"] for i in (await client.get(f"/workspaces/{workspace}/invites")).json()] == [
+            issued["id"]
+        ]
+
+        preview = await client.post("/invites/preview", json={"token": issued["token"]})
+        assert preview.json()["invited_by"] == EMAIL
+        accepted = await client.post(
+            "/invites/accept", json={"token": issued["token"]}, headers=other
+        )
+        assert accepted.json()["id"] == workspace
+        me = (await client.get("/auth/me", headers=other)).json()
+        assert me["default_workspace_id"] == workspace
+        assert (await client.get(f"/workspaces/{workspace}/invites")).json() == []
+        again = await client.post("/invites/preview", json={"token": issued["token"]})
+        assert again.status_code == 404
+
+        members = (await client.get(f"/workspaces/{workspace}/members")).json()
+        assert [(m["email"], m["role"], m["is_owner"]) for m in members] == [
+            (EMAIL, "admin", True),
+            ("other@example.com", "member", False),
+        ]
+        removed = await client.delete(f"/workspaces/{workspace}/members/{me['id']}")
+        assert removed.status_code == 204
+        assert (await client.get(f"/workspaces/{workspace}", headers=other)).status_code == 404
+        me = (await client.get("/auth/me", headers=other)).json()
+        assert me["default_workspace_id"] != workspace
+
+    async def test_owner_cannot_be_removed(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        me = (await client.get("/auth/me")).json()
+        path = f"/workspaces/{me['default_workspace_id']}/members/{me['id']}"
+        assert (await client.delete(path)).status_code == 403
+
+    async def test_register_by_link(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        workspace = (await client.get("/auth/me")).json()["default_workspace_id"]
+        issued = (await client.post(f"/workspaces/{workspace}/invites", json={})).json()
+        created = await client.post(
+            "/auth/register",
+            json={
+                "email": "new@example.com",
+                "password": PASSWORD,
+                "invite_token": issued["token"],
+            },
+        )
+        assert created.status_code == 201, created.text
+        assert created.json()["default_workspace_id"] == workspace

@@ -77,8 +77,8 @@ export const useAuthStore = defineStore('auth', () => {
     restored.value = true
   }
 
-  async function signUp(email: string, password: string): Promise<void> {
-    await authApi.register(email, password)
+  async function signUp(email: string, password: string, inviteToken: string | null = null) {
+    await authApi.register(email, password, inviteToken)
     await signIn(email, password)
   }
 

@@ -39,6 +39,7 @@ from tests.fakes import (
     FakeUnitOfWork,
     InMemorySessionRepository,
     InMemoryUserRepository,
+    InMemoryWorkspaceInviteRepository,
     InMemoryWorkspaceMemberRepository,
     InMemoryWorkspaceRepository,
 )
@@ -54,7 +55,8 @@ class AuthWorld:
         self.clock = FakeClock()
         self.users = InMemoryUserRepository()
         self.workspaces = InMemoryWorkspaceRepository()
-        self.members = InMemoryWorkspaceMemberRepository(self.workspaces)
+        self.members = InMemoryWorkspaceMemberRepository(self.workspaces, self.users)
+        self.invites = InMemoryWorkspaceInviteRepository()
         self.sessions = InMemorySessionRepository()
         self.hasher = FakePasswordHasher()
         self.tokens = FakeTokenGenerator()
@@ -64,6 +66,8 @@ class AuthWorld:
             self.users,
             self.workspaces,
             self.members,
+            self.invites,
+            self.tokens,
             self.hasher,
             self.clock,
             self.uow,

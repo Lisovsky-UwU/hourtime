@@ -1,10 +1,14 @@
 import { request } from '@/api/client'
 import type { LoginResponse, ProfilePatch, User } from '@/types'
 
-export function register(email: string, password: string): Promise<User> {
+export function register(
+  email: string,
+  password: string,
+  inviteToken: string | null = null,
+): Promise<User> {
   return request<User>('/auth/register', {
     method: 'POST',
-    body: { email, password },
+    body: inviteToken ? { email, password, invite_token: inviteToken } : { email, password },
     auth: false,
   })
 }

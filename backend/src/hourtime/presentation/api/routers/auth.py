@@ -57,7 +57,9 @@ async def register(
     body: RegisterRequest,
     use_case: Annotated[RegisterUser, Depends(get_register_user)],
 ) -> UserResponse:
-    user = await use_case.execute(RegisterUserInput(email=body.email, password=body.password))
+    user = await use_case.execute(
+        RegisterUserInput(email=body.email, password=body.password, invite_token=body.invite_token)
+    )
     return UserResponse.of(user)
 
 

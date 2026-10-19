@@ -17,7 +17,8 @@
     "tags": "Tags",
     "reports": "Reports",
     "calendar": "Calendar",
-    "timesheet": "Timesheet"
+    "timesheet": "Timesheet",
+    "members": "Members"
   },
   "common": {
     "saveChanges": "Save changes",
@@ -425,5 +426,43 @@
     "open": "Open calendar",
     "previous": "Previous month",
     "next": "Next month"
+  },
+  "members": {
+    "title": "Members",
+    "invite": "Invite by link",
+    "loadFailed": "Could not load the members.",
+    "issuedHint": "Send this link to the person you invite. It works once, lasts 7 days and will not be shown again.",
+    "link": "Invite link",
+    "copy": "Copy",
+    "copied": "Link copied",
+    "copyFailed": "Could not copy; select the link by hand",
+    "name": "Name",
+    "role": "Role",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    },
+    "actionsFor": "Actions for {name}",
+    "makeAdmin": "Make admin",
+    "makeMember": "Make member",
+    "remove": "Remove from team",
+    "removeTitle": "Remove {name}?",
+    "removeConfirm": "Access ends at once. Their entries stay in the reports.",
+    "leave": "Leave team",
+    "leaveTitle": "Leave {workspace}?",
+    "leaveConfirm": "You can only come back with a new link. Your entries stay in the team's reports.",
+    "openLinks": "Unused links",
+    "linkMade": "Made {day}",
+    "linkExpires": "valid until {day}",
+    "revoke": "Revoke link"
+  },
+  "invite": {
+    "title": "Invitation",
+    "invalid": "This link no longer works: it was used, revoked or has expired. Ask for a new one.",
+    "from": "{name} invites you to {workspace}.",
+    "signedInAs": "You are signed in as {email}.",
+    "join": "Join {workspace}",
+    "register": "Create account"
   }
 }
