@@ -55,6 +55,8 @@ class UserResponse(BaseModel):
     week_start: int
     duration_format: DurationFormat
     hour_cycle: HourCycle
+    # The workspace the frontend opens; the last one the user picked.
+    default_workspace_id: UUID
     created_at: datetime
 
     @classmethod
@@ -67,6 +69,7 @@ class UserResponse(BaseModel):
             week_start=user.week_start,
             duration_format=user.duration_format,
             hour_cycle=user.hour_cycle,
+            default_workspace_id=user.default_workspace_id,
             created_at=user.created_at,
         )
 

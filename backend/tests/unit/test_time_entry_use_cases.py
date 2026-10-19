@@ -185,7 +185,6 @@ class TestStop:
         stopped = await world.stop.execute(
             StopTimerInput(
                 user_id=world.user.id,
-                workspace_id=world.user.default_workspace_id,
                 entry_id=entry.id,
             )
         )
@@ -199,16 +198,23 @@ class TestStop:
             StartTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
         )
         world.clock.advance(timedelta(minutes=5))
-        stopped = await world.stop.execute(
-            StopTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
-        )
+        stopped = await world.stop.execute(StopTimerInput(user_id=world.user.id))
         assert not stopped.is_running
+
+    async def test_stops_own_entry_from_any_workspace(self, world: TimerWorld) -> None:
+        entry = await world.entries.add(make_entry(world.user, workspace_id=uuid4()))
+        world.clock.advance(timedelta(minutes=5))
+        stopped = await world.stop.execute(StopTimerInput(user_id=world.user.id, entry_id=entry.id))
+        assert not stopped.is_running
+
+    async def test_rejects_stopping_someone_elses_entry(self, world: TimerWorld) -> None:
+        theirs = await world.entries.add(make_entry(world.other_user))
+        with pytest.raises(NotFound):
+            await world.stop.execute(StopTimerInput(user_id=world.user.id, entry_id=theirs.id))
 
     async def test_complains_when_nothing_runs(self, world: TimerWorld) -> None:
         with pytest.raises(NotFound):
-            await world.stop.execute(
-                StopTimerInput(user_id=world.user.id, workspace_id=world.user.default_workspace_id)
-            )
+            await world.stop.execute(StopTimerInput(user_id=world.user.id))
 
     async def test_rejects_stopping_before_the_start(self, world: TimerWorld) -> None:
         entry = await world.start.execute(
@@ -218,7 +224,6 @@ class TestStop:
             await world.stop.execute(
                 StopTimerInput(
                     user_id=world.user.id,
-                    workspace_id=world.user.default_workspace_id,
                     entry_id=entry.id,
                     stopped_at=entry.started_at - timedelta(minutes=1),
                 )
@@ -232,7 +237,6 @@ class TestStop:
         await world.stop.execute(
             StopTimerInput(
                 user_id=world.user.id,
-                workspace_id=world.user.default_workspace_id,
                 entry_id=entry.id,
             )
         )
@@ -240,7 +244,6 @@ class TestStop:
             await world.stop.execute(
                 StopTimerInput(
                     user_id=world.user.id,
-                    workspace_id=world.user.default_workspace_id,
                     entry_id=entry.id,
                 )
             )
@@ -776,9 +779,7 @@ class TestBillable:
 
     async def test_an_explicit_choice_beats_the_project_default(self, world: TimerWorld) -> None:
         project_id = await self._project(world, billable=True)
-        entry = await world.start.execute(
-            self._start(world, project_id=project_id, billable=False)
-        )
+        entry = await world.start.execute(self._start(world, project_id=project_id, billable=False))
         assert entry.billable is False
 
     async def test_manual_entry_follows_the_project_default(self, world: TimerWorld) -> None:

@@ -12,7 +12,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from hourtime.domain.entities import Session, TimeEntry, User
+from hourtime.domain.entities import (
+    MemberRole,
+    Session,
+    TimeEntry,
+    User,
+    Workspace,
+    WorkspaceMember,
+)
 from hourtime.domain.entities.user import DurationFormat, HourCycle
 from hourtime.domain.reports import (
     DetailedSort,
@@ -80,10 +87,16 @@ class AuthenticatedUser(BaseModel):
     user: User
     session_id: UUID
 
+
+class CurrentMember(BaseModel):
+    """The caller inside the workspace named in the URL, membership already checked."""
+
+    user: User
+    member: WorkspaceMember
+
     @property
     def workspace_id(self) -> UUID:
-        """The workspace every request works in until the API lets one be picked."""
-        return self.user.default_workspace_id
+        return self.member.workspace_id
 
 
 class UpdateProfileInput(PatchInput):
@@ -104,6 +117,11 @@ class ChangePasswordInput(BaseModel):
 
 
 # --- workspaces -------------------------------------------------------------
+
+
+class MemberWorkspace(BaseModel):
+    workspace: Workspace
+    role: MemberRole
 
 
 class UpdateWorkspaceInput(PatchInput):
@@ -179,8 +197,9 @@ class StartTimerInput(BaseModel):
 
 
 class StopTimerInput(BaseModel):
+    """Stops the user's own entry in whichever workspace it was tracked."""
+
     user_id: UUID
-    workspace_id: UUID
     entry_id: UUID | None = None
     stopped_at: datetime | None = None
 

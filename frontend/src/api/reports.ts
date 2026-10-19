@@ -1,4 +1,4 @@
-import { download, request } from '@/api/client'
+import { download, inWorkspace, request } from '@/api/client'
 import type { DetailedReport, SummaryReport, WeeklyReport } from '@/types'
 
 export type SummaryGrouping = 'project' | 'client' | 'tag' | 'description'
@@ -27,7 +27,7 @@ export function summary(
   groupBy: SummaryGrouping,
   subgroupBy: SummaryGrouping | null,
 ): Promise<SummaryReport> {
-  return request<SummaryReport>('/reports/summary', {
+  return request<SummaryReport>(inWorkspace('/reports/summary'), {
     query: { ...filters, group_by: groupBy, subgroup_by: subgroupBy },
   })
 }
@@ -39,7 +39,7 @@ export function detailed(
   limit: number,
   offset: number,
 ): Promise<DetailedReport> {
-  return request<DetailedReport>('/reports/detailed', {
+  return request<DetailedReport>(inWorkspace('/reports/detailed'), {
     query: { ...filters, sort, order, limit, offset },
   })
 }
@@ -49,7 +49,7 @@ export function summaryCsv(
   groupBy: SummaryGrouping,
   subgroupBy: SummaryGrouping | null,
 ): Promise<void> {
-  return download('/reports/summary.csv', {
+  return download(inWorkspace('/reports/summary.csv'), {
     query: { ...filters, group_by: groupBy, subgroup_by: subgroupBy },
   })
 }
@@ -60,7 +60,7 @@ export function detailedCsv(
   sort: DetailedSort,
   order: 'asc' | 'desc',
 ): Promise<void> {
-  return download('/reports/detailed.csv', { query: { ...filters, sort, order } })
+  return download(inWorkspace('/reports/detailed.csv'), { query: { ...filters, sort, order } })
 }
 
 /** At most 7 days; the caller aligns them to the profile's first day of the week. */
@@ -68,5 +68,7 @@ export function weekly(
   filters: ReportFilters,
   groupBy: 'project' | 'client',
 ): Promise<WeeklyReport> {
-  return request<WeeklyReport>('/reports/weekly', { query: { ...filters, group_by: groupBy } })
+  return request<WeeklyReport>(inWorkspace('/reports/weekly'), {
+    query: { ...filters, group_by: groupBy },
+  })
 }

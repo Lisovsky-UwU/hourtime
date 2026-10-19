@@ -2,6 +2,7 @@
 
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -95,7 +96,7 @@ class TestAuthEndpoints:
         assert response.json()["error"]["code"] == "validation_error"
 
     async def test_protected_routes_need_a_token(self, client: httpx.AsyncClient) -> None:
-        response = await client.get("/projects")
+        response = await client.get(f"/workspaces/{uuid4()}/projects")
         assert response.status_code == 401
         assert response.headers["www-authenticate"] == "Bearer"
 
@@ -271,14 +272,14 @@ class TestTimerEndpoints:
         assert entry["stopped_at"] is None
         assert entry["duration_seconds"] is None
 
-        current = await client.get("/time-entries/current")
+        current = await client.get("/me/time-entries/current")
         assert current.json()["id"] == entry["id"]
 
-        stopped = await client.post(f"/time-entries/{entry['id']}/stop", json={})
+        stopped = await client.post(f"/me/time-entries/{entry['id']}/stop", json={})
         assert stopped.status_code == 200
         assert stopped.json()["duration_seconds"] >= 0
 
-        assert (await client.get("/time-entries/current")).json() is None
+        assert (await client.get("/me/time-entries/current")).json() is None
 
         page = await client.get("/time-entries")
         assert len(page.json()["items"]) == 1
@@ -294,7 +295,7 @@ class TestTimerEndpoints:
         )
         other_token = second_device.json()["tokens"]["access_token"]
         seen = await client.get(
-            "/time-entries/current", headers={"Authorization": f"Bearer {other_token}"}
+            "/me/time-entries/current", headers={"Authorization": f"Bearer {other_token}"}
         )
         assert seen.json()["id"] == started["id"]
 
@@ -308,7 +309,7 @@ class TestTimerEndpoints:
         assert len(page["items"]) == 2
         closed = next(item for item in page["items"] if item["id"] == first["id"])
         assert closed["stopped_at"] is not None
-        assert (await client.get("/time-entries/current")).json()["id"] == second["id"]
+        assert (await client.get("/me/time-entries/current")).json()["id"] == second["id"]
 
     async def test_backdated_start(self, client: httpx.AsyncClient, tokens: dict[str, str]) -> None:
         earlier = datetime.now(UTC) - timedelta(hours=2)
@@ -321,9 +322,7 @@ class TestTimerEndpoints:
         self, client: httpx.AsyncClient, tokens: dict[str, str]
     ) -> None:
         later = datetime.now(UTC) + timedelta(hours=1)
-        response = await client.post(
-            "/time-entries/start", json={"started_at": later.isoformat()}
-        )
+        response = await client.post("/time-entries/start", json={"started_at": later.isoformat()})
         assert response.status_code == 400
 
     async def test_naive_timestamps_are_rejected(
@@ -593,8 +592,8 @@ class TestEntryTags:
         entry = started.json()
         assert entry["tag_ids"] == expected
 
-        assert (await client.get("/time-entries/current")).json()["tag_ids"] == expected
-        stopped = await client.post(f"/time-entries/{entry['id']}/stop", json={})
+        assert (await client.get("/me/time-entries/current")).json()["tag_ids"] == expected
+        stopped = await client.post(f"/me/time-entries/{entry['id']}/stop", json={})
         assert stopped.json()["tag_ids"] == expected
         assert (await client.get("/time-entries")).json()["items"][0]["tag_ids"] == expected
 
@@ -720,9 +719,7 @@ class TestIsolationBetweenUsers:
         other_login = await client.post(
             "/auth/login", json={"email": "other@example.com", "password": PASSWORD}
         )
-        other_headers = {
-            "Authorization": f"Bearer {other_login.json()['tokens']['access_token']}"
-        }
+        other_headers = {"Authorization": f"Bearer {other_login.json()['tokens']['access_token']}"}
 
         assert (await client.get("/projects", headers=other_headers)).json() == []
         peek = await client.patch(
@@ -741,9 +738,7 @@ class TestIsolationBetweenUsers:
         other_login = await client.post(
             "/auth/login", json={"email": "other@example.com", "password": PASSWORD}
         )
-        other_headers = {
-            "Authorization": f"Bearer {other_login.json()['tokens']['access_token']}"
-        }
+        other_headers = {"Authorization": f"Bearer {other_login.json()['tokens']['access_token']}"}
 
         created = await client.post("/projects", json={"name": "Website"}, headers=other_headers)
         assert created.status_code == 201
@@ -915,3 +910,41 @@ class TestBilling:
             started.json()["id"]: True,
             manual["id"]: False,
         }
+
+
+class TestWorkspaceMembership:
+    async def test_lists_the_personal_workspace_as_admin(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        me = (await client.get("/auth/me")).json()
+        listed = (await client.get("/workspaces")).json()
+        assert [(item["id"], item["role"]) for item in listed] == [
+            (me["default_workspace_id"], "admin")
+        ]
+
+    async def test_someone_elses_workspace_is_not_found(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        mine = (await client.get("/auth/me")).json()["default_workspace_id"]
+        other = await other_user_headers(client)
+        prefix = f"/workspaces/{mine}"
+        for method, path in (
+            ("GET", ""),
+            ("PATCH", ""),
+            ("GET", "/clients"),
+            ("POST", "/clients"),
+            ("GET", "/projects"),
+            ("POST", "/projects"),
+            ("GET", "/tags"),
+            ("POST", "/tags"),
+            ("GET", "/time-entries"),
+            ("POST", "/time-entries/start"),
+            ("GET", "/reports/summary"),
+        ):
+            response = await client.request(method, prefix + path, json={}, headers=other)
+            assert response.status_code == 404, (method, path, response.text)
+
+    async def test_unknown_workspace_is_not_found(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        assert (await client.get(f"/workspaces/{uuid4()}/projects")).status_code == 404

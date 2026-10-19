@@ -2,7 +2,6 @@ from hourtime.domain.entities import TimeEntry
 from hourtime.domain.errors import NotFound, ValidationError
 from hourtime.interfaces.repositories import TimeEntryRepository
 from hourtime.interfaces.services import Clock, UnitOfWork
-from hourtime.use_cases.access import get_owned_time_entry
 from hourtime.use_cases.dto import StopTimerInput
 from hourtime.use_cases.time_entries.rules import END_TIME, reject_future
 
@@ -21,9 +20,9 @@ class StopTimer:
             if entry is None:
                 raise NotFound("No timer is running")
         else:
-            entry = await get_owned_time_entry(
-                self._entries, data.user_id, data.workspace_id, data.entry_id
-            )
+            entry = await self._entries.get_by_id(data.entry_id)
+            if entry is None or entry.user_id != data.user_id:
+                raise NotFound("Time entry not found")
             if not entry.is_running:
                 raise ValidationError("This entry is already stopped")
 

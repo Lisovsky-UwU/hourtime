@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from hourtime.presentation.api.deps import (
+    CurrentMemberDep,
     CurrentUserDep,
     get_create_time_entry,
     get_delete_time_entry,
@@ -43,12 +44,15 @@ from hourtime.use_cases.time_entries import (
     UpdateTimeEntry,
 )
 
-router = APIRouter(prefix="/time-entries", tags=["time-entries"])
+router = APIRouter(prefix="/workspaces/{workspace_id}/time-entries", tags=["time-entries"])
+# The running timer belongs to the user, not to a workspace: there is one at most
+# across all of them, and the timer bar shows it whichever workspace is open.
+me_router = APIRouter(prefix="/me/time-entries", tags=["time-entries"])
 
 
 @router.get("", response_model=TimeEntryPageResponse)
 async def list_time_entries(
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[ListTimeEntries, Depends(get_list_time_entries)],
     started_from: Annotated[datetime | None, Query()] = None,
     started_to: Annotated[datetime | None, Query()] = None,
@@ -79,7 +83,7 @@ async def list_time_entries(
 
 @router.get("/suggestions", response_model=list[TimeEntrySuggestionResponse])
 async def suggest_time_entries(
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[SuggestTimeEntries, Depends(get_suggest_time_entries)],
     q: Annotated[str, Query(max_length=200)] = "",
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
@@ -92,7 +96,7 @@ async def suggest_time_entries(
     return [TimeEntrySuggestionResponse.of(suggestion) for suggestion in found]
 
 
-@router.get("/current", response_model=TimeEntryResponse | None)
+@me_router.get("/current", response_model=TimeEntryResponse | None)
 async def current_timer(
     current: CurrentUserDep,
     use_case: Annotated[GetRunningTimer, Depends(get_running_timer)],
@@ -104,7 +108,7 @@ async def current_timer(
 @router.post("/start", response_model=TimeEntryResponse, status_code=status.HTTP_201_CREATED)
 async def start_timer(
     body: StartTimerRequest,
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[StartTimer, Depends(get_start_timer)],
 ) -> TimeEntryResponse:
     entry = await use_case.execute(
@@ -121,7 +125,7 @@ async def start_timer(
     return TimeEntryResponse.of(entry)
 
 
-@router.post("/{entry_id}/stop", response_model=TimeEntryResponse)
+@me_router.post("/{entry_id}/stop", response_model=TimeEntryResponse)
 async def stop_timer(
     entry_id: UUID,
     body: StopTimerRequest,
@@ -131,7 +135,6 @@ async def stop_timer(
     entry = await use_case.execute(
         StopTimerInput(
             user_id=current.user.id,
-            workspace_id=current.workspace_id,
             entry_id=entry_id,
             stopped_at=body.stopped_at,
         )
@@ -142,7 +145,7 @@ async def stop_timer(
 @router.post("", response_model=TimeEntryResponse, status_code=status.HTTP_201_CREATED)
 async def create_time_entry(
     body: CreateTimeEntryRequest,
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[CreateTimeEntry, Depends(get_create_time_entry)],
 ) -> TimeEntryResponse:
     entry = await use_case.execute(
@@ -164,7 +167,7 @@ async def create_time_entry(
 async def update_time_entry(
     entry_id: UUID,
     body: UpdateTimeEntryRequest,
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[UpdateTimeEntry, Depends(get_update_time_entry)],
 ) -> TimeEntryResponse:
     entry = await use_case.execute(
@@ -181,7 +184,7 @@ async def update_time_entry(
 @router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_time_entry(
     entry_id: UUID,
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[DeleteTimeEntry, Depends(get_delete_time_entry)],
 ) -> Response:
     await use_case.execute(current.user.id, current.workspace_id, entry_id)

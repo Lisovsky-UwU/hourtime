@@ -5,6 +5,9 @@ from hourtime.interfaces.repositories.session_repository import SessionRepositor
 from hourtime.interfaces.repositories.tag_repository import TagRepository
 from hourtime.interfaces.repositories.time_entry_repository import TimeEntryRepository
 from hourtime.interfaces.repositories.user_repository import UserRepository
+from hourtime.interfaces.repositories.workspace_member_repository import (
+    WorkspaceMemberRepository,
+)
 from hourtime.interfaces.repositories.workspace_repository import WorkspaceRepository
 
 __all__ = [
@@ -15,5 +18,6 @@ __all__ = [
     "TagRepository",
     "TimeEntryRepository",
     "UserRepository",
+    "WorkspaceMemberRepository",
     "WorkspaceRepository",
 ]

@@ -52,6 +52,7 @@ function readStored(): Tokens | null {
 }
 
 let tokens: Tokens | null = readStored()
+let workspaceId: string | null = null
 let refreshInFlight: Promise<Tokens> | null = null
 const listeners = new Set<(next: Tokens | null) => void>()
 
@@ -74,6 +75,20 @@ export function setTokens(next: Tokens | null): void {
 export function onTokensChanged(listener: (next: Tokens | null) => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
+}
+
+/**
+ * The workspace this tab works in. Set once from the profile on sign-in, so a
+ * switch made in another tab does not pull this one along until a reload.
+ */
+export function setWorkspace(id: string | null): void {
+  workspaceId = id
+}
+
+/** Prefixes a workspace route such as `/projects` with the active workspace. */
+export function inWorkspace(path: string): string {
+  if (!workspaceId) throw new Error('No active workspace')
+  return `/workspaces/${workspaceId}${path}`
 }
 
 function buildUrl(path: string, query?: Record<string, QueryValue>): string {

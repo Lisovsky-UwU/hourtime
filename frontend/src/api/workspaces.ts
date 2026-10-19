@@ -1,12 +1,12 @@
-import { request } from '@/api/client'
+import { inWorkspace, request } from '@/api/client'
 import type { Workspace, WorkspacePatch } from '@/types'
 
-/** The workspace everything is tracked in, until workspaces can be picked. */
+/** The workspace this tab works in. */
 export function current(): Promise<Workspace> {
-  return request<Workspace>('/workspaces/current')
+  return request<Workspace>(inWorkspace(''))
 }
 
 /** Only the keys present are changed; `default_hourly_rate: null` removes the rate. */
 export function updateCurrent(patch: WorkspacePatch): Promise<Workspace> {
-  return request<Workspace>('/workspaces/current', { method: 'PATCH', body: patch })
+  return request<Workspace>(inWorkspace(''), { method: 'PATCH', body: patch })
 }

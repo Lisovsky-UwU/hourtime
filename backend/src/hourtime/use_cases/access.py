@@ -4,21 +4,30 @@ Clients, projects and tags belong to a workspace, time entries to a workspace
 and the user who tracked them. A resource from somewhere else is reported as
 missing rather than forbidden - a 403 would confirm that the id exists.
 
-The workspace id itself is not checked here: today it always comes from the
-caller's own `default_workspace_id`. Membership checks arrive together with
-shared workspaces, when the id starts coming from the URL.
+The workspace id comes from the URL, so every request into a workspace starts
+with `require_member`; the checks below then trust it.
 """
 
 from uuid import UUID
 
-from hourtime.domain.entities import Client, Project, Tag, TimeEntry
+from hourtime.domain.entities import Client, Project, Tag, TimeEntry, WorkspaceMember
 from hourtime.domain.errors import NotFound
 from hourtime.interfaces.repositories import (
     ClientRepository,
     ProjectRepository,
     TagRepository,
     TimeEntryRepository,
+    WorkspaceMemberRepository,
 )
+
+
+async def require_member(
+    members: WorkspaceMemberRepository, workspace_id: UUID, user_id: UUID
+) -> WorkspaceMember:
+    member = await members.get(workspace_id, user_id)
+    if member is None:
+        raise NotFound("Workspace not found")
+    return member
 
 
 async def get_workspace_client(

@@ -5,6 +5,7 @@ import io
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -867,7 +868,8 @@ class TestCsv:
 
     async def test_needs_a_token(self, client: httpx.AsyncClient) -> None:
         for kind in ("summary.csv", "detailed.csv"):
-            assert (await client.get(f"/reports/{kind}")).status_code == 401
+            path = f"/workspaces/{uuid4()}/reports/{kind}"
+            assert (await client.get(path)).status_code == 401
 
 
 class TestValidation:
@@ -902,4 +904,5 @@ class TestValidation:
 
     async def test_needs_a_token(self, client: httpx.AsyncClient) -> None:
         for kind in ("summary", "detailed", "weekly"):
-            assert (await client.get(f"/reports/{kind}", params=WEEK)).status_code == 401
+            path = f"/workspaces/{uuid4()}/reports/{kind}"
+            assert (await client.get(path, params=WEEK)).status_code == 401

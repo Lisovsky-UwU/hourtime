@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator
 from contextlib import suppress
 from datetime import timedelta
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -29,6 +30,9 @@ from hourtime.infrastructure.db.repositories.session_repository import SqlSessio
 from hourtime.infrastructure.db.repositories.tag_repository import SqlTagRepository
 from hourtime.infrastructure.db.repositories.time_entry_repository import SqlTimeEntryRepository
 from hourtime.infrastructure.db.repositories.user_repository import SqlUserRepository
+from hourtime.infrastructure.db.repositories.workspace_member_repository import (
+    SqlWorkspaceMemberRepository,
+)
 from hourtime.infrastructure.db.repositories.workspace_repository import (
     SqlWorkspaceRepository,
 )
@@ -39,9 +43,11 @@ from hourtime.interfaces.repositories import (
     ReportRepository,
     TagRepository,
     TimeEntryRepository,
+    WorkspaceMemberRepository,
     WorkspaceRepository,
 )
 from hourtime.interfaces.services import Clock, PasswordHasher, TokenGenerator, UnitOfWork
+from hourtime.use_cases.access import require_member
 from hourtime.use_cases.auth import (
     AuthenticateAccessToken,
     ChangePassword,
@@ -54,7 +60,7 @@ from hourtime.use_cases.auth import (
     UpdateProfile,
 )
 from hourtime.use_cases.clients import CreateClient, DeleteClient, ListClients, UpdateClient
-from hourtime.use_cases.dto import AuthenticatedUser
+from hourtime.use_cases.dto import AuthenticatedUser, CurrentMember
 from hourtime.use_cases.projects import CreateProject, DeleteProject, ListProjects, UpdateProject
 from hourtime.use_cases.reports import (
     ExportDetailedReport,
@@ -73,7 +79,7 @@ from hourtime.use_cases.time_entries import (
     SuggestTimeEntries,
     UpdateTimeEntry,
 )
-from hourtime.use_cases.workspaces import GetWorkspace, UpdateWorkspace
+from hourtime.use_cases.workspaces import GetWorkspace, ListWorkspaces, UpdateWorkspace
 
 # --- process-wide singletons -------------------------------------------------
 
@@ -159,6 +165,13 @@ def get_workspace_repository(session: DbSessionDep) -> WorkspaceRepository:
 WorkspacesDep = Annotated[WorkspaceRepository, Depends(get_workspace_repository)]
 
 
+def get_workspace_member_repository(session: DbSessionDep) -> WorkspaceMemberRepository:
+    return SqlWorkspaceMemberRepository(session)
+
+
+MembersDep = Annotated[WorkspaceMemberRepository, Depends(get_workspace_member_repository)]
+
+
 def get_client_repository(session: DbSessionDep) -> ClientRepository:
     return SqlClientRepository(session)
 
@@ -241,6 +254,7 @@ IssuerDep = Annotated[SessionIssuer, Depends(get_session_issuer)]
 def get_register_user(
     users: UsersDep,
     workspaces: WorkspacesDep,
+    members: MembersDep,
     hasher: HasherDep,
     clock: ClockDep,
     uow: UowDep,
@@ -249,6 +263,7 @@ def get_register_user(
     return RegisterUser(
         users,
         workspaces,
+        members,
         hasher,
         clock,
         uow,
@@ -352,7 +367,22 @@ async def get_current_user(
 CurrentUserDep = Annotated[AuthenticatedUser, Depends(get_current_user)]
 
 
+async def get_current_member(
+    workspace_id: UUID, current: CurrentUserDep, members: MembersDep
+) -> CurrentMember:
+    """For routes under `/workspaces/{workspace_id}`: one indexed lookup per request."""
+    member = await require_member(members, workspace_id, current.user.id)
+    return CurrentMember(user=current.user, member=member)
+
+
+CurrentMemberDep = Annotated[CurrentMember, Depends(get_current_member)]
+
+
 # --- workspace use cases -----------------------------------------------------
+
+
+def get_list_workspaces(members: MembersDep) -> ListWorkspaces:
+    return ListWorkspaces(members)
 
 
 def get_get_workspace(workspaces: WorkspacesDep) -> GetWorkspace:

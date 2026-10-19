@@ -71,6 +71,24 @@ class WorkspaceModel(Base):
     __table_args__ = (sa.Index("ix_workspaces_owner_id", "owner_id"),)
 
 
+class WorkspaceMemberModel(Base):
+    __tablename__ = "workspace_members"
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        sa.ForeignKey("workspaces.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    role: Mapped[str] = mapped_column(sa.String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+
+    # The primary key covers the membership check; this one, a user's workspace list.
+    __table_args__ = (sa.Index("ix_workspace_members_user_id", "user_id"),)
+
+
 class SessionModel(Base):
     __tablename__ = "sessions"
 

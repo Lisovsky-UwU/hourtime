@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from hourtime.presentation.api.deps import (
-    CurrentUserDep,
+    CurrentMemberDep,
     get_create_client,
     get_delete_client,
     get_list_clients,
@@ -18,12 +18,12 @@ from hourtime.presentation.api.schemas.clients import (
 from hourtime.use_cases.clients import CreateClient, DeleteClient, ListClients, UpdateClient
 from hourtime.use_cases.dto import CreateClientInput, UpdateClientInput
 
-router = APIRouter(prefix="/clients", tags=["clients"])
+router = APIRouter(prefix="/workspaces/{workspace_id}/clients", tags=["clients"])
 
 
 @router.get("", response_model=list[ClientResponse])
 async def list_clients(
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[ListClients, Depends(get_list_clients)],
     include_archived: Annotated[bool, Query()] = False,
 ) -> list[ClientResponse]:
@@ -34,7 +34,7 @@ async def list_clients(
 @router.post("", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 async def create_client(
     body: CreateClientRequest,
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[CreateClient, Depends(get_create_client)],
 ) -> ClientResponse:
     client = await use_case.execute(
@@ -47,7 +47,7 @@ async def create_client(
 async def update_client(
     client_id: UUID,
     body: UpdateClientRequest,
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[UpdateClient, Depends(get_update_client)],
 ) -> ClientResponse:
     client = await use_case.execute(
@@ -63,7 +63,7 @@ async def update_client(
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_client(
     client_id: UUID,
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     use_case: Annotated[DeleteClient, Depends(get_delete_client)],
 ) -> Response:
     await use_case.execute(current.workspace_id, client_id)

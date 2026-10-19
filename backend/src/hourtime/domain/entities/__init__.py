@@ -6,12 +6,14 @@ from hourtime.domain.entities.tag import Tag
 from hourtime.domain.entities.time_entry import TimeEntry, TimeEntrySuggestion
 from hourtime.domain.entities.user import User
 from hourtime.domain.entities.workspace import PERSONAL_WORKSPACE_NAME, Workspace
+from hourtime.domain.entities.workspace_member import MemberRole, WorkspaceMember
 
 __all__ = [
     "DEFAULT_COLOR",
     "PERSONAL_WORKSPACE_NAME",
     "Client",
     "Entity",
+    "MemberRole",
     "Project",
     "Session",
     "Tag",
@@ -20,5 +22,6 @@ __all__ = [
     "User",
     "UtcDatetime",
     "Workspace",
+    "WorkspaceMember",
     "normalise_color",
 ]

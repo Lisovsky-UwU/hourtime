@@ -39,6 +39,7 @@ from tests.fakes import (
     FakeUnitOfWork,
     InMemorySessionRepository,
     InMemoryUserRepository,
+    InMemoryWorkspaceMemberRepository,
     InMemoryWorkspaceRepository,
 )
 
@@ -53,16 +54,16 @@ class AuthWorld:
         self.clock = FakeClock()
         self.users = InMemoryUserRepository()
         self.workspaces = InMemoryWorkspaceRepository()
+        self.members = InMemoryWorkspaceMemberRepository(self.workspaces)
         self.sessions = InMemorySessionRepository()
         self.hasher = FakePasswordHasher()
         self.tokens = FakeTokenGenerator()
         self.uow = FakeUnitOfWork()
-        self.issuer = SessionIssuer(
-            self.sessions, self.tokens, self.clock, ACCESS_TTL, REFRESH_TTL
-        )
+        self.issuer = SessionIssuer(self.sessions, self.tokens, self.clock, ACCESS_TTL, REFRESH_TTL)
         self.register = RegisterUser(
             self.users,
             self.workspaces,
+            self.members,
             self.hasher,
             self.clock,
             self.uow,
@@ -113,6 +114,9 @@ class TestRegister:
         workspace = world.workspaces.items[user.default_workspace_id]
         assert workspace.owner_id == user.id
         assert workspace.name == "Personal"
+        member = await world.members.get(workspace.id, user.id)
+        assert member is not None
+        assert member.role == "admin"
 
     async def test_rejects_duplicate_email(self, world: AuthWorld) -> None:
         await world.register.execute(

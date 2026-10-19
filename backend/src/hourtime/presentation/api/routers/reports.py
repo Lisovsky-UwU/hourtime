@@ -9,7 +9,7 @@ from hourtime.domain.entities.time_entry import DESCRIPTION_MAX_LENGTH
 from hourtime.domain.reports import DetailedSort, ReportGrouping, SortOrder, WeeklyGrouping
 from hourtime.presentation.api.csv_export import csv_response, detailed_csv, summary_csv
 from hourtime.presentation.api.deps import (
-    CurrentUserDep,
+    CurrentMemberDep,
     get_export_detailed_report,
     get_get_detailed_report,
     get_get_summary_report,
@@ -34,11 +34,11 @@ from hourtime.use_cases.reports import (
     GetWeeklyReport,
 )
 
-router = APIRouter(prefix="/reports", tags=["reports"])
+router = APIRouter(prefix="/workspaces/{workspace_id}/reports", tags=["reports"])
 
 
 def report_filters(
-    current: CurrentUserDep,
+    current: CurrentMemberDep,
     # Local dates in the user's time zone, both inclusive; give both or neither.
     start_date: Annotated[date | None, Query()] = None,
     end_date: Annotated[date | None, Query()] = None,

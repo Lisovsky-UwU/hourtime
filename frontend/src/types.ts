@@ -13,6 +13,8 @@ export interface User {
   week_start: number
   duration_format: DurationFormat
   hour_cycle: 12 | 24
+  /** The workspace the app opens; the last one the user picked. */
+  default_workspace_id: string
   created_at: string
 }
 

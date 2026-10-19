@@ -4,7 +4,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from hourtime.domain.billing import HourlyRate
-from hourtime.domain.entities import Workspace
+from hourtime.domain.entities import MemberRole, Workspace
+from hourtime.use_cases.dto import MemberWorkspace
 
 
 class WorkspaceResponse(BaseModel):
@@ -22,6 +23,15 @@ class WorkspaceResponse(BaseModel):
             default_hourly_rate=workspace.default_hourly_rate,
             currency=workspace.currency,
         )
+
+
+class MemberWorkspaceResponse(WorkspaceResponse):
+    # The caller's role in this workspace.
+    role: MemberRole
+
+    @classmethod
+    def of_member(cls, found: MemberWorkspace) -> "MemberWorkspaceResponse":
+        return cls(**WorkspaceResponse.of(found.workspace).model_dump(), role=found.role)
 
 
 class UpdateWorkspaceRequest(BaseModel):

@@ -123,6 +123,7 @@ def create_app() -> FastAPI:
         reports.router,
         tags.router,
         time_entries.router,
+        time_entries.me_router,
         workspaces.router,
     ):
         app.include_router(router, prefix=API_PREFIX)

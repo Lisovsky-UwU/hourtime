@@ -5,6 +5,7 @@ from uuid import UUID
 
 from hourtime.domain.entities import (
     Client,
+    MemberRole,
     Project,
     Session,
     Tag,
@@ -12,6 +13,7 @@ from hourtime.domain.entities import (
     TimeEntrySuggestion,
     User,
     Workspace,
+    WorkspaceMember,
 )
 from hourtime.domain.errors import (
     ClientNameTaken,
@@ -40,6 +42,7 @@ from hourtime.interfaces.repositories import (
     TagRepository,
     TimeEntryRepository,
     UserRepository,
+    WorkspaceMemberRepository,
     WorkspaceRepository,
 )
 from hourtime.interfaces.services import Clock, PasswordHasher, TokenGenerator, UnitOfWork
@@ -147,6 +150,27 @@ class InMemoryWorkspaceRepository(WorkspaceRepository):
             raise NotFound("Workspace not found")
         self.items[workspace.id] = workspace
         return workspace
+
+
+class InMemoryWorkspaceMemberRepository(WorkspaceMemberRepository):
+    def __init__(self, workspaces: InMemoryWorkspaceRepository) -> None:
+        self.workspaces = workspaces
+        self.items: dict[tuple[UUID, UUID], WorkspaceMember] = {}
+
+    async def get(self, workspace_id: UUID, user_id: UUID) -> WorkspaceMember | None:
+        return self.items.get((workspace_id, user_id))
+
+    async def list_for_user(self, user_id: UUID) -> list[tuple[Workspace, MemberRole]]:
+        found = [
+            (self.workspaces.items[member.workspace_id], member.role)
+            for member in self.items.values()
+            if member.user_id == user_id
+        ]
+        return sorted(found, key=lambda pair: pair[0].name.lower())
+
+    async def add(self, member: WorkspaceMember) -> WorkspaceMember:
+        self.items[(member.workspace_id, member.user_id)] = member
+        return member
 
 
 class InMemoryClientRepository(ClientRepository):
@@ -456,9 +480,7 @@ class InMemorySessionRepository(SessionRepository):
         return revoked
 
     async def delete_expired_before(self, cutoff: datetime) -> int:
-        doomed = [
-            key for key, item in self.items.items() if item.refresh_expires_at < cutoff
-        ]
+        doomed = [key for key, item in self.items.items() if item.refresh_expires_at < cutoff]
         for key in doomed:
             del self.items[key]
         return len(doomed)

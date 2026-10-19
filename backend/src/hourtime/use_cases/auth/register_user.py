@@ -1,8 +1,12 @@
 from uuid import uuid4
 
-from hourtime.domain.entities import PERSONAL_WORKSPACE_NAME, User, Workspace
+from hourtime.domain.entities import PERSONAL_WORKSPACE_NAME, User, Workspace, WorkspaceMember
 from hourtime.domain.errors import EmailAlreadyUsed, RegistrationDisabled, ValidationError
-from hourtime.interfaces.repositories import UserRepository, WorkspaceRepository
+from hourtime.interfaces.repositories import (
+    UserRepository,
+    WorkspaceMemberRepository,
+    WorkspaceRepository,
+)
 from hourtime.interfaces.services import Clock, PasswordHasher, UnitOfWork
 from hourtime.use_cases.dto import RegisterUserInput
 
@@ -12,6 +16,7 @@ class RegisterUser:
         self,
         users: UserRepository,
         workspaces: WorkspaceRepository,
+        members: WorkspaceMemberRepository,
         hasher: PasswordHasher,
         clock: Clock,
         uow: UnitOfWork,
@@ -21,6 +26,7 @@ class RegisterUser:
     ) -> None:
         self._users = users
         self._workspaces = workspaces
+        self._members = members
         self._hasher = hasher
         self._clock = clock
         self._uow = uow
@@ -60,6 +66,14 @@ class RegisterUser:
                 owner_id=user.id,
                 created_at=now,
                 updated_at=now,
+            )
+        )
+        await self._members.add(
+            WorkspaceMember(
+                workspace_id=user.default_workspace_id,
+                user_id=user.id,
+                role="admin",
+                created_at=now,
             )
         )
         await self._uow.commit()

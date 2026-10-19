@@ -1,4 +1,4 @@
-import { request } from '@/api/client'
+import { inWorkspace, request } from '@/api/client'
 import type { Project } from '@/types'
 
 export interface ProjectPatch {
@@ -16,18 +16,22 @@ export interface ProjectPatch {
 export type ProjectExtras = Pick<ProjectPatch, 'client_id' | 'billable' | 'hourly_rate'>
 
 export function list(includeArchived = false): Promise<Project[]> {
-  return request<Project[]>('/projects', { query: { include_archived: includeArchived } })
+  return request<Project[]>(inWorkspace('/projects'), {
+    query: { include_archived: includeArchived },
+  })
 }
 
 export function create(name: string, color: string, extras: ProjectExtras = {}): Promise<Project> {
-  return request<Project>('/projects', { method: 'POST', body: { name, color, ...extras } })
+  return request<Project>(inWorkspace('/projects'), {
+    method: 'POST', body: { name, color, ...extras },
+  })
 }
 
 /** Only the keys present in `patch` are changed. */
 export function update(id: string, patch: ProjectPatch): Promise<Project> {
-  return request<Project>(`/projects/${id}`, { method: 'PATCH', body: patch })
+  return request<Project>(inWorkspace(`/projects/${id}`), { method: 'PATCH', body: patch })
 }
 
 export function remove(id: string): Promise<void> {
-  return request<void>(`/projects/${id}`, { method: 'DELETE' })
+  return request<void>(inWorkspace(`/projects/${id}`), { method: 'DELETE' })
 }

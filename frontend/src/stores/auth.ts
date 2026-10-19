@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import * as authApi from '@/api/auth'
-import { getTokens, onTokensChanged, setTokens } from '@/api/client'
+import { getTokens, onTokensChanged, setTokens, setWorkspace } from '@/api/client'
 import type { ProfilePatch, User } from '@/types'
 import { detectHourCycle } from '@/utils/timeOfDay'
 
@@ -28,7 +28,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   // A refresh that fails clears the tokens from under us; follow it.
   onTokensChanged((tokens) => {
-    if (!tokens) user.value = null
+    if (!tokens) {
+      user.value = null
+      setWorkspace(null)
+    }
   })
 
   /**
@@ -51,6 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function adopt(next: User): void {
     user.value = next
+    setWorkspace(next.default_workspace_id)
     void fillDeviceDefaults()
   }
 

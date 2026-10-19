@@ -40,6 +40,7 @@ TABLES = (
     "tags",
     "projects",
     "clients",
+    "workspace_members",
     "workspaces",
     "users",
 )
@@ -72,17 +73,45 @@ async def app(database: None) -> AsyncIterator[FastAPI]:
     # ASGITransport does not run lifespan events, so drive them by hand.
     async with application.router.lifespan_context(application):
         async with application.state.sessionmaker() as session:
-            await session.execute(
-                sa.text(f"TRUNCATE {', '.join(TABLES)} RESTART IDENTITY CASCADE")
-            )
+            await session.execute(sa.text(f"TRUNCATE {', '.join(TABLES)} RESTART IDENTITY CASCADE"))
             await session.commit()
         yield application
 
 
+# Routes that live under `/workspaces/{id}`. Tests write them without the prefix,
+# and `/workspaces/current` for the workspace itself: `client` fills in the
+# default workspace of whoever the request is signed in as.
+WORKSPACE_ROUTES = ("clients", "projects", "reports", "tags", "time-entries")
+
+
 @pytest.fixture
 async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
+    workspace_by_token: dict[str, str] = {}
+
+    async def remember_workspace(response: httpx.Response) -> None:
+        if response.request.url.path.endswith(("/auth/login", "/auth/refresh")):
+            await response.aread()
+            if response.status_code == 200:
+                body = response.json()
+                workspace_by_token[body["tokens"]["access_token"]] = body["user"][
+                    "default_workspace_id"
+                ]
+
+    async def scope_to_workspace(request: httpx.Request) -> None:
+        token = request.headers.get("Authorization", "").removeprefix("Bearer ")
+        path = request.url.path.removeprefix(f"{API_PREFIX}/")
+        if token not in workspace_by_token:
+            return
+        workspace = f"{API_PREFIX}/workspaces/{workspace_by_token[token]}"
+        if path.split("/")[0] in WORKSPACE_ROUTES:
+            request.url = request.url.copy_with(path=f"{workspace}/{path}")
+        elif path == "workspaces/current":
+            request.url = request.url.copy_with(path=workspace)
+
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(
-        transport=transport, base_url=f"http://testserver{API_PREFIX}"
+        transport=transport,
+        base_url=f"http://testserver{API_PREFIX}",
+        event_hooks={"request": [scope_to_workspace], "response": [remember_workspace]},
     ) as http_client:
         yield http_client

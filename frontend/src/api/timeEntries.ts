@@ -1,4 +1,4 @@
-import { request } from '@/api/client'
+import { inWorkspace, request } from '@/api/client'
 import type { TimeEntry, TimeEntryPage, TimeEntrySuggestion } from '@/types'
 
 export interface ListQuery {
@@ -35,24 +35,26 @@ export interface EntryPatch {
 }
 
 export function list(query: ListQuery = {}): Promise<TimeEntryPage> {
-  return request<TimeEntryPage>('/time-entries', { query: { ...query } })
+  return request<TimeEntryPage>(inWorkspace('/time-entries'), { query: { ...query } })
 }
 
 /** Past descriptions containing `q`, newest first; archived projects are left out. */
 export function suggestions(q: string, limit = 8): Promise<TimeEntrySuggestion[]> {
-  return request<TimeEntrySuggestion[]>('/time-entries/suggestions', { query: { q, limit } })
+  return request<TimeEntrySuggestion[]>(inWorkspace('/time-entries/suggestions'), {
+    query: { q, limit },
+  })
 }
 
 export function current(): Promise<TimeEntry | null> {
-  return request<TimeEntry | null>('/time-entries/current')
+  return request<TimeEntry | null>('/me/time-entries/current')
 }
 
 export function start(payload: StartPayload = {}): Promise<TimeEntry> {
-  return request<TimeEntry>('/time-entries/start', { method: 'POST', body: payload })
+  return request<TimeEntry>(inWorkspace('/time-entries/start'), { method: 'POST', body: payload })
 }
 
 export function stop(id: string, stoppedAt?: string): Promise<TimeEntry> {
-  return request<TimeEntry>(`/time-entries/${id}/stop`, {
+  return request<TimeEntry>(`/me/time-entries/${id}/stop`, {
     method: 'POST',
     body: stoppedAt ? { stopped_at: stoppedAt } : {},
   })
@@ -66,13 +68,13 @@ export function create(payload: {
   description?: string
   billable?: boolean
 }): Promise<TimeEntry> {
-  return request<TimeEntry>('/time-entries', { method: 'POST', body: payload })
+  return request<TimeEntry>(inWorkspace('/time-entries'), { method: 'POST', body: payload })
 }
 
 export function update(id: string, patch: EntryPatch): Promise<TimeEntry> {
-  return request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: patch })
+  return request<TimeEntry>(inWorkspace(`/time-entries/${id}`), { method: 'PATCH', body: patch })
 }
 
 export function remove(id: string): Promise<void> {
-  return request<void>(`/time-entries/${id}`, { method: 'DELETE' })
+  return request<void>(inWorkspace(`/time-entries/${id}`), { method: 'DELETE' })
 }
