@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-10-20
+
+### Added
+
+- Shared workspaces. An admin invites people with a one-time link that lasts 7
+  days and can be revoked; the link also signs up a new account when open
+  registration is off. The Members page lists everyone with their role: admins
+  promote, demote and remove members, anyone but the owner can leave.
+- Roles: members create projects, clients and tags; changing or deleting them,
+  and the workspace name, rate and currency, is for admins.
+- Workspace switcher in the sidebar, with "Create workspace". The choice is
+  kept in the profile, so the next load and new tabs open the same workspace.
+- Team reports: a member filter, grouping by member and a member column in the
+  detailed report and its CSV, shown once a workspace has more than one person.
+  The timer, calendar and timesheet still show only your own entries.
+
+### Changed
+
+- The API takes the workspace in the path: `/workspaces/{id}/projects` and so
+  on. The running timer is per user: `/me/time-entries/current` and
+  `/me/time-entries/{id}/stop`.
+- Personal workspaces are named after the owner's email instead of "Personal".
+
 ## [0.4.0] - 2026-10-14
 
 ### Added
