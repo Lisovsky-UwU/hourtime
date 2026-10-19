@@ -75,7 +75,7 @@ export const useTimerStore = defineStore('timer', () => {
   async function amend(patch: entriesApi.EntryPatch): Promise<TimeEntry | null> {
     const running = entry.value
     if (!running) return null
-    const updated = await entriesApi.update(running.id, patch)
+    const updated = await entriesApi.update(running.id, patch, running.workspace_id)
     adopt(updated)
     return updated
   }

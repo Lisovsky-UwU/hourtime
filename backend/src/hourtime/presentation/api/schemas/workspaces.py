@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from hourtime.domain.billing import HourlyRate
 from hourtime.domain.entities import MemberRole, Workspace, WorkspaceInvite
+from hourtime.domain.entities.workspace import NAME_MAX_LENGTH
 from hourtime.use_cases.dto import MemberAccount, MemberWorkspace
 
 
@@ -40,8 +41,13 @@ class UpdateWorkspaceRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    name: str | None = Field(default=None, max_length=NAME_MAX_LENGTH)
     default_hourly_rate: HourlyRate | None = None
     currency: str | None = Field(default=None, min_length=3, max_length=3)
+
+
+class CreateWorkspaceRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=NAME_MAX_LENGTH)
 
 
 class MemberResponse(BaseModel):

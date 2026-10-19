@@ -151,7 +151,33 @@ const timezone = computed({
 
 const showDeviceZone = computed(() => !!auth.user?.timezone && auth.user.timezone !== device)
 
-// --- billing: the workspace's default rate and currency ----------------------
+// --- workspace: its name, default rate and currency --------------------------
+
+const workspaceName = ref('')
+const workspaceNameError = ref<string | null>(null)
+const workspaceNameErrorId = useId()
+
+watch(
+  () => workspace.item?.name,
+  (value) => {
+    workspaceName.value = value ?? ''
+  },
+  { immediate: true },
+)
+
+async function saveWorkspaceName() {
+  const value = workspaceName.value.trim()
+  if (!value || value === workspace.item?.name) {
+    workspaceName.value = workspace.item?.name ?? ''
+    return
+  }
+  workspaceNameError.value = null
+  try {
+    await workspace.update({ name: value })
+  } catch (cause) {
+    workspaceNameError.value = messageFor(cause)
+  }
+}
 
 const defaultRate = ref('')
 const rateError = ref<string | null>(null)
@@ -305,11 +331,32 @@ async function signOutEverywhere() {
 
     <section class="section">
       <header class="section-head">
-        <h2>{{ t('billing.title') }}</h2>
+        <h2>{{ t('settings.workspace') }}</h2>
         <p class="muted scope">
           {{ workspace.canManage ? t('settings.synced') : t('billing.adminsOnly') }}
         </p>
       </header>
+
+      <div class="setting">
+        <div class="setting-text">
+          <h3>{{ t('settings.workspaceName') }}</h3>
+          <p class="muted">{{ t('settings.workspaceNameHint') }}</p>
+          <p v-if="workspaceNameError" :id="workspaceNameErrorId" class="error" role="alert">
+            {{ workspaceNameError }}
+          </p>
+        </div>
+        <UiInput
+          v-model="workspaceName"
+          class="control-wide"
+          maxlength="100"
+          :aria-label="t('settings.workspaceName')"
+          :disabled="!workspace.loaded || !workspace.canManage"
+          :invalid="!!workspaceNameError"
+          :aria-describedby="workspaceNameError ? workspaceNameErrorId : undefined"
+          @change="saveWorkspaceName"
+          @keydown.enter="saveWorkspaceName"
+        />
+      </div>
 
       <div class="setting">
         <div class="setting-text">

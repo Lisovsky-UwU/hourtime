@@ -2,19 +2,27 @@ from typing import Any
 
 from hourtime.domain.entities import User
 from hourtime.domain.errors import NotFound, ValidationError
-from hourtime.interfaces.repositories import UserRepository
+from hourtime.interfaces.repositories import UserRepository, WorkspaceMemberRepository
 from hourtime.interfaces.services import Clock, UnitOfWork
+from hourtime.use_cases.access import require_member
 from hourtime.use_cases.dto import UpdateProfileInput
 
 # Only the display name may be cleared; the rest always has a value once set.
-_REQUIRED = ("timezone", "week_start", "duration_format", "hour_cycle")
+_REQUIRED = ("timezone", "week_start", "duration_format", "hour_cycle", "default_workspace_id")
 
 
 class UpdateProfile:
     """Everything PATCH /auth/me can change. Email and password have their own paths."""
 
-    def __init__(self, users: UserRepository, clock: Clock, uow: UnitOfWork) -> None:
+    def __init__(
+        self,
+        users: UserRepository,
+        members: WorkspaceMemberRepository,
+        clock: Clock,
+        uow: UnitOfWork,
+    ) -> None:
         self._users = users
+        self._members = members
         self._clock = clock
         self._uow = uow
 
@@ -34,6 +42,9 @@ class UpdateProfile:
 
         if not changes:
             return user
+        # Switching workspaces: only to one the user is in.
+        if "default_workspace_id" in changes:
+            await require_member(self._members, changes["default_workspace_id"], user.id)
 
         changes["updated_at"] = self._clock.now()
         updated = await self._users.update(user.evolve(**changes))

@@ -19,6 +19,7 @@ import RunningIndicator from '@/components/RunningIndicator.vue'
 import ShortcutsDialog from '@/components/ShortcutsDialog.vue'
 import UiIconButton from '@/components/ui/UiIconButton.vue'
 import UiTooltip from '@/components/ui/UiTooltip.vue'
+import WorkspaceSwitcher from '@/components/WorkspaceSwitcher.vue'
 import { useHotkeys } from '@/composables/useHotkeys'
 import { useAuthStore } from '@/stores/auth'
 import { useClientsStore } from '@/stores/clients'
@@ -132,6 +133,8 @@ async function signOut() {
         />
       </div>
 
+      <WorkspaceSwitcher :compact="preferences.sidebarCollapsed" />
+
       <RunningIndicator class="sidebar-running" :compact="preferences.sidebarCollapsed" />
 
       <nav class="nav" :aria-label="t('nav.main')">
@@ -200,6 +203,7 @@ async function signOut() {
             <DialogDescription class="visually-hidden">{{ t('nav.main') }}</DialogDescription>
             <UiIconButton icon="close" :label="t('common.close')" @click="drawerOpen = false" />
           </div>
+          <WorkspaceSwitcher />
           <RunningIndicator />
           <nav class="nav" :aria-label="t('nav.main')">
             <RouterLink

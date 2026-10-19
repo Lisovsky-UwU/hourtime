@@ -86,6 +86,7 @@ from hourtime.use_cases.time_entries import (
 from hourtime.use_cases.workspaces import (
     AcceptInvite,
     CreateInvite,
+    CreateWorkspace,
     GetWorkspace,
     ListInvites,
     ListMembers,
@@ -322,8 +323,10 @@ def get_logout_user(
     return LogoutUser(sessions, tokens, clock, uow)
 
 
-def get_update_profile(users: UsersDep, clock: ClockDep, uow: UowDep) -> UpdateProfile:
-    return UpdateProfile(users, clock, uow)
+def get_update_profile(
+    users: UsersDep, members: MembersDep, clock: ClockDep, uow: UowDep
+) -> UpdateProfile:
+    return UpdateProfile(users, members, clock, uow)
 
 
 def get_change_password(
@@ -420,6 +423,12 @@ def get_update_workspace(
     workspaces: WorkspacesDep, clock: ClockDep, uow: UowDep
 ) -> UpdateWorkspace:
     return UpdateWorkspace(workspaces, clock, uow)
+
+
+def get_create_workspace(
+    workspaces: WorkspacesDep, members: MembersDep, clock: ClockDep, uow: UowDep
+) -> CreateWorkspace:
+    return CreateWorkspace(workspaces, members, clock, uow)
 
 
 def get_list_members(members: MembersDep, workspaces: WorkspacesDep) -> ListMembers:

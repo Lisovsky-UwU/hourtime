@@ -71,8 +71,12 @@ export function create(payload: {
   return request<TimeEntry>(inWorkspace('/time-entries'), { method: 'POST', body: payload })
 }
 
-export function update(id: string, patch: EntryPatch): Promise<TimeEntry> {
-  return request<TimeEntry>(inWorkspace(`/time-entries/${id}`), { method: 'PATCH', body: patch })
+/** `workspaceId` for an entry outside the open workspace: the running timer may be one. */
+export function update(id: string, patch: EntryPatch, workspaceId?: string): Promise<TimeEntry> {
+  const path = workspaceId
+    ? `/workspaces/${workspaceId}/time-entries/${id}`
+    : inWorkspace(`/time-entries/${id}`)
+  return request<TimeEntry>(path, { method: 'PATCH', body: patch })
 }
 
 export function remove(id: string): Promise<void> {

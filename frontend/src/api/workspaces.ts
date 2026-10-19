@@ -9,6 +9,16 @@ import type {
   WorkspacePatch,
 } from '@/types'
 
+/** Every workspace the user is in, with their role there. */
+export function list(): Promise<Workspace[]> {
+  return request<Workspace[]>('/workspaces')
+}
+
+/** The caller owns the new workspace and is its admin. */
+export function create(name: string): Promise<Workspace> {
+  return request<Workspace>('/workspaces', { method: 'POST', body: { name } })
+}
+
 /** The workspace this tab works in. */
 export function current(): Promise<Workspace> {
   return request<Workspace>(inWorkspace(''))

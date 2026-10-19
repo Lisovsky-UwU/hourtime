@@ -7,6 +7,7 @@ from hourtime.presentation.api.deps import (
     CurrentMemberDep,
     CurrentUserDep,
     get_create_invite,
+    get_create_workspace,
     get_get_workspace,
     get_list_invites,
     get_list_members,
@@ -18,6 +19,7 @@ from hourtime.presentation.api.deps import (
 )
 from hourtime.presentation.api.schemas.workspaces import (
     CreateInviteRequest,
+    CreateWorkspaceRequest,
     InviteResponse,
     IssuedInviteResponse,
     MemberResponse,
@@ -28,6 +30,7 @@ from hourtime.presentation.api.schemas.workspaces import (
 from hourtime.use_cases.dto import MemberWorkspace, UpdateWorkspaceInput
 from hourtime.use_cases.workspaces import (
     CreateInvite,
+    CreateWorkspace,
     GetWorkspace,
     ListInvites,
     ListMembers,
@@ -48,6 +51,15 @@ async def list_workspaces(
 ) -> list[MemberWorkspaceResponse]:
     found = await use_case.execute(current.user.id)
     return [MemberWorkspaceResponse.of_member(item) for item in found]
+
+
+@router.post("", response_model=MemberWorkspaceResponse, status_code=status.HTTP_201_CREATED)
+async def create_workspace(
+    body: CreateWorkspaceRequest,
+    current: CurrentUserDep,
+    use_case: Annotated[CreateWorkspace, Depends(get_create_workspace)],
+) -> MemberWorkspaceResponse:
+    return MemberWorkspaceResponse.of_member(await use_case.execute(current.user.id, body.name))
 
 
 @router.get("/{workspace_id}", response_model=MemberWorkspaceResponse)

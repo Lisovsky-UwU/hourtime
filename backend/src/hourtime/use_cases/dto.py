@@ -109,6 +109,7 @@ class UpdateProfileInput(PatchInput):
     week_start: int | None = None
     duration_format: DurationFormat | None = None
     hour_cycle: HourCycle | None = None
+    default_workspace_id: UUID | None = None
 
 
 class ChangePasswordInput(BaseModel):
@@ -150,6 +151,7 @@ class MemberAccount(BaseModel):
 class UpdateWorkspaceInput(PatchInput):
     workspace_id: UUID
     role: MemberRole
+    name: str | None = None
     default_hourly_rate: Decimal | None = None
     currency: str | None = None
 

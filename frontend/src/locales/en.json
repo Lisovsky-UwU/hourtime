@@ -389,7 +389,10 @@
     "newPassword": "New password",
     "passwordHint": "Other devices will be signed out; this one stays.",
     "passwordChanged": "Password changed",
-    "passwordChangedHint": "Other devices have been signed out."
+    "passwordChangedHint": "Other devices have been signed out.",
+    "workspace": "Workspace",
+    "workspaceName": "Name",
+    "workspaceNameHint": "Every member sees it in the workspace switcher."
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -446,12 +449,12 @@
     "actionsFor": "Actions for {name}",
     "makeAdmin": "Make admin",
     "makeMember": "Make member",
-    "remove": "Remove from team",
+    "remove": "Remove from workspace",
     "removeTitle": "Remove {name}?",
     "removeConfirm": "Access ends at once. Their entries stay in the reports.",
-    "leave": "Leave team",
+    "leave": "Leave workspace",
     "leaveTitle": "Leave {workspace}?",
-    "leaveConfirm": "You can only come back with a new link. Your entries stay in the team's reports.",
+    "leaveConfirm": "You can only come back with a new link. Your entries stay in its reports.",
     "openLinks": "Unused links",
     "linkMade": "Made {day}",
     "linkExpires": "valid until {day}",
@@ -464,5 +467,12 @@
     "signedInAs": "You are signed in as {email}.",
     "join": "Join {workspace}",
     "register": "Create account"
+  },
+  "workspaces": {
+    "switch": "Switch workspace",
+    "create": "Create workspace",
+    "createTitle": "New workspace",
+    "name": "Name",
+    "namePlaceholder": "For example, Studio"
   }
 }

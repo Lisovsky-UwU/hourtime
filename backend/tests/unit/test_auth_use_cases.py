@@ -82,7 +82,7 @@ class AuthWorld:
         self.authenticate = AuthenticateAccessToken(
             self.sessions, self.users, self.tokens, self.clock
         )
-        self.update_profile = UpdateProfile(self.users, self.clock, self.uow)
+        self.update_profile = UpdateProfile(self.users, self.members, self.clock, self.uow)
         self.change_password = ChangePassword(
             self.users,
             self.sessions,

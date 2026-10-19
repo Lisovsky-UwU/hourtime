@@ -19,7 +19,15 @@ export interface User {
 }
 
 export type ProfilePatch = Partial<
-  Pick<User, 'display_name' | 'timezone' | 'week_start' | 'duration_format' | 'hour_cycle'>
+  Pick<
+    User,
+    | 'display_name'
+    | 'timezone'
+    | 'week_start'
+    | 'duration_format'
+    | 'hour_cycle'
+    | 'default_workspace_id'
+  >
 >
 
 export interface Tokens {
@@ -76,7 +84,7 @@ export interface InvitePreview {
   role: MemberRole
 }
 
-export type WorkspacePatch = Partial<Pick<Workspace, 'default_hourly_rate' | 'currency'>>
+export type WorkspacePatch = Partial<Pick<Workspace, 'name' | 'default_hourly_rate' | 'currency'>>
 
 export interface Client {
   id: string
@@ -109,6 +117,7 @@ export interface Project {
 
 export interface TimeEntry {
   id: string
+  workspace_id: string
   project_id: string | null
   tag_ids: string[]
   description: string

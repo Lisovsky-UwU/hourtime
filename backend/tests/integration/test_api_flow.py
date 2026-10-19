@@ -847,7 +847,7 @@ class TestBilling:
             {"currency": None},
             {"default_hourly_rate": -1},
             {"default_hourly_rate": "10.555"},
-            {"name": "Team"},
+            {"name": "  "},
         ],
     )
     async def test_rejects_bad_workspace_settings(
@@ -1043,3 +1043,38 @@ class TestInvites:
         )
         assert created.status_code == 201, created.text
         assert created.json()["default_workspace_id"] == workspace
+
+
+class TestSwitchWorkspaces:
+    async def test_create_switch_and_keep_the_timer(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        personal = (await client.get("/auth/me")).json()["default_workspace_id"]
+        running = (await client.post("/time-entries/start", json={})).json()
+
+        created = await client.post("/workspaces", json={"name": "Agency"})
+        assert created.status_code == 201, created.text
+        agency = created.json()
+        assert agency["role"] == "admin"
+        names = [item["name"] for item in (await client.get("/workspaces")).json()]
+        assert names == ["Agency", "Personal"]
+
+        switched = await client.patch("/auth/me", json={"default_workspace_id": agency["id"]})
+        assert switched.json()["default_workspace_id"] == agency["id"]
+        # The timer belongs to the user: still visible and stoppable from anywhere.
+        current = (await client.get("/me/time-entries/current")).json()
+        assert current["id"] == running["id"]
+        assert current["workspace_id"] == personal
+        stopped = await client.post(f"/me/time-entries/{running['id']}/stop", json={})
+        assert stopped.status_code == 200
+
+        renamed = await client.patch(f"/workspaces/{agency['id']}", json={"name": " Studio "})
+        assert renamed.json()["name"] == "Studio"
+
+    async def test_cannot_switch_to_someone_elses_workspace(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        other = await other_user_headers(client)
+        theirs = (await client.get("/auth/me", headers=other)).json()["default_workspace_id"]
+        response = await client.patch("/auth/me", json={"default_workspace_id": theirs})
+        assert response.status_code == 404

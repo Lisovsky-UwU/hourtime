@@ -10,6 +10,8 @@ from hourtime.use_cases.dto import TimeEntryPage
 
 class TimeEntryResponse(BaseModel):
     id: UUID
+    # The running timer may come from another workspace than the one on screen.
+    workspace_id: UUID
     project_id: UUID | None
     # Sorted by id, never null; an untagged entry has [].
     tag_ids: list[UUID]
@@ -32,6 +34,7 @@ class TimeEntryResponse(BaseModel):
         )
         return cls(
             id=entry.id,
+            workspace_id=entry.workspace_id,
             project_id=entry.project_id,
             tag_ids=entry.tag_ids,
             description=entry.description,

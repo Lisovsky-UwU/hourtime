@@ -1,3 +1,4 @@
+from hourtime.use_cases.workspaces.create_workspace import CreateWorkspace
 from hourtime.use_cases.workspaces.get_workspace import GetWorkspace
 from hourtime.use_cases.workspaces.invites import (
     AcceptInvite,
@@ -13,6 +14,7 @@ from hourtime.use_cases.workspaces.update_workspace import UpdateWorkspace
 __all__ = [
     "AcceptInvite",
     "CreateInvite",
+    "CreateWorkspace",
     "GetWorkspace",
     "ListInvites",
     "ListMembers",

@@ -9,7 +9,7 @@ from hourtime.use_cases.dto import UpdateWorkspaceInput
 
 
 class UpdateWorkspace:
-    """Billing settings of the workspace. `default_hourly_rate: null` removes the rate."""
+    """Name and billing settings. `default_hourly_rate: null` removes the rate."""
 
     def __init__(self, workspaces: WorkspaceRepository, clock: Clock, uow: UnitOfWork) -> None:
         self._workspaces = workspaces
@@ -23,6 +23,10 @@ class UpdateWorkspace:
             raise NotFound("Workspace not found")
 
         changes: dict[str, Any] = {}
+        if data.provided("name"):
+            if data.name is None:
+                raise ValidationError("The name is required")
+            changes["name"] = data.name
         if data.provided("default_hourly_rate"):
             changes["default_hourly_rate"] = data.default_hourly_rate
         if data.provided("currency"):

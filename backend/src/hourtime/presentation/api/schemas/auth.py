@@ -86,6 +86,8 @@ class UpdateProfileRequest(BaseModel):
     week_start: int | None = Field(default=None, ge=0, le=6)
     duration_format: DurationFormat | None = None
     hour_cycle: HourCycle | None = None
+    # The workspace switcher: the next load and new tabs open this one.
+    default_workspace_id: UUID | None = None
 
 
 class ChangePasswordRequest(BaseModel):
