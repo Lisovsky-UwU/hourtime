@@ -40,7 +40,7 @@ def report_criteria(filters: ReportFiltersInput) -> ReportCriteria:
         started_before = _local_midnight(filters.end_date + timedelta(days=1), zone)
 
     return ReportCriteria(
-        user_id=filters.user_id,
+        user_ids=filters.user_ids,
         workspace_id=filters.workspace_id,
         timezone=timezone,
         started_from=started_from,

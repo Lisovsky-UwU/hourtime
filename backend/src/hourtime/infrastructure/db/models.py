@@ -229,7 +229,10 @@ class TimeEntryModel(Base):
     __table_args__ = (
         sa.Index("ix_time_entries_user_started_at", "user_id", sa.text("started_at DESC")),
         sa.Index("ix_time_entries_project_id", "project_id"),
-        sa.Index("ix_time_entries_workspace_id", "workspace_id"),
+        # Team reports: a workspace's entries over a period, whoever tracked them.
+        sa.Index(
+            "ix_time_entries_workspace_started_at", "workspace_id", sa.text("started_at DESC")
+        ),
         # One running timer per user. Lifting this constraint is all it takes to
         # allow parallel timers later.
         sa.Index(

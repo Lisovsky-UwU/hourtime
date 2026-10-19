@@ -12,12 +12,14 @@ import UiSegmented from '@/components/ui/UiSegmented.vue'
 import { useDuration } from '@/composables/useDuration'
 import { useReportData } from '@/composables/useReportData'
 import { useReportQuery } from '@/composables/useReportQuery'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { ReportGroup } from '@/types'
 import { formatAmount } from '@/utils/money'
 
 const { t, locale } = useI18n()
 const duration = useDuration()
 const report = useReportQuery()
+const workspace = useWorkspaceStore()
 
 const { data, loading, error, load } = useReportData(
   () => [report.filters.value, report.state.value.groupBy, report.state.value.subgroupBy],
@@ -37,10 +39,9 @@ function money(amount: string): string {
 }
 
 const groupOptions = computed(() =>
-  (['project', 'client', 'tag', 'description'] as const).map((value) => ({
-    value,
-    label: t(`reports.group.${value}`),
-  })),
+  (['project', 'client', 'tag', 'description', 'user'] as const)
+    .filter((value) => value !== 'user' || workspace.isTeam)
+    .map((value) => ({ value, label: t(`reports.group.${value}`) })),
 )
 
 const groupBy = computed({

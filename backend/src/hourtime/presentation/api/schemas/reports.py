@@ -11,6 +11,7 @@ from hourtime.domain.reports import (
     ReportEntry,
     TagRef,
     Totals,
+    UserRef,
 )
 from hourtime.use_cases.dto import (
     DetailedReport,
@@ -151,8 +152,19 @@ class ReportTagResponse(BaseModel):
         return cls(id=tag.id, name=tag.name)
 
 
+class ReportUserResponse(BaseModel):
+    id: UUID
+    # The display name, or the email when there is none.
+    name: str
+
+    @classmethod
+    def of(cls, user: UserRef) -> "ReportUserResponse":
+        return cls(id=user.id, name=user.name)
+
+
 class ReportEntryResponse(BaseModel):
     id: UUID
+    user: ReportUserResponse
     description: str
     project: ReportProjectResponse | None
     client: ReportClientResponse | None
@@ -169,6 +181,7 @@ class ReportEntryResponse(BaseModel):
     def of(cls, entry: ReportEntry) -> "ReportEntryResponse":
         return cls(
             id=entry.id,
+            user=ReportUserResponse.of(entry.user),
             description=entry.description,
             project=ReportProjectResponse.of(entry.project) if entry.project else None,
             client=ReportClientResponse.of(entry.client) if entry.client else None,

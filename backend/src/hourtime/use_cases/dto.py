@@ -297,8 +297,9 @@ class ReportFiltersInput(BaseModel):
     matches the list OR the flag.
     """
 
-    user_id: UUID
     workspace_id: UUID
+    # Empty means every member.
+    user_ids: list[UUID] = Field(default_factory=list)
     # The user's IANA zone; None means UTC.
     timezone: str | None = None
     start_date: date | None = None

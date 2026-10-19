@@ -20,6 +20,7 @@ import type { ReportView } from '@/composables/useReportQuery'
 import { useClientsStore } from '@/stores/clients'
 import { useProjectsStore } from '@/stores/projects'
 import { useTagsStore } from '@/stores/tags'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { Period } from '@/utils/period'
 import { formatPeriod } from '@/utils/period'
 
@@ -32,6 +33,8 @@ const report = useReportQuery()
 const projects = useProjectsStore()
 const clients = useClientsStore()
 const tags = useTagsStore()
+const workspace = useWorkspaceStore()
+void workspace.loadMembers().catch(() => {})
 
 const views: ReportView[] = ['summary', 'detailed', 'weekly']
 
@@ -61,12 +64,19 @@ const tagItems = computed<ComboboxItem[]>(() =>
   tags.sorted.map((tag) => ({ value: tag.id, label: tag.name })),
 )
 
+const memberItems = computed<ComboboxItem[]>(() =>
+  workspace.members.map((member) => ({
+    value: member.user_id,
+    label: member.display_name || member.email,
+  })),
+)
+
 const billableItems = computed<ComboboxItem[]>(() => [
   { value: 'yes', label: t('billing.billable') },
   { value: 'no', label: t('billing.notBillable') },
 ])
 
-function listModel(key: 'projects' | 'clients' | 'tags', param: string) {
+function listModel(key: 'projects' | 'clients' | 'tags' | 'users', param: string) {
   return computed({
     get: () => report.state.value[key],
     set: (value: string[]) => report.patch({ [param]: value }),
@@ -76,6 +86,7 @@ function listModel(key: 'projects' | 'clients' | 'tags', param: string) {
 const pickedProjects = listModel('projects', 'project')
 const pickedClients = listModel('clients', 'client')
 const pickedTags = listModel('tags', 'tag')
+const pickedUsers = listModel('users', 'member')
 
 const pickedBillable = computed({
   get: () => (report.state.value.billable ? [report.state.value.billable] : []),
@@ -145,6 +156,7 @@ const printedFilters = computed(() => {
     [t('reports.filters.projects'), names(state.projects, projectItems.value, t('reports.without.project'))],
     [t('reports.filters.clients'), names(state.clients, clientItems.value, t('reports.without.client'))],
     [t('reports.filters.tags'), names(state.tags, tagItems.value, t('reports.without.tag'))],
+    [t('reports.filters.members'), names(state.users, memberItems.value, '')],
     [t('reports.filters.billable'), names(state.billable ? [state.billable] : [], billableItems.value, '')],
     [t('reports.filters.description'), state.description],
   ].filter(([, value]) => value)
@@ -224,6 +236,12 @@ function clear() {
         :label="t('reports.filters.tags')"
         :items="tagItems"
         :none-label="t('reports.without.tag')"
+      />
+      <FilterSelect
+        v-if="workspace.isTeam"
+        v-model="pickedUsers"
+        :label="t('reports.filters.members')"
+        :items="memberItems"
       />
       <FilterSelect
         v-model="pickedBillable"

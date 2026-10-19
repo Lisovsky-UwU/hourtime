@@ -28,6 +28,7 @@ GROUP_HEADERS: dict[ReportGrouping, str] = {
     "client": "Client",
     "tag": "Tag",
     "description": "Description",
+    "user": "Member",
 }
 
 UNNAMED_GROUPS: dict[ReportGrouping, str] = {
@@ -35,6 +36,7 @@ UNNAMED_GROUPS: dict[ReportGrouping, str] = {
     "client": "Without client",
     "tag": "Without tags",
     "description": "Without description",
+    "user": "Unknown member",
 }
 
 
@@ -71,6 +73,7 @@ def _entry_row(entry: ReportEntry, zone: ZoneInfo) -> list[str]:
     started = entry.started_at.astimezone(zone)
     stopped = entry.stopped_at.astimezone(zone)
     return [
+        _text(entry.user.name),
         _text(entry.description),
         _text(entry.project.name) if entry.project else "",
         _text(entry.client.name) if entry.client else "",
@@ -90,6 +93,7 @@ async def detailed_csv(export: DetailedExport) -> AsyncIterator[str]:
     zone = ZoneInfo(export.timezone)
     yield BOM + _line(
         [
+            "Member",
             "Description",
             "Project",
             "Client",

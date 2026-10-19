@@ -52,10 +52,12 @@ def report_filters(
     without_tags: Annotated[bool, Query()] = False,
     billable: Annotated[bool | None, Query()] = None,
     description: Annotated[str, Query(max_length=DESCRIPTION_MAX_LENGTH)] = "",
+    # Members to report on; none means the whole workspace.
+    user_ids: Annotated[list[UUID] | None, Query()] = None,
 ) -> ReportFiltersInput:
     return ReportFiltersInput(
-        user_id=current.user.id,
         workspace_id=current.workspace_id,
+        user_ids=user_ids or [],
         timezone=current.user.timezone,
         start_date=start_date,
         end_date=end_date,

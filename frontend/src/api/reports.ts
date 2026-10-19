@@ -1,7 +1,7 @@
 import { download, inWorkspace, request } from '@/api/client'
 import type { DetailedReport, SummaryReport, WeeklyReport } from '@/types'
 
-export type SummaryGrouping = 'project' | 'client' | 'tag' | 'description'
+export type SummaryGrouping = 'project' | 'client' | 'tag' | 'description' | 'user'
 export type DetailedSort = 'started_at' | 'duration' | 'description' | 'project'
 
 /**
@@ -20,6 +20,8 @@ export interface ReportFilters {
   without_tags?: boolean
   billable?: boolean
   description?: string
+  /** Members to report on; none means everyone. */
+  user_ids?: string[]
 }
 
 export function summary(

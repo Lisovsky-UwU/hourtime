@@ -10,6 +10,7 @@ import { messageFor } from '@/composables/useApiError'
 import { useDuration } from '@/composables/useDuration'
 import { useReportQuery } from '@/composables/useReportQuery'
 import { usePreferencesStore } from '@/stores/preferences'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { DetailedReport, DetailedReportItem } from '@/types'
 import { currencySymbol, formatAmount } from '@/utils/money'
 import { formatTimeOfDay, toTimeOfDay } from '@/utils/timeOfDay'
@@ -20,6 +21,7 @@ const { t, d, locale } = useI18n()
 const duration = useDuration()
 const preferences = usePreferencesStore()
 const report = useReportQuery()
+const workspace = useWorkspaceStore()
 
 const head = ref<DetailedReport | null>(null)
 const items = ref<DetailedReportItem[]>([])
@@ -165,6 +167,7 @@ const columns = computed(() => [
                 />
               </button>
             </th>
+            <th v-if="workspace.isTeam" scope="col">{{ t('reports.columns.member') }}</th>
             <th scope="col">{{ t('reports.columns.tags') }}</th>
             <th scope="col" class="num-col">{{ t('reports.columns.time') }}</th>
             <th scope="col" class="num-col" :aria-sort="ariaSort('duration')">
@@ -196,6 +199,7 @@ const columns = computed(() => [
                 </span>
               </span>
             </td>
+            <td v-if="workspace.isTeam" class="member">{{ item.user.name }}</td>
             <td class="tags muted">{{ item.tags.map((tag) => tag.name).join(', ') }}</td>
             <td class="num-col num">{{ interval(item) }}</td>
             <td class="num-col num duration">

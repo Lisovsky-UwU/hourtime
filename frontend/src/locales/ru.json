@@ -255,13 +255,15 @@
       "billable": "Оплата",
       "description": "Описание",
       "clear": "Сбросить фильтры",
-      "picked": "выбран {count} | выбрано {count} | выбрано {count}"
+      "picked": "выбран {count} | выбрано {count} | выбрано {count}",
+      "members": "Участники"
     },
     "without": {
       "project": "Без проекта",
       "client": "Без клиента",
       "tag": "Без тегов",
-      "description": "Без описания"
+      "description": "Без описания",
+      "user": "Без участника"
     },
     "group": {
       "label": "Группировать",
@@ -271,7 +273,8 @@
       "description": "Описание",
       "then": "затем",
       "subgroupLabel": "Подгруппы",
-      "none": "Без подгрупп"
+      "none": "Без подгрупп",
+      "user": "Участник"
     },
     "totals": {
       "label": "Итоги",
@@ -294,7 +297,8 @@
       "description": "Описание",
       "project": "Проект",
       "tags": "Теги",
-      "time": "Время"
+      "time": "Время",
+      "member": "Участник"
     },
     "spentColumn": "Затрачено",
     "export": {

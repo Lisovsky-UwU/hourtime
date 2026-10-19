@@ -21,6 +21,7 @@ from hourtime.domain.reports import (
     SortOrder,
     TagRef,
     Totals,
+    UserRef,
     WeeklyGrouping,
 )
 from hourtime.infrastructure.db.models import (
@@ -29,6 +30,7 @@ from hourtime.infrastructure.db.models import (
     TagModel,
     TimeEntryModel,
     TimeEntryTagModel,
+    UserModel,
     WorkspaceModel,
 )
 from hourtime.infrastructure.db.repositories.time_entry_repository import escape_like
@@ -46,10 +48,11 @@ def _matching_any(*options: tuple[bool, ColumnElement[bool]]) -> ColumnElement[b
 def _filters(criteria: ReportCriteria) -> list[ColumnElement[bool]]:
     entry = TimeEntryModel
     conditions: list[ColumnElement[bool]] = [
-        entry.user_id == criteria.user_id,
         entry.workspace_id == criteria.workspace_id,
         entry.stopped_at.is_not(None),
     ]
+    if criteria.user_ids:
+        conditions.append(entry.user_id.in_(criteria.user_ids))
     if criteria.started_from is not None:
         conditions.append(entry.started_at >= criteria.started_from)
     if criteria.started_before is not None:
@@ -101,6 +104,10 @@ def _entries(criteria: ReportCriteria) -> sa.Subquery:
     return (
         sa.select(
             entry.id,
+            entry.user_id,
+            sa.func.coalesce(sa.func.nullif(UserModel.display_name, ""), UserModel.email).label(
+                "user_name"
+            ),
             entry.description,
             entry.billable,
             entry.started_at,
@@ -116,6 +123,7 @@ def _entries(criteria: ReportCriteria) -> sa.Subquery:
         )
         .select_from(entry)
         .join(WorkspaceModel, WorkspaceModel.id == entry.workspace_id)
+        .join(UserModel, UserModel.id == entry.user_id)
         .outerjoin(ProjectModel, ProjectModel.id == entry.project_id)
         .outerjoin(ClientModel, ClientModel.id == ProjectModel.client_id)
         .where(*_filters(criteria))
@@ -151,6 +159,8 @@ def _key_columns(
             return {"id": entries.c.client_id, "name": entries.c.client_name}
         case "tag":
             return {"id": tags.c.tag_id, "name": tags.c.tag_name}
+        case "user":
+            return {"id": entries.c.user_id, "name": entries.c.user_name}
         case "description":
             # A literal, not a bound parameter: the expression appears in both
             # SELECT and GROUP BY, and two different parameters would not match.
@@ -314,6 +324,7 @@ class SqlReportRepository(ReportRepository):
         )
         return ReportEntry(
             id=row.id,
+            user=UserRef(id=row.user_id, name=row.user_name),
             description=row.description,
             project=project,
             client=client,

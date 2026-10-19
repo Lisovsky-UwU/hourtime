@@ -13,6 +13,7 @@ from hourtime.domain.reports import (
     GroupTotals,
     ReportEntry,
     Totals,
+    UserRef,
 )
 from hourtime.use_cases.dto import (
     DetailedExportInput,
@@ -37,7 +38,7 @@ WORKSPACE = make_workspace(USER, currency="RUB")
 
 
 def filters(**overrides: Any) -> ReportFiltersInput:
-    values: dict[str, Any] = {"user_id": USER.id, "workspace_id": WORKSPACE.id}
+    values: dict[str, Any] = {"workspace_id": WORKSPACE.id}
     values.update(overrides)
     return ReportFiltersInput(**values)
 
@@ -217,6 +218,7 @@ class TestDetailed:
     def entry(hour: int) -> ReportEntry:
         return ReportEntry(
             id=uuid4(),
+            user=UserRef(id=USER.id, name=USER.email),
             description="",
             billable=False,
             started_at=datetime(2025, 2, 3, hour, tzinfo=UTC),

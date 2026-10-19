@@ -11,7 +11,7 @@ import httpx
 import pytest
 
 from hourtime.domain.billing import billable_amount
-from tests.integration.test_api_flow import other_user_headers, register_and_login
+from tests.integration.test_api_flow import EMAIL, join, other_user_headers, register_and_login
 
 # 2025-02-03 is a Monday; no DST change anywhere near it in the zones used here.
 WEEK = {"start_date": "2025-02-03", "end_date": "2025-02-09"}
@@ -562,12 +562,14 @@ class TestDetailed:
         bare = await add(client, "2025-02-04T09:00", "2025-02-04T09:01")
 
         page = await report(client, "detailed")
+        me = {"id": (await client.get("/auth/me")).json()["id"], "name": EMAIL}
         assert page == {
             "currency": "USD",
             "totals": {"duration": 3660, "billable_duration": 0, "amount": "0.00", "entries": 2},
             "items": [
                 {
                     "id": entry["id"],
+                    "user": me,
                     "description": "Planning",
                     "project": {"id": project["id"], "name": "hourtime", "color": "#2f6f4e"},
                     "client": {"id": acme["id"], "name": "Acme"},
@@ -583,6 +585,7 @@ class TestDetailed:
                 },
                 {
                     "id": bare["id"],
+                    "user": me,
                     "description": "",
                     "project": None,
                     "client": None,
@@ -754,6 +757,7 @@ class TestCsv:
         )
         assert rows == [
             [
+                "Member",
                 "Description",
                 "Project",
                 "Client",
@@ -769,6 +773,7 @@ class TestCsv:
             ],
             # Times are in the profile's zone: 21:30 UTC is past midnight in Moscow.
             [
+                EMAIL,
                 'Fix, "quoted" и кириллица',
                 "Сайт",
                 "Acme",
@@ -784,6 +789,7 @@ class TestCsv:
             ],
             # A formula would run in a spreadsheet; the apostrophe keeps it text.
             [
+                EMAIL,
                 "'=1+1",
                 "",
                 "",
@@ -884,7 +890,7 @@ class TestValidation:
             ("weekly", {"start_date": "2025-02-03", "end_date": "2025-02-10"}),
             ("weekly", {**WEEK, "group_by": "tag"}),
             ("summary", {"group_by": "client", "subgroup_by": "client"}),
-            ("summary", {"group_by": "user"}),
+            ("summary", {"group_by": "member"}),
             ("summary", {"subgroup_by": "day"}),
             ("detailed", {"sort": "amount"}),
             ("detailed", {"order": "up"}),
@@ -906,3 +912,38 @@ class TestValidation:
         for kind in ("summary", "detailed", "weekly"):
             path = f"/workspaces/{uuid4()}/reports/{kind}"
             assert (await client.get(path, params=WEEK)).status_code == 401
+
+
+class TestTeam:
+    async def test_reports_cover_every_member(
+        self, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        workspace = (await client.get("/auth/me")).json()["default_workspace_id"]
+        member = await other_user_headers(client)
+        await join(client, workspace, member)
+        member_id = (await client.get("/auth/me", headers=member)).json()["id"]
+        mine = await add(client, "2025-02-03T09:00", "2025-02-03T10:00")
+        theirs = await client.post(
+            f"/workspaces/{workspace}/time-entries",
+            json={"started_at": "2025-02-03T11:00:00Z", "stopped_at": "2025-02-03T11:30:00Z"},
+            headers=member,
+        )
+        assert theirs.status_code == 201, theirs.text
+
+        team = await report(client, "summary", {**WEEK, "group_by": "user"})
+        assert team["totals"]["duration"] == 5400
+        assert {g["name"]: g["duration"] for g in team["groups"]} == {
+            EMAIL: 3600,
+            "other@example.com": 1800,
+        }
+        only_them = await report(client, "detailed", {**WEEK, "user_ids": member_id})
+        assert [(i["id"], i["user"]["name"]) for i in only_them["items"]] == [
+            (theirs.json()["id"], "other@example.com")
+        ]
+
+        # The member sees the team in reports, but only their own entries elsewhere.
+        seen = await client.get(f"/workspaces/{workspace}/reports/summary", headers=member)
+        assert seen.json()["totals"]["duration"] == 5400
+        listed = await client.get(f"/workspaces/{workspace}/time-entries", headers=member)
+        assert [item["id"] for item in listed.json()["items"]] == [theirs.json()["id"]]
+        assert mine["id"] not in {item["id"] for item in listed.json()["items"]}

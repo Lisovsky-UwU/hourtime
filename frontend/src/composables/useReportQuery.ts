@@ -12,7 +12,7 @@ export type ReportView = 'summary' | 'detailed' | 'weekly'
 /** In a project, client or tag list it stands for "without one"; never a real id. */
 export const NONE = 'none'
 
-const GROUPINGS: SummaryGrouping[] = ['project', 'client', 'tag', 'description']
+const GROUPINGS: SummaryGrouping[] = ['project', 'client', 'tag', 'description', 'user']
 const SORTS: DetailedSort[] = ['started_at', 'duration', 'description', 'project']
 
 export interface ReportState {
@@ -21,6 +21,8 @@ export interface ReportState {
   projects: string[]
   clients: string[]
   tags: string[]
+  /** Member ids; empty means everyone. */
+  users: string[]
   billable: 'yes' | 'no' | null
   description: string
   groupBy: SummaryGrouping
@@ -95,6 +97,7 @@ export function useReportQuery() {
       projects: list(query.project),
       clients: list(query.client),
       tags: list(query.tag),
+      users: list(query.member),
       billable: oneOf(single(query.billable), ['yes', 'no'] as const),
       description: single(query.q) ?? '',
       groupBy,
@@ -121,6 +124,7 @@ export function useReportQuery() {
       without_tags: withoutTags,
       billable: current.billable === null ? undefined : current.billable === 'yes',
       description: current.description.trim() || undefined,
+      user_ids: current.users.length ? current.users : undefined,
     }
   })
 
@@ -128,6 +132,7 @@ export function useReportQuery() {
     const current = state.value
     return (
       current.projects.length + current.clients.length + current.tags.length > 0 ||
+      current.users.length > 0 ||
       current.billable !== null ||
       current.description.trim() !== ''
     )
@@ -161,7 +166,7 @@ export function useReportQuery() {
   }
 
   function clearFilters() {
-    patch({ project: null, client: null, tag: null, billable: null, q: null })
+    patch({ project: null, client: null, tag: null, member: null, billable: null, q: null })
   }
 
   /** Same report, other view; the filters travel along in the query. */

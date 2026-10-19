@@ -180,6 +180,8 @@ export interface SummaryReport {
 
 export interface DetailedReportItem {
   id: string
+  /** Who tracked it: the display name, or the email without one. */
+  user: { id: string; name: string }
   description: string
   project: { id: string; name: string; color: string } | null
   client: { id: string; name: string } | null

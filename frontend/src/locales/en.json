@@ -255,13 +255,15 @@
       "billable": "Billable",
       "description": "Description",
       "clear": "Clear filters",
-      "picked": "{count} selected | {count} selected"
+      "picked": "{count} selected | {count} selected",
+      "members": "Members"
     },
     "without": {
       "project": "Without project",
       "client": "Without client",
       "tag": "Without tags",
-      "description": "Without description"
+      "description": "Without description",
+      "user": "No member"
     },
     "group": {
       "label": "Group by",
@@ -271,7 +273,8 @@
       "description": "Description",
       "then": "then",
       "subgroupLabel": "Subgroup by",
-      "none": "No subgroups"
+      "none": "No subgroups",
+      "user": "Member"
     },
     "totals": {
       "label": "Totals",
@@ -294,7 +297,8 @@
       "description": "Description",
       "project": "Project",
       "tags": "Tags",
-      "time": "Time"
+      "time": "Time",
+      "member": "Member"
     },
     "spentColumn": "Tracked",
     "export": {

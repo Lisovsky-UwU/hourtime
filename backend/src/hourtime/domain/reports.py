@@ -16,7 +16,7 @@ from hourtime.domain.billing import CENT
 from hourtime.domain.entities.base import Entity, UtcDatetime
 
 # What a summary can be grouped by; weekly rows only by the first two.
-ReportGrouping = Literal["project", "client", "tag", "description"]
+ReportGrouping = Literal["project", "client", "tag", "description", "user"]
 WeeklyGrouping = Literal["project", "client"]
 
 DetailedSort = Literal["started_at", "duration", "description", "project"]
@@ -26,15 +26,16 @@ ZERO_AMOUNT = Decimal("0.00")
 
 
 class ReportCriteria(Entity):
-    """Which finished entries of one user in one workspace a report covers.
+    """Which finished entries of a workspace a report covers.
 
     Each id list goes with a `without_*` flag and the two are alternatives: an
     entry passes when it matches the list OR the flag. Leaving both empty
     switches that filter off.
     """
 
-    user_id: UUID
     workspace_id: UUID
+    # Whose entries; empty means everyone's, members who left included.
+    user_ids: list[UUID] = Field(default_factory=list)
     # IANA name; a day is cut at midnight in this zone.
     timezone: str
     started_from: UtcDatetime | None = None
@@ -123,10 +124,17 @@ class TagRef(Entity):
     name: str
 
 
+class UserRef(Entity):
+    id: UUID
+    # The display name, or the email when there is none.
+    name: str
+
+
 class ReportEntry(Entity):
     """One finished entry as the detailed report lists it."""
 
     id: UUID
+    user: UserRef
     description: str
     project: ProjectRef | None = None
     client: ClientRef | None = None
