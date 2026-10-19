@@ -126,6 +126,7 @@ class MemberWorkspace(BaseModel):
 
 class UpdateWorkspaceInput(PatchInput):
     workspace_id: UUID
+    role: MemberRole
     default_hourly_rate: Decimal | None = None
     currency: str | None = None
 
@@ -140,6 +141,7 @@ class CreateClientInput(BaseModel):
 
 class UpdateClientInput(PatchInput):
     workspace_id: UUID
+    role: MemberRole
     client_id: UUID
     name: str | None = None
     archived: bool | None = None
@@ -155,6 +157,7 @@ class CreateTagInput(BaseModel):
 
 class UpdateTagInput(BaseModel):
     workspace_id: UUID
+    role: MemberRole
     tag_id: UUID
     name: str
 
@@ -173,6 +176,7 @@ class CreateProjectInput(BaseModel):
 
 class UpdateProjectInput(PatchInput):
     workspace_id: UUID
+    role: MemberRole
     project_id: UUID
     name: str | None = None
     color: str | None = None

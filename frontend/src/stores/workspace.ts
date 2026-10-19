@@ -5,7 +5,7 @@ import * as workspacesApi from '@/api/workspaces'
 import type { Workspace, WorkspacePatch } from '@/types'
 import { toCents } from '@/utils/money'
 
-/** Billing settings of the current workspace: the default rate and the currency. */
+/** The current workspace: billing settings and the caller's role in it. */
 export const useWorkspaceStore = defineStore('workspace', () => {
   const item = ref<Workspace | null>(null)
   const loaded = ref(false)
@@ -13,6 +13,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   /** USD until loaded - the server default, so a first paint rarely changes. */
   const currency = computed(() => item.value?.currency ?? 'USD')
   const defaultRateCents = computed(() => toCents(item.value?.default_hourly_rate ?? null))
+  /**
+   * Edit and delete controls. True until loaded: most workspaces are personal,
+   * so admins see no flicker, and the server refuses a member anyway.
+   */
+  const canManage = computed(() => item.value?.role !== 'member')
 
   async function load(force = false): Promise<void> {
     if (loaded.value && !force) return
@@ -30,5 +35,5 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     loaded.value = false
   }
 
-  return { item, loaded, currency, defaultRateCents, load, update, reset }
+  return { item, loaded, currency, defaultRateCents, canManage, load, update, reset }
 })

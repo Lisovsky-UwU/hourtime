@@ -10,8 +10,15 @@ with `require_member`; the checks below then trust it.
 
 from uuid import UUID
 
-from hourtime.domain.entities import Client, Project, Tag, TimeEntry, WorkspaceMember
-from hourtime.domain.errors import NotFound
+from hourtime.domain.entities import (
+    Client,
+    MemberRole,
+    Project,
+    Tag,
+    TimeEntry,
+    WorkspaceMember,
+)
+from hourtime.domain.errors import NotFound, PermissionDenied
 from hourtime.interfaces.repositories import (
     ClientRepository,
     ProjectRepository,
@@ -28,6 +35,12 @@ async def require_member(
     if member is None:
         raise NotFound("Workspace not found")
     return member
+
+
+def require_admin(role: MemberRole) -> None:
+    """Members create projects, clients and tags; changing or removing them is for admins."""
+    if role != "admin":
+        raise PermissionDenied("Only workspace admins can do this")
 
 
 async def get_workspace_client(

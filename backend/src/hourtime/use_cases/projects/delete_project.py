@@ -1,8 +1,9 @@
 from uuid import UUID
 
+from hourtime.domain.entities import MemberRole
 from hourtime.interfaces.repositories import ProjectRepository
 from hourtime.interfaces.services import UnitOfWork
-from hourtime.use_cases.access import get_workspace_project
+from hourtime.use_cases.access import get_workspace_project, require_admin
 
 
 class DeleteProject:
@@ -12,7 +13,8 @@ class DeleteProject:
         self._projects = projects
         self._uow = uow
 
-    async def execute(self, workspace_id: UUID, project_id: UUID) -> None:
+    async def execute(self, workspace_id: UUID, project_id: UUID, *, role: MemberRole) -> None:
+        require_admin(role)
         project = await get_workspace_project(self._projects, workspace_id, project_id)
         await self._projects.delete(project.id)
         await self._uow.commit()

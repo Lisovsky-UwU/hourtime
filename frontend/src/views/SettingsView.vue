@@ -306,7 +306,9 @@ async function signOutEverywhere() {
     <section class="section">
       <header class="section-head">
         <h2>{{ t('billing.title') }}</h2>
-        <p class="muted scope">{{ t('settings.synced') }}</p>
+        <p class="muted scope">
+          {{ workspace.canManage ? t('settings.synced') : t('billing.adminsOnly') }}
+        </p>
       </header>
 
       <div class="setting">
@@ -323,7 +325,7 @@ async function signOutEverywhere() {
             autocomplete="off"
             :aria-label="t('billing.defaultRate')"
             :placeholder="t('billing.ratePlaceholder')"
-            :disabled="!workspace.loaded"
+            :disabled="!workspace.loaded || !workspace.canManage"
             :invalid="!!rateError"
             :aria-describedby="rateError ? rateErrorId : undefined"
             @change="saveRate"
@@ -344,6 +346,7 @@ async function signOutEverywhere() {
             :items="currencies"
             :label="t('billing.currency')"
             :placeholder="t('common.loading')"
+            :disabled="!workspace.canManage"
           />
         </div>
       </div>

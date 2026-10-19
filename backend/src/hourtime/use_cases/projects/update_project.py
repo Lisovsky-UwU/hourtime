@@ -4,7 +4,7 @@ from hourtime.domain.entities import Project
 from hourtime.domain.errors import ProjectNameTaken, ValidationError
 from hourtime.interfaces.repositories import ClientRepository, ProjectRepository
 from hourtime.interfaces.services import Clock, UnitOfWork
-from hourtime.use_cases.access import get_workspace_project
+from hourtime.use_cases.access import get_workspace_project, require_admin
 from hourtime.use_cases.dto import UpdateProjectInput
 from hourtime.use_cases.projects.rules import resolve_client
 
@@ -27,6 +27,7 @@ class UpdateProject:
         self._uow = uow
 
     async def execute(self, data: UpdateProjectInput) -> Project:
+        require_admin(data.role)
         project = await get_workspace_project(self._projects, data.workspace_id, data.project_id)
         now = self._clock.now()
         changes: dict[str, Any] = {}

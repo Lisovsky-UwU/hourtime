@@ -53,6 +53,7 @@ async def update_client(
     client = await use_case.execute(
         UpdateClientInput(
             workspace_id=current.workspace_id,
+            role=current.member.role,
             client_id=client_id,
             **body.model_dump(exclude_unset=True),
         )
@@ -66,5 +67,5 @@ async def delete_client(
     current: CurrentMemberDep,
     use_case: Annotated[DeleteClient, Depends(get_delete_client)],
 ) -> Response:
-    await use_case.execute(current.workspace_id, client_id)
+    await use_case.execute(current.workspace_id, client_id, role=current.member.role)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

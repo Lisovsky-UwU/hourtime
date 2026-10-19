@@ -61,7 +61,9 @@ class TestUpdate:
         tag = await world.tags.add(make_tag(world.workspace_id))
         later = world.clock.advance(timedelta(minutes=5))
         updated = await world.update.execute(
-            UpdateTagInput(workspace_id=world.workspace_id, tag_id=tag.id, name=" urgent ")
+            UpdateTagInput(
+                workspace_id=world.workspace_id, role="admin", tag_id=tag.id, name=" urgent "
+            )
         )
         assert (updated.name, updated.updated_at) == ("urgent", later)
 
@@ -70,13 +72,17 @@ class TestUpdate:
         other = await world.tags.add(make_tag(world.workspace_id, name="urgent"))
         with pytest.raises(TagNameTaken):
             await world.update.execute(
-                UpdateTagInput(workspace_id=world.workspace_id, tag_id=other.id, name="BILLABLE")
+                UpdateTagInput(
+                    workspace_id=world.workspace_id, role="admin", tag_id=other.id, name="BILLABLE"
+                )
             )
 
     async def test_keeping_its_own_name_is_not_a_clash(self, world: TagWorld) -> None:
         tag = await world.tags.add(make_tag(world.workspace_id, name="billable"))
         updated = await world.update.execute(
-            UpdateTagInput(workspace_id=world.workspace_id, tag_id=tag.id, name="Billable")
+            UpdateTagInput(
+                workspace_id=world.workspace_id, role="admin", tag_id=tag.id, name="Billable"
+            )
         )
         assert updated.name == "Billable"
 
@@ -84,7 +90,9 @@ class TestUpdate:
         theirs = await world.tags.add(make_tag(world.other_workspace_id))
         with pytest.raises(NotFound):
             await world.update.execute(
-                UpdateTagInput(workspace_id=world.workspace_id, tag_id=theirs.id, name="mine")
+                UpdateTagInput(
+                    workspace_id=world.workspace_id, role="admin", tag_id=theirs.id, name="mine"
+                )
             )
 
 
@@ -101,15 +109,15 @@ class TestListing:
 class TestDelete:
     async def test_removes_the_tag(self, world: TagWorld) -> None:
         tag = await world.tags.add(make_tag(world.workspace_id))
-        await world.delete.execute(world.workspace_id, tag.id)
+        await world.delete.execute(world.workspace_id, tag.id, role="admin")
         assert await world.tags.get_by_id(tag.id) is None
 
     async def test_rejects_a_tag_from_another_workspace(self, world: TagWorld) -> None:
         theirs = await world.tags.add(make_tag(world.other_workspace_id))
         with pytest.raises(NotFound):
-            await world.delete.execute(world.workspace_id, theirs.id)
+            await world.delete.execute(world.workspace_id, theirs.id, role="admin")
         assert await world.tags.get_by_id(theirs.id) is not None
 
     async def test_reports_a_missing_tag_as_not_found(self, world: TagWorld) -> None:
         with pytest.raises(NotFound):
-            await world.delete.execute(world.workspace_id, uuid4())
+            await world.delete.execute(world.workspace_id, uuid4(), role="admin")

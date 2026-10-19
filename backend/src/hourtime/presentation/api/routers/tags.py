@@ -44,7 +44,12 @@ async def update_tag(
     use_case: Annotated[UpdateTag, Depends(get_update_tag)],
 ) -> TagResponse:
     tag = await use_case.execute(
-        UpdateTagInput(workspace_id=current.workspace_id, tag_id=tag_id, name=body.name)
+        UpdateTagInput(
+            workspace_id=current.workspace_id,
+            role=current.member.role,
+            tag_id=tag_id,
+            name=body.name,
+        )
     )
     return TagResponse.of(tag)
 
@@ -55,5 +60,5 @@ async def delete_tag(
     current: CurrentMemberDep,
     use_case: Annotated[DeleteTag, Depends(get_delete_tag)],
 ) -> Response:
-    await use_case.execute(current.workspace_id, tag_id)
+    await use_case.execute(current.workspace_id, tag_id, role=current.member.role)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

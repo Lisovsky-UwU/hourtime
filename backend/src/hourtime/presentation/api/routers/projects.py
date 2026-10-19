@@ -61,6 +61,7 @@ async def update_project(
     project = await use_case.execute(
         UpdateProjectInput(
             workspace_id=current.workspace_id,
+            role=current.member.role,
             project_id=project_id,
             **body.model_dump(exclude_unset=True),
         )
@@ -74,5 +75,5 @@ async def delete_project(
     current: CurrentMemberDep,
     use_case: Annotated[DeleteProject, Depends(get_delete_project)],
 ) -> Response:
-    await use_case.execute(current.workspace_id, project_id)
+    await use_case.execute(current.workspace_id, project_id, role=current.member.role)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

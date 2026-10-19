@@ -71,19 +71,25 @@ class TestUpdate:
     async def test_renames(self, world: ClientWorld) -> None:
         client = await world.clients.add(make_client(world.workspace_id))
         updated = await world.update.execute(
-            UpdateClientInput(workspace_id=world.workspace_id, client_id=client.id, name="Globex")
+            UpdateClientInput(
+                workspace_id=world.workspace_id, role="admin", client_id=client.id, name="Globex"
+            )
         )
         assert updated.name == "Globex"
 
     async def test_archives_and_restores(self, world: ClientWorld) -> None:
         client = await world.clients.add(make_client(world.workspace_id))
         archived = await world.update.execute(
-            UpdateClientInput(workspace_id=world.workspace_id, client_id=client.id, archived=True)
+            UpdateClientInput(
+                workspace_id=world.workspace_id, role="admin", client_id=client.id, archived=True
+            )
         )
         assert archived.archived_at == world.clock.now()
 
         restored = await world.update.execute(
-            UpdateClientInput(workspace_id=world.workspace_id, client_id=client.id, archived=False)
+            UpdateClientInput(
+                workspace_id=world.workspace_id, role="admin", client_id=client.id, archived=False
+            )
         )
         assert not restored.is_archived
 
@@ -92,13 +98,17 @@ class TestUpdate:
         other = await world.clients.add(make_client(world.workspace_id, name="Globex"))
         with pytest.raises(ClientNameTaken):
             await world.update.execute(
-                UpdateClientInput(workspace_id=world.workspace_id, client_id=other.id, name="acme")
+                UpdateClientInput(
+                    workspace_id=world.workspace_id, role="admin", client_id=other.id, name="acme"
+                )
             )
 
     async def test_keeping_its_own_name_is_not_a_clash(self, world: ClientWorld) -> None:
         client = await world.clients.add(make_client(world.workspace_id, name="Acme"))
         updated = await world.update.execute(
-            UpdateClientInput(workspace_id=world.workspace_id, client_id=client.id, name="ACME")
+            UpdateClientInput(
+                workspace_id=world.workspace_id, role="admin", client_id=client.id, name="ACME"
+            )
         )
         assert updated.name == "ACME"
 
@@ -106,14 +116,18 @@ class TestUpdate:
         client = await world.clients.add(make_client(world.workspace_id))
         with pytest.raises(ValidationError):
             await world.update.execute(
-                UpdateClientInput(workspace_id=world.workspace_id, client_id=client.id, name=None)
+                UpdateClientInput(
+                    workspace_id=world.workspace_id, role="admin", client_id=client.id, name=None
+                )
             )
 
     async def test_rejects_a_client_from_another_workspace(self, world: ClientWorld) -> None:
         theirs = await world.clients.add(make_client(world.other_workspace_id))
         with pytest.raises(NotFound):
             await world.update.execute(
-                UpdateClientInput(workspace_id=world.workspace_id, client_id=theirs.id, name="Mine")
+                UpdateClientInput(
+                    workspace_id=world.workspace_id, role="admin", client_id=theirs.id, name="Mine"
+                )
             )
 
 
@@ -136,15 +150,15 @@ class TestListing:
 class TestDelete:
     async def test_removes_the_client(self, world: ClientWorld) -> None:
         client = await world.clients.add(make_client(world.workspace_id))
-        await world.delete.execute(world.workspace_id, client.id)
+        await world.delete.execute(world.workspace_id, client.id, role="admin")
         assert await world.clients.get_by_id(client.id) is None
 
     async def test_rejects_a_client_from_another_workspace(self, world: ClientWorld) -> None:
         theirs = await world.clients.add(make_client(world.other_workspace_id))
         with pytest.raises(NotFound):
-            await world.delete.execute(world.workspace_id, theirs.id)
+            await world.delete.execute(world.workspace_id, theirs.id, role="admin")
         assert await world.clients.get_by_id(theirs.id) is not None
 
     async def test_reports_a_missing_client_as_not_found(self, world: ClientWorld) -> None:
         with pytest.raises(NotFound):
-            await world.delete.execute(world.workspace_id, uuid4())
+            await world.delete.execute(world.workspace_id, uuid4(), role="admin")

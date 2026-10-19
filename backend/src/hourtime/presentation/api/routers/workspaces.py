@@ -12,9 +12,8 @@ from hourtime.presentation.api.deps import (
 from hourtime.presentation.api.schemas.workspaces import (
     MemberWorkspaceResponse,
     UpdateWorkspaceRequest,
-    WorkspaceResponse,
 )
-from hourtime.use_cases.dto import UpdateWorkspaceInput
+from hourtime.use_cases.dto import MemberWorkspace, UpdateWorkspaceInput
 from hourtime.use_cases.workspaces import GetWorkspace, ListWorkspaces, UpdateWorkspace
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
@@ -29,23 +28,30 @@ async def list_workspaces(
     return [MemberWorkspaceResponse.of_member(item) for item in found]
 
 
-@router.get("/{workspace_id}", response_model=WorkspaceResponse)
+@router.get("/{workspace_id}", response_model=MemberWorkspaceResponse)
 async def get_workspace(
     current: CurrentMemberDep,
     use_case: Annotated[GetWorkspace, Depends(get_get_workspace)],
-) -> WorkspaceResponse:
-    return WorkspaceResponse.of(await use_case.execute(current.workspace_id))
+) -> MemberWorkspaceResponse:
+    workspace = await use_case.execute(current.workspace_id)
+    return MemberWorkspaceResponse.of_member(
+        MemberWorkspace(workspace=workspace, role=current.member.role)
+    )
 
 
-@router.patch("/{workspace_id}", response_model=WorkspaceResponse)
+@router.patch("/{workspace_id}", response_model=MemberWorkspaceResponse)
 async def update_workspace(
     body: UpdateWorkspaceRequest,
     current: CurrentMemberDep,
     use_case: Annotated[UpdateWorkspace, Depends(get_update_workspace)],
-) -> WorkspaceResponse:
+) -> MemberWorkspaceResponse:
     workspace = await use_case.execute(
         UpdateWorkspaceInput(
-            workspace_id=current.workspace_id, **body.model_dump(exclude_unset=True)
+            workspace_id=current.workspace_id,
+            role=current.member.role,
+            **body.model_dump(exclude_unset=True),
         )
     )
-    return WorkspaceResponse.of(workspace)
+    return MemberWorkspaceResponse.of_member(
+        MemberWorkspace(workspace=workspace, role=current.member.role)
+    )

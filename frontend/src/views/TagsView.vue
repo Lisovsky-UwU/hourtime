@@ -11,11 +11,13 @@ import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
 import { useEntriesStore } from '@/stores/entries'
 import { useTagsStore } from '@/stores/tags'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { Tag } from '@/types'
 
 const { t } = useI18n()
 const tags = useTagsStore()
 const entries = useEntriesStore()
+const workspace = useWorkspaceStore()
 /** Only a failed load shows inline; failed actions go to a toast. */
 const loadError = ref<string | null>(null)
 const busy = ref(false)
@@ -49,7 +51,7 @@ async function confirmDelete() {
 async function load() {
   loadError.value = null
   try {
-    await tags.load()
+    await Promise.all([tags.load(), workspace.load()])
   } catch (cause) {
     loadError.value = messageFor(cause)
   }
@@ -114,12 +116,24 @@ onMounted(load)
       <tbody>
         <tr v-for="tag in tags.sorted" :key="tag.id">
           <td>
-            <button type="button" class="row-name" @click="editing = tag">
+            <button
+              v-if="workspace.canManage"
+              type="button"
+              class="row-name"
+              @click="editing = tag"
+            >
               <span class="row-name-text">{{ tag.name }}</span>
             </button>
+            <span v-else class="row-name">
+              <span class="row-name-text">{{ tag.name }}</span>
+            </span>
           </td>
           <td class="actions-col">
-            <UiDropdownMenu :items="menuFor(tag)" :label="t('tags.actionsFor', { name: tag.name })" />
+            <UiDropdownMenu
+              v-if="workspace.canManage"
+              :items="menuFor(tag)"
+              :label="t('tags.actionsFor', { name: tag.name })"
+            />
           </td>
         </tr>
       </tbody>

@@ -195,10 +195,19 @@ onMounted(() => {
       <tbody>
         <tr v-for="project in visible" :key="project.id">
           <td>
-            <button type="button" class="row-name" @click="openDialog(project)">
+            <button
+              v-if="workspace.canManage"
+              type="button"
+              class="row-name"
+              @click="openDialog(project)"
+            >
               <span class="row-dot" :style="{ background: project.color }" />
               <span class="row-name-text">{{ project.name }}</span>
             </button>
+            <span v-else class="row-name">
+              <span class="row-dot" :style="{ background: project.color }" />
+              <span class="row-name-text">{{ project.name }}</span>
+            </span>
           </td>
           <td class="client">{{ clients.find(project.client_id)?.name }}</td>
           <td class="num-col num spent">{{ spent.has(project.id) ? duration(spent.get(project.id) ?? 0) : '' }}</td>
@@ -207,6 +216,7 @@ onMounted(() => {
           </td>
           <td class="actions-col">
             <UiDropdownMenu
+              v-if="workspace.canManage"
               :items="menuFor(project)"
               :label="t('projects.actionsFor', { name: project.name })"
             />

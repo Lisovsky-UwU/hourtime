@@ -12,6 +12,7 @@ import { toast } from '@/components/ui/toast'
 import { messageFor } from '@/composables/useApiError'
 import { useClientsStore } from '@/stores/clients'
 import { useProjectsStore } from '@/stores/projects'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { Client } from '@/types'
 
 type Filter = 'active' | 'archived'
@@ -19,6 +20,7 @@ type Filter = 'active' | 'archived'
 const { t } = useI18n()
 const clients = useClientsStore()
 const projects = useProjectsStore()
+const workspace = useWorkspaceStore()
 /** Only a failed load shows inline; failed actions go to a toast. */
 const loadError = ref<string | null>(null)
 const busy = ref(false)
@@ -82,7 +84,7 @@ async function confirmDelete() {
 async function load() {
   loadError.value = null
   try {
-    await Promise.all([clients.load(), projects.load()])
+    await Promise.all([clients.load(), projects.load(), workspace.load()])
   } catch (cause) {
     loadError.value = messageFor(cause)
   }
@@ -157,13 +159,22 @@ onMounted(load)
       <tbody>
         <tr v-for="client in visible" :key="client.id">
           <td>
-            <button type="button" class="row-name" @click="editing = client">
+            <button
+              v-if="workspace.canManage"
+              type="button"
+              class="row-name"
+              @click="editing = client"
+            >
               <span class="row-name-text">{{ client.name }}</span>
             </button>
+            <span v-else class="row-name">
+              <span class="row-name-text">{{ client.name }}</span>
+            </span>
           </td>
           <td class="num-col num">{{ projectCounts.get(client.id) ?? 0 }}</td>
           <td class="actions-col">
             <UiDropdownMenu
+              v-if="workspace.canManage"
               :items="menuFor(client)"
               :label="t('clients.actionsFor', { name: client.name })"
             />

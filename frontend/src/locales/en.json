@@ -207,6 +207,7 @@
     "hourlyRate": "Hourly rate",
     "projectRateHint": "Leave empty to use the default rate, {rate}.",
     "projectRateNoDefault": "Leave empty to use the default rate. It is not set yet: Settings, Billing.",
+    "adminsOnly": "Only admins can change these",
     "ratePlaceholder": "Not set",
     "perHour": "{currency}/h",
     "rateInvalid": "Enter an amount such as 1500 or 1500.50.",

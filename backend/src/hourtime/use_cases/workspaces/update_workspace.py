@@ -4,6 +4,7 @@ from hourtime.domain.entities import Workspace
 from hourtime.domain.errors import NotFound, ValidationError
 from hourtime.interfaces.repositories import WorkspaceRepository
 from hourtime.interfaces.services import Clock, UnitOfWork
+from hourtime.use_cases.access import require_admin
 from hourtime.use_cases.dto import UpdateWorkspaceInput
 
 
@@ -16,6 +17,7 @@ class UpdateWorkspace:
         self._uow = uow
 
     async def execute(self, data: UpdateWorkspaceInput) -> Workspace:
+        require_admin(data.role)
         workspace = await self._workspaces.get_by_id(data.workspace_id)
         if workspace is None:
             raise NotFound("Workspace not found")

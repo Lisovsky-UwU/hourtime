@@ -948,3 +948,40 @@ class TestWorkspaceMembership:
         self, client: httpx.AsyncClient, tokens: dict[str, str]
     ) -> None:
         assert (await client.get(f"/workspaces/{uuid4()}/projects")).status_code == 404
+
+
+class TestMemberRole:
+    async def test_member_creates_but_does_not_change(
+        self, app: FastAPI, client: httpx.AsyncClient, tokens: dict[str, str]
+    ) -> None:
+        workspace = (await client.get("/auth/me")).json()["default_workspace_id"]
+        project = (await client.post("/projects", json={"name": "Website"})).json()
+        member = await other_user_headers(client)
+        member_id = (await client.get("/auth/me", headers=member)).json()["id"]
+        # Invites arrive with the next stage; until then a member is added by hand.
+        async with app.state.sessionmaker() as session:
+            await session.execute(
+                sa.text(
+                    "INSERT INTO workspace_members (workspace_id, user_id, role, created_at)"
+                    " VALUES (:workspace, :user, 'member', now())"
+                ),
+                {"workspace": workspace, "user": member_id},
+            )
+            await session.commit()
+
+        prefix = f"/workspaces/{workspace}"
+        seen = await client.get(prefix, headers=member)
+        assert seen.json()["role"] == "member"
+        listed = (await client.get("/workspaces", headers=member)).json()
+        assert {item["role"] for item in listed} == {"admin", "member"}
+
+        created = await client.post(f"{prefix}/projects", json={"name": "Ad hoc"}, headers=member)
+        assert created.status_code == 201
+        for method, path, body in (
+            ("PATCH", f"/projects/{project['id']}", {"name": "Renamed"}),
+            ("DELETE", f"/projects/{project['id']}", None),
+            ("PATCH", "", {"currency": "EUR"}),
+        ):
+            response = await client.request(method, prefix + path, json=body, headers=member)
+            assert response.status_code == 403, (method, path, response.text)
+            assert response.json()["error"]["code"] == "permission_denied"

@@ -42,6 +42,8 @@ export interface Workspace {
   default_hourly_rate: string | null
   /** ISO 4217 code: one currency for every rate and amount. */
   currency: string
+  /** The caller's role here: members create, admins also change and remove. */
+  role: 'admin' | 'member'
 }
 
 export type WorkspacePatch = Partial<Pick<Workspace, 'default_hourly_rate' | 'currency'>>

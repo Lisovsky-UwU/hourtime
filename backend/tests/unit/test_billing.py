@@ -101,6 +101,7 @@ class TestWorkspaceSettings:
         updated = await world.update.execute(
             UpdateWorkspaceInput(
                 workspace_id=world.user.default_workspace_id,
+                role="admin",
                 default_hourly_rate=Decimal("1500"),
                 currency="rub",
             )
@@ -113,27 +114,33 @@ class TestWorkspaceSettings:
     async def test_null_removes_the_rate(self, world: WorkspaceWorld) -> None:
         workspace_id = world.user.default_workspace_id
         await world.update.execute(
-            UpdateWorkspaceInput(workspace_id=workspace_id, default_hourly_rate=Decimal("10"))
+            UpdateWorkspaceInput(
+                workspace_id=workspace_id, role="admin", default_hourly_rate=Decimal("10")
+            )
         )
         updated = await world.update.execute(
-            UpdateWorkspaceInput(workspace_id=workspace_id, default_hourly_rate=None)
+            UpdateWorkspaceInput(workspace_id=workspace_id, role="admin", default_hourly_rate=None)
         )
         assert updated.default_hourly_rate is None
 
     async def test_currency_cannot_be_null(self, world: WorkspaceWorld) -> None:
         with pytest.raises(ValidationError):
             await world.update.execute(
-                UpdateWorkspaceInput(workspace_id=world.user.default_workspace_id, currency=None)
+                UpdateWorkspaceInput(
+                    workspace_id=world.user.default_workspace_id, role="admin", currency=None
+                )
             )
 
     async def test_rejects_an_unknown_shape_of_currency(self, world: WorkspaceWorld) -> None:
         with pytest.raises(ValidationError):
             await world.update.execute(
-                UpdateWorkspaceInput(workspace_id=world.user.default_workspace_id, currency="R$")
+                UpdateWorkspaceInput(
+                    workspace_id=world.user.default_workspace_id, role="admin", currency="R$"
+                )
             )
 
     async def test_nothing_sent_changes_nothing(self, world: WorkspaceWorld) -> None:
         await world.update.execute(
-            UpdateWorkspaceInput(workspace_id=world.user.default_workspace_id)
+            UpdateWorkspaceInput(workspace_id=world.user.default_workspace_id, role="admin")
         )
         assert world.uow.commits == 0

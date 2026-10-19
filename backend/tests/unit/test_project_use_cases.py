@@ -75,6 +75,7 @@ class TestUpdate:
         updated = await world.update.execute(
             UpdateProjectInput(
                 workspace_id=world.user.default_workspace_id,
+                role="admin",
                 project_id=project.id,
                 name="Landing",
                 color="#ff0000",
@@ -88,7 +89,10 @@ class TestUpdate:
         )
         await world.update.execute(
             UpdateProjectInput(
-                workspace_id=world.user.default_workspace_id, project_id=project.id, archived=True
+                workspace_id=world.user.default_workspace_id,
+                role="admin",
+                project_id=project.id,
+                archived=True,
             )
         )
         reused = await world.create.execute(
@@ -102,7 +106,10 @@ class TestUpdate:
         )
         updated = await world.update.execute(
             UpdateProjectInput(
-                workspace_id=world.user.default_workspace_id, project_id=project.id, archived=False
+                workspace_id=world.user.default_workspace_id,
+                role="admin",
+                project_id=project.id,
+                archived=False,
             )
         )
         assert not updated.is_archived
@@ -116,6 +123,7 @@ class TestUpdate:
             await world.update.execute(
                 UpdateProjectInput(
                     workspace_id=world.user.default_workspace_id,
+                    role="admin",
                     project_id=other.id,
                     name="Website",
                 )
@@ -128,6 +136,7 @@ class TestUpdate:
         updated = await world.update.execute(
             UpdateProjectInput(
                 workspace_id=world.user.default_workspace_id,
+                role="admin",
                 project_id=project.id,
                 name="Website",
                 color="#000000",
@@ -140,7 +149,10 @@ class TestUpdate:
         with pytest.raises(NotFound):
             await world.update.execute(
                 UpdateProjectInput(
-                    workspace_id=world.user.default_workspace_id, project_id=theirs.id, name="Mine"
+                    workspace_id=world.user.default_workspace_id,
+                    role="admin",
+                    project_id=theirs.id,
+                    name="Mine",
                 )
             )
 
@@ -150,6 +162,7 @@ class TestUpdate:
             await world.update.execute(
                 UpdateProjectInput(
                     workspace_id=world.user.default_workspace_id,
+                    role="admin",
                     project_id=project.id,
                     color="chartreuse",
                 )
@@ -179,17 +192,17 @@ class TestListing:
 class TestDelete:
     async def test_removes_own_project(self, world: ProjectWorld) -> None:
         project = await world.projects.add(make_project(world.user.default_workspace_id))
-        await world.delete.execute(world.user.default_workspace_id, project.id)
+        await world.delete.execute(world.user.default_workspace_id, project.id, role="admin")
         assert await world.projects.get_by_id(project.id) is None
 
     async def test_rejects_someone_elses_project(self, world: ProjectWorld) -> None:
         theirs = await world.projects.add(make_project(world.other_user.default_workspace_id))
         with pytest.raises(NotFound):
-            await world.delete.execute(world.user.default_workspace_id, theirs.id)
+            await world.delete.execute(world.user.default_workspace_id, theirs.id, role="admin")
 
     async def test_reports_a_missing_project_as_not_found(self, world: ProjectWorld) -> None:
         with pytest.raises(NotFound):
-            await world.delete.execute(world.user.default_workspace_id, uuid4())
+            await world.delete.execute(world.user.default_workspace_id, uuid4(), role="admin")
 
 
 class TestClientAssignment:
@@ -217,6 +230,7 @@ class TestClientAssignment:
             await world.update.execute(
                 UpdateProjectInput(
                     workspace_id=world.user.default_workspace_id,
+                    role="admin",
                     project_id=project.id,
                     client_id=theirs.id,
                 )
@@ -239,6 +253,7 @@ class TestClientAssignment:
             await world.update.execute(
                 UpdateProjectInput(
                     workspace_id=world.user.default_workspace_id,
+                    role="admin",
                     project_id=project.id,
                     client_id=archived.id,
                 )
@@ -251,18 +266,22 @@ class TestClientAssignment:
 
         assigned = await world.update.execute(
             UpdateProjectInput(
-                workspace_id=workspace_id, project_id=project.id, client_id=client.id
+                workspace_id=workspace_id, role="admin", project_id=project.id, client_id=client.id
             )
         )
         assert assigned.client_id == client.id
 
         renamed = await world.update.execute(
-            UpdateProjectInput(workspace_id=workspace_id, project_id=project.id, name="Landing")
+            UpdateProjectInput(
+                workspace_id=workspace_id, role="admin", project_id=project.id, name="Landing"
+            )
         )
         assert renamed.client_id == client.id
 
         detached = await world.update.execute(
-            UpdateProjectInput(workspace_id=workspace_id, project_id=project.id, client_id=None)
+            UpdateProjectInput(
+                workspace_id=workspace_id, role="admin", project_id=project.id, client_id=None
+            )
         )
         assert detached.client_id is None
 
@@ -294,6 +313,7 @@ class TestBilling:
         updated = await world.update.execute(
             UpdateProjectInput(
                 workspace_id=world.user.default_workspace_id,
+                role="admin",
                 project_id=project.id,
                 hourly_rate=None,
             )
@@ -306,6 +326,7 @@ class TestBilling:
             await world.update.execute(
                 UpdateProjectInput(
                     workspace_id=world.user.default_workspace_id,
+                    role="admin",
                     project_id=project.id,
                     hourly_rate=Decimal("-5"),
                 )
@@ -317,6 +338,7 @@ class TestBilling:
             await world.update.execute(
                 UpdateProjectInput(
                     workspace_id=world.user.default_workspace_id,
+                    role="admin",
                     project_id=project.id,
                     billable=None,
                 )

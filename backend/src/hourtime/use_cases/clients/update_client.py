@@ -4,7 +4,7 @@ from hourtime.domain.entities import Client
 from hourtime.domain.errors import ClientNameTaken, ValidationError
 from hourtime.interfaces.repositories import ClientRepository
 from hourtime.interfaces.services import Clock, UnitOfWork
-from hourtime.use_cases.access import get_workspace_client
+from hourtime.use_cases.access import get_workspace_client, require_admin
 from hourtime.use_cases.dto import UpdateClientInput
 
 
@@ -17,6 +17,7 @@ class UpdateClient:
         self._uow = uow
 
     async def execute(self, data: UpdateClientInput) -> Client:
+        require_admin(data.role)
         client = await get_workspace_client(self._clients, data.workspace_id, data.client_id)
         now = self._clock.now()
         changes: dict[str, Any] = {}
