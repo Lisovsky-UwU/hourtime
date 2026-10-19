@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from hourtime.domain.entities import PERSONAL_WORKSPACE_NAME, User, Workspace, WorkspaceMember
+from hourtime.domain.entities import User, Workspace, WorkspaceMember, personal_workspace_name
 from hourtime.domain.errors import EmailAlreadyUsed, RegistrationDisabled, ValidationError
 from hourtime.interfaces.repositories import (
     UserRepository,
@@ -71,7 +71,7 @@ class RegisterUser:
         await self._workspaces.add(
             Workspace(
                 id=user.default_workspace_id,
-                name=PERSONAL_WORKSPACE_NAME,
+                name=personal_workspace_name(email),
                 owner_id=user.id,
                 created_at=now,
                 updated_at=now,

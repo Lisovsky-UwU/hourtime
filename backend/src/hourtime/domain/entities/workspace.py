@@ -7,9 +7,11 @@ from hourtime.domain.entities.base import Entity, UtcDatetime
 
 NAME_MAX_LENGTH = 100
 
-# Every account gets one at registration. The name is not shown anywhere yet:
-# it only matters once a user can be in more than one workspace.
-PERSONAL_WORKSPACE_NAME = "Personal"
+
+def personal_workspace_name(email: str) -> str:
+    """Every account gets a workspace at registration, named after its owner so
+    that members of several personal workspaces can tell them apart."""
+    return email[:NAME_MAX_LENGTH]
 
 
 class Workspace(Entity):

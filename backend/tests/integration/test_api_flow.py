@@ -809,7 +809,7 @@ class TestDatabaseGuarantees:
             )
             assert rows.one()._asdict() == {
                 "owned": True,
-                "name": "Personal",
+                "name": EMAIL,
                 "project_in": True,
                 "entry_in": True,
             }
@@ -1057,7 +1057,7 @@ class TestSwitchWorkspaces:
         agency = created.json()
         assert agency["role"] == "admin"
         names = [item["name"] for item in (await client.get("/workspaces")).json()]
-        assert names == ["Agency", "Personal"]
+        assert names == ["Agency", EMAIL]
 
         switched = await client.patch("/auth/me", json={"default_workspace_id": agency["id"]})
         assert switched.json()["default_workspace_id"] == agency["id"]

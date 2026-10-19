@@ -117,7 +117,7 @@ class TestRegister:
         )
         workspace = world.workspaces.items[user.default_workspace_id]
         assert workspace.owner_id == user.id
-        assert workspace.name == "Personal"
+        assert workspace.name == "owner@example.com"
         member = await world.members.get(workspace.id, user.id)
         assert member is not None
         assert member.role == "admin"
