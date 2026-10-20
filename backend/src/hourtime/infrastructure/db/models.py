@@ -120,6 +120,7 @@ class SessionModel(Base):
     access_expires_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     refresh_expires_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    rotated_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     last_used_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     user_agent: Mapped[str | None] = mapped_column(sa.String(512))

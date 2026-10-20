@@ -22,6 +22,7 @@ def to_domain(model: SessionModel) -> Session:
         access_expires_at=model.access_expires_at,
         refresh_expires_at=model.refresh_expires_at,
         revoked_at=model.revoked_at,
+        rotated_at=model.rotated_at,
         created_at=model.created_at,
         last_used_at=model.last_used_at,
         user_agent=model.user_agent,

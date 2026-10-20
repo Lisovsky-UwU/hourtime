@@ -248,6 +248,21 @@ class TestRefresh:
         with pytest.raises(InvalidToken):
             await world.authenticate.execute(rotated.tokens.access_token)
 
+    async def test_signed_out_device_does_not_sign_out_the_others(self, world: AuthWorld) -> None:
+        """A device revoked by logout-all is not a thief: its refresh must not cascade."""
+        first = await world.signed_up()
+        await world.logout.execute_all(first.user.id)
+        second = await world.login.execute(
+            LoginUserInput(email="owner@example.com", password="correct-horse")
+        )
+
+        with pytest.raises(InvalidToken):
+            await world.refresh.execute(
+                RefreshSessionInput(refresh_token=first.tokens.refresh_token)
+            )
+
+        await world.authenticate.execute(second.tokens.access_token)
+
     async def test_rejects_expired_refresh_token(self, world: AuthWorld) -> None:
         login = await world.signed_up()
         world.clock.advance(REFRESH_TTL + timedelta(seconds=1))

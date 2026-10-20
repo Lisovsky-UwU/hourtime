@@ -142,11 +142,34 @@ async function send(
   return response
 }
 
+// Tabs share the stored pair but each keeps its own copy in memory. Without
+// this, a tab that slept through another tab's rotation would replay a dead
+// refresh token, and the API would revoke every session of the user.
+window.addEventListener('storage', (event) => {
+  if (event.key !== STORAGE_KEY) return
+  tokens = readStored()
+  listeners.forEach((listener) => listener(tokens))
+})
+
+/** Serialises refreshes across tabs; `navigator.locks` is missing outside secure contexts. */
+function withRefreshLock(run: () => Promise<Tokens>): Promise<Tokens> {
+  if (!navigator.locks) return run()
+  // The DOM typings wrap the callback's promise once more; at runtime it is flattened.
+  return navigator.locks.request('hourtime.refresh', run) as unknown as Promise<Tokens>
+}
+
 function refreshTokens(): Promise<Tokens> {
   if (!refreshInFlight) {
-    const current = tokens
-    refreshInFlight = (async () => {
+    const stale = tokens
+    refreshInFlight = withRefreshLock(async () => {
       try {
+        // Another tab may have rotated the pair while this one waited for the lock.
+        const stored = readStored()
+        if (stored && stored.refresh_token !== stale?.refresh_token) {
+          tokens = stored
+          return stored
+        }
+        const current = tokens
         if (!current) throw new ApiError(401, 'invalid_token', 'Not signed in')
         const response = await send(
           '/auth/refresh',
@@ -164,7 +187,7 @@ function refreshTokens(): Promise<Tokens> {
       } finally {
         refreshInFlight = null
       }
-    })()
+    })
   }
   return refreshInFlight
 }

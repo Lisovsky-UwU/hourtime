@@ -36,12 +36,16 @@ class RefreshSession:
 
         now = self._clock.now()
 
-        if session.is_revoked:
+        if session.rotated_at is not None:
             # Someone replayed a rotated token: assume the pair leaked and cut
             # every session of that user loose.
             await self._sessions.revoke_all_for_user(session.user_id, now)
             await self._uow.commit()
             raise InvalidToken("This refresh token has already been used")
+        if session.is_revoked:
+            # Signed out by logout or a bulk revoke. Treating this as a replay
+            # would sign out every other device, which then cascades.
+            raise InvalidToken("This session has been signed out")
 
         if now >= session.refresh_expires_at:
             raise SessionExpired
@@ -52,7 +56,7 @@ class RefreshSession:
         if not user.is_active:
             raise AccountDisabled
 
-        await self._sessions.update(session.revoke(now).touch(now))
+        await self._sessions.update(session.rotate(now))
         issued = await self._issuer.issue(
             user.id, user_agent=data.user_agent or session.user_agent, ip=data.ip or session.ip
         )

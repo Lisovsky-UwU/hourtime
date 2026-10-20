@@ -18,6 +18,9 @@ class Session(Entity):
     access_expires_at: UtcDatetime
     refresh_expires_at: UtcDatetime
     revoked_at: UtcDatetime | None = None
+    # Set only when a refresh replaced this pair. Logout and bulk revokes leave
+    # it empty, so a device signed out from elsewhere is not taken for a thief.
+    rotated_at: UtcDatetime | None = None
     created_at: UtcDatetime
     last_used_at: UtcDatetime
     user_agent: str | None = None
@@ -35,6 +38,9 @@ class Session(Entity):
 
     def revoke(self, at: datetime) -> "Session":
         return self.evolve(revoked_at=at)
+
+    def rotate(self, at: datetime) -> "Session":
+        return self.evolve(revoked_at=at, rotated_at=at, last_used_at=at)
 
     def touch(self, at: datetime) -> "Session":
         return self.evolve(last_used_at=at)
