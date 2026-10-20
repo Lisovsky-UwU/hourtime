@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.1] - 2026-10-21
+
+### Fixed
+
+- Devices kept signing each other out. A refresh with a token revoked by
+  logout or a bulk revoke was taken for a stolen token and revoked every
+  session of the user, so each signed-out device signed out the rest on its
+  next refresh. Only a token already replaced by a refresh counts as stolen now.
+- Tabs of one browser pick up tokens refreshed or cleared in another tab
+  instead of replaying a stale refresh token.
+
 ## [0.5.0] - 2026-10-20
 
 ### Added

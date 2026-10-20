@@ -1,6 +1,6 @@
 [project]
 name = "hourtime"
-version = "0.5.0"
+version = "0.5.1"
 description = "Self-hosted time tracker"
 license = "Apache-2.0"
 requires-python = ">=3.12"
