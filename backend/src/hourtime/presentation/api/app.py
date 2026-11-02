@@ -21,6 +21,7 @@ from hourtime.presentation.api.routers import (
     projects,
     reports,
     tags,
+    tasks,
     time_entries,
     workspaces,
 )
@@ -124,6 +125,7 @@ def create_app() -> FastAPI:
         projects.router,
         reports.router,
         tags.router,
+        tasks.router,
         time_entries.router,
         time_entries.me_router,
         workspaces.router,

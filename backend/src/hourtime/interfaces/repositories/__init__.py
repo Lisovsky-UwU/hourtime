@@ -3,6 +3,7 @@ from hourtime.interfaces.repositories.project_repository import ProjectRepositor
 from hourtime.interfaces.repositories.report_repository import ReportRepository
 from hourtime.interfaces.repositories.session_repository import SessionRepository
 from hourtime.interfaces.repositories.tag_repository import TagRepository
+from hourtime.interfaces.repositories.task_repository import TaskRepository
 from hourtime.interfaces.repositories.time_entry_repository import TimeEntryRepository
 from hourtime.interfaces.repositories.user_repository import UserRepository
 from hourtime.interfaces.repositories.workspace_invite_repository import (
@@ -19,6 +20,7 @@ __all__ = [
     "ReportRepository",
     "SessionRepository",
     "TagRepository",
+    "TaskRepository",
     "TimeEntryRepository",
     "UserRepository",
     "WorkspaceInviteRepository",

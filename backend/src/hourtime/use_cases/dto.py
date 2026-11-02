@@ -211,6 +211,25 @@ class UpdateProjectInput(PatchInput):
     hourly_rate: Decimal | None = None
 
 
+# --- tasks ------------------------------------------------------------------
+
+
+class CreateTaskInput(BaseModel):
+    workspace_id: UUID
+    project_id: UUID
+    name: str
+    estimated_seconds: int | None = Field(default=None, gt=0)
+
+
+class UpdateTaskInput(PatchInput):
+    workspace_id: UUID
+    role: MemberRole
+    task_id: UUID
+    name: str | None = None
+    estimated_seconds: int | None = Field(default=None, gt=0)
+    completed: bool | None = None
+
+
 # --- time entries -----------------------------------------------------------
 
 

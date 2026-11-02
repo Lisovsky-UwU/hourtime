@@ -3,6 +3,7 @@ from hourtime.domain.entities.client import Client
 from hourtime.domain.entities.project import DEFAULT_COLOR, Project, normalise_color
 from hourtime.domain.entities.session import Session
 from hourtime.domain.entities.tag import Tag
+from hourtime.domain.entities.task import Task
 from hourtime.domain.entities.time_entry import TimeEntry, TimeEntrySuggestion
 from hourtime.domain.entities.user import User
 from hourtime.domain.entities.workspace import Workspace, personal_workspace_name
@@ -18,6 +19,7 @@ __all__ = [
     "Project",
     "Session",
     "Tag",
+    "Task",
     "TimeEntry",
     "TimeEntrySuggestion",
     "User",

@@ -9,6 +9,7 @@ from hourtime.domain.entities import (
     Project,
     Session,
     Tag,
+    Task,
     TimeEntry,
     TimeEntrySuggestion,
     User,
@@ -21,6 +22,7 @@ from hourtime.domain.errors import (
     NotFound,
     ProjectNameTaken,
     TagNameTaken,
+    TaskNameTaken,
     TimerAlreadyRunning,
 )
 from hourtime.domain.reports import (
@@ -41,6 +43,7 @@ from hourtime.interfaces.repositories import (
     ReportRepository,
     SessionRepository,
     TagRepository,
+    TaskRepository,
     TimeEntryRepository,
     UserRepository,
     WorkspaceInviteRepository,
@@ -356,6 +359,69 @@ class InMemoryProjectRepository(ProjectRepository):
     async def delete(self, project_id: UUID) -> None:
         if self.items.pop(project_id, None) is None:
             raise NotFound("Project not found")
+
+
+class InMemoryTaskRepository(TaskRepository):
+    def __init__(
+        self,
+        tasks: list[Task] | None = None,
+        projects: InMemoryProjectRepository | None = None,
+    ) -> None:
+        self.items: dict[UUID, Task] = {task.id: task for task in tasks or []}
+        self._projects = projects
+
+    async def get_by_id(self, task_id: UUID) -> Task | None:
+        return self.items.get(task_id)
+
+    async def list_for_workspace(
+        self,
+        workspace_id: UUID,
+        *,
+        project_id: UUID | None = None,
+        include_completed: bool = False,
+    ) -> list[Task]:
+        projects = self._projects.items if self._projects else {}
+        found = [
+            task
+            for task in self.items.values()
+            if task.project_id in projects
+            and projects[task.project_id].workspace_id == workspace_id
+            and (project_id is None or task.project_id == project_id)
+            and (include_completed or not task.is_completed)
+        ]
+        return sorted(found, key=lambda task: task.name.lower())
+
+    async def find_by_name(self, project_id: UUID, name: str) -> Task | None:
+        wanted = name.strip().lower()
+        return next(
+            (
+                task
+                for task in self.items.values()
+                if task.project_id == project_id
+                and task.name.lower() == wanted
+                and not task.is_completed
+            ),
+            None,
+        )
+
+    async def add(self, task: Task) -> Task:
+        if await self.find_by_name(task.project_id, task.name) is not None:
+            raise TaskNameTaken
+        self.items[task.id] = task
+        return task
+
+    async def update(self, task: Task) -> Task:
+        if task.id not in self.items:
+            raise NotFound("Task not found")
+        clash = await self.find_by_name(task.project_id, task.name)
+        if clash is not None and clash.id != task.id:
+            raise TaskNameTaken
+        self.items[task.id] = task
+        return task
+
+    async def delete(self, task_id: UUID) -> None:
+        if self.items.pop(task_id, None) is None:
+            raise NotFound("Task not found")
 
 
 class InMemoryTimeEntryRepository(TimeEntryRepository):

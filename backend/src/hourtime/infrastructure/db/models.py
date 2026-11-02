@@ -190,6 +190,32 @@ class ProjectModel(Base):
     )
 
 
+class TaskModel(Base):
+    __tablename__ = "tasks"
+
+    id: Mapped[UUID] = _uuid_pk()
+    project_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(sa.String(100), nullable=False)
+    estimated_seconds: Mapped[int | None] = mapped_column(sa.Integer)
+    completed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        sa.CheckConstraint("estimated_seconds > 0", name="ck_tasks_estimated_seconds_positive"),
+        sa.Index("ix_tasks_project_id", "project_id"),
+        sa.Index(
+            "uq_tasks_project_active_name",
+            "project_id",
+            sa.text("lower(name)"),
+            unique=True,
+            postgresql_where=sa.text("completed_at IS NULL"),
+        ),
+    )
+
+
 class TagModel(Base):
     __tablename__ = "tags"
 

@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from hourtime.domain.entities import Client, Project, Tag, TimeEntry, User, Workspace
+from hourtime.domain.entities import Client, Project, Tag, Task, TimeEntry, User, Workspace
 
 NOW = datetime(2026, 3, 1, 12, 0, tzinfo=UTC)
 
@@ -74,6 +74,20 @@ def make_project(workspace_id: UUID, *, name: str = "Website", **overrides: obje
     }
     values.update(overrides)
     return Project.model_validate(values)
+
+
+def make_task(project_id: UUID, *, name: str = "Design", **overrides: object) -> Task:
+    values: dict[str, object] = {
+        "id": uuid4(),
+        "project_id": project_id,
+        "name": name,
+        "estimated_seconds": None,
+        "completed_at": None,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+    values.update(overrides)
+    return Task.model_validate(values)
 
 
 def make_entry(user: User, *, started_at: datetime = NOW, **overrides: object) -> TimeEntry:

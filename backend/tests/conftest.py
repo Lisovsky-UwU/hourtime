@@ -38,6 +38,7 @@ TABLES = (
     "time_entry_tags",
     "time_entries",
     "tags",
+    "tasks",
     "projects",
     "clients",
     "workspace_members",
@@ -81,7 +82,7 @@ async def app(database: None) -> AsyncIterator[FastAPI]:
 # Routes that live under `/workspaces/{id}`. Tests write them without the prefix,
 # and `/workspaces/current` for the workspace itself: `client` fills in the
 # default workspace of whoever the request is signed in as.
-WORKSPACE_ROUTES = ("clients", "projects", "reports", "tags", "time-entries")
+WORKSPACE_ROUTES = ("clients", "projects", "reports", "tags", "tasks", "time-entries")
 
 
 @pytest.fixture

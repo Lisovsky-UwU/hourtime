@@ -74,6 +74,15 @@ class ProjectNameTaken(DomainError):
     default_message = "A project with this name already exists"
 
 
+class TaskNotFound(NotFound):
+    default_message = "Task not found"
+
+
+class TaskNameTaken(DomainError):
+    code = "task_name_taken"
+    default_message = "An active task with this name already exists in the project"
+
+
 class ClientNameTaken(DomainError):
     code = "client_name_taken"
     default_message = "A client with this name already exists"

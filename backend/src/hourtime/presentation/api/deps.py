@@ -28,6 +28,7 @@ from hourtime.infrastructure.db.repositories.project_repository import SqlProjec
 from hourtime.infrastructure.db.repositories.report_repository import SqlReportRepository
 from hourtime.infrastructure.db.repositories.session_repository import SqlSessionRepository
 from hourtime.infrastructure.db.repositories.tag_repository import SqlTagRepository
+from hourtime.infrastructure.db.repositories.task_repository import SqlTaskRepository
 from hourtime.infrastructure.db.repositories.time_entry_repository import SqlTimeEntryRepository
 from hourtime.infrastructure.db.repositories.user_repository import SqlUserRepository
 from hourtime.infrastructure.db.repositories.workspace_invite_repository import (
@@ -45,6 +46,7 @@ from hourtime.interfaces.repositories import (
     ProjectRepository,
     ReportRepository,
     TagRepository,
+    TaskRepository,
     TimeEntryRepository,
     WorkspaceInviteRepository,
     WorkspaceMemberRepository,
@@ -73,6 +75,14 @@ from hourtime.use_cases.reports import (
     GetWeeklyReport,
 )
 from hourtime.use_cases.tags import CreateTag, DeleteTag, ListTags, UpdateTag
+from hourtime.use_cases.tasks import (
+    CompleteTask,
+    CreateTask,
+    DeleteTask,
+    ListTasks,
+    ReopenTask,
+    UpdateTask,
+)
 from hourtime.use_cases.time_entries import (
     CreateTimeEntry,
     DeleteTimeEntry,
@@ -215,6 +225,13 @@ def get_project_repository(session: DbSessionDep) -> ProjectRepository:
 
 
 ProjectsDep = Annotated[ProjectRepository, Depends(get_project_repository)]
+
+
+def get_task_repository(session: DbSessionDep) -> TaskRepository:
+    return SqlTaskRepository(session)
+
+
+TasksDep = Annotated[TaskRepository, Depends(get_task_repository)]
 
 
 def get_time_entry_repository(session: DbSessionDep) -> TimeEntryRepository:
@@ -540,6 +557,41 @@ def get_update_project(
 
 def get_delete_project(projects: ProjectsDep, uow: UowDep) -> DeleteProject:
     return DeleteProject(projects, uow)
+
+
+# --- task use cases ----------------------------------------------------------
+
+
+def get_create_task(
+    tasks: TasksDep, projects: ProjectsDep, clock: ClockDep, uow: UowDep
+) -> CreateTask:
+    return CreateTask(tasks, projects, clock, uow)
+
+
+def get_list_tasks(tasks: TasksDep, projects: ProjectsDep) -> ListTasks:
+    return ListTasks(tasks, projects)
+
+
+def get_update_task(
+    tasks: TasksDep, projects: ProjectsDep, clock: ClockDep, uow: UowDep
+) -> UpdateTask:
+    return UpdateTask(tasks, projects, clock, uow)
+
+
+def get_complete_task(
+    tasks: TasksDep, projects: ProjectsDep, clock: ClockDep, uow: UowDep
+) -> CompleteTask:
+    return CompleteTask(tasks, projects, clock, uow)
+
+
+def get_reopen_task(
+    tasks: TasksDep, projects: ProjectsDep, clock: ClockDep, uow: UowDep
+) -> ReopenTask:
+    return ReopenTask(tasks, projects, clock, uow)
+
+
+def get_delete_task(tasks: TasksDep, projects: ProjectsDep, uow: UowDep) -> DeleteTask:
+    return DeleteTask(tasks, projects, uow)
 
 
 # --- time entry use cases ----------------------------------------------------

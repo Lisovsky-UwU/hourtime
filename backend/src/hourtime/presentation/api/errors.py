@@ -25,6 +25,7 @@ from hourtime.domain.errors import (
     ProjectNameTaken,
     RegistrationDisabled,
     TagNameTaken,
+    TaskNameTaken,
     TimerAlreadyRunning,
     ValidationError,
 )
@@ -43,6 +44,7 @@ _STATUS_BY_ERROR: dict[type, int] = {
     ClientNameTaken: status.HTTP_409_CONFLICT,
     ProjectNameTaken: status.HTTP_409_CONFLICT,
     TagNameTaken: status.HTTP_409_CONFLICT,
+    TaskNameTaken: status.HTTP_409_CONFLICT,
     TimerAlreadyRunning: status.HTTP_409_CONFLICT,
 }
 

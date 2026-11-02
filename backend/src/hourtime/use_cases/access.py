@@ -15,14 +15,16 @@ from hourtime.domain.entities import (
     MemberRole,
     Project,
     Tag,
+    Task,
     TimeEntry,
     WorkspaceMember,
 )
-from hourtime.domain.errors import NotFound, PermissionDenied
+from hourtime.domain.errors import NotFound, PermissionDenied, TaskNotFound
 from hourtime.interfaces.repositories import (
     ClientRepository,
     ProjectRepository,
     TagRepository,
+    TaskRepository,
     TimeEntryRepository,
     WorkspaceMemberRepository,
 )
@@ -59,6 +61,21 @@ async def get_workspace_project(
     if project is None or project.workspace_id != workspace_id:
         raise NotFound("Project not found")
     return project
+
+
+async def get_workspace_task(
+    tasks: TaskRepository,
+    projects: ProjectRepository,
+    workspace_id: UUID,
+    task_id: UUID,
+) -> tuple[Task, Project]:
+    task = await tasks.get_by_id(task_id)
+    if task is None:
+        raise TaskNotFound
+    project = await projects.get_by_id(task.project_id)
+    if project is None or project.workspace_id != workspace_id:
+        raise TaskNotFound
+    return task, project
 
 
 async def get_workspace_tag(tags: TagRepository, workspace_id: UUID, tag_id: UUID) -> Tag:
