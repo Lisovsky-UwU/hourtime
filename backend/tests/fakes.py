@@ -434,9 +434,11 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
         self,
         entries: list[TimeEntry] | None = None,
         projects: InMemoryProjectRepository | None = None,
+        tasks: InMemoryTaskRepository | None = None,
     ) -> None:
         self.items: dict[UUID, TimeEntry] = {entry.id: entry for entry in entries or []}
         self._projects = projects
+        self._tasks = tasks
 
     def _check_single_running(self, entry: TimeEntry) -> None:
         if not entry.is_running:
@@ -475,6 +477,7 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
         client_id: UUID | None = None,
         tag_ids: list[UUID] | None = None,
         without_project: bool = False,
+        task_id: UUID | None = None,
     ) -> list[TimeEntry]:
         found = [
             entry
@@ -487,6 +490,8 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
             found = [entry for entry in found if entry.started_at <= started_to]
         if project_id is not None:
             found = [entry for entry in found if entry.project_id == project_id]
+        if task_id is not None:
+            found = [entry for entry in found if entry.task_id == task_id]
         if without_project:
             found = [entry for entry in found if entry.project_id is None]
         if client_id is not None:
@@ -511,6 +516,7 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
         client_id: UUID | None = None,
         tag_ids: list[UUID] | None = None,
         without_project: bool = False,
+        task_id: UUID | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[TimeEntry]:
@@ -523,22 +529,35 @@ class InMemoryTimeEntryRepository(TimeEntryRepository):
             client_id,
             tag_ids,
             without_project,
+            task_id,
         )
         return found[offset : offset + limit]
 
     async def suggest(
         self, user_id: UUID, workspace_id: UUID, *, query: str = "", limit: int = 10
     ) -> list[TimeEntrySuggestion]:
-        """Archived projects are not filtered here: this fake knows no projects."""
+        """Archived projects and completed tasks are not filtered here unless the
+        fake was given their repositories."""
         needle = query.casefold()
-        found: dict[tuple[str, UUID | None], TimeEntrySuggestion] = {}
+        tasks = self._tasks.items if self._tasks else {}
+        projects = self._projects.items if self._projects else {}
+        found: dict[tuple[str, UUID | None, UUID | None], TimeEntrySuggestion] = {}
         for entry in self._matching(user_id, workspace_id, None, None, None):
-            key = (entry.description, entry.project_id)
+            key = (entry.description, entry.project_id, entry.task_id)
             if not entry.description or key in found or needle not in entry.description.casefold():
                 continue
+            if entry.task_id is not None:
+                task = tasks.get(entry.task_id)
+                if task is not None and task.is_completed:
+                    continue
+            if entry.project_id is not None:
+                project = projects.get(entry.project_id)
+                if project is not None and project.is_archived:
+                    continue
             found[key] = TimeEntrySuggestion(
                 description=entry.description,
                 project_id=entry.project_id,
+                task_id=entry.task_id,
                 last_used_at=entry.started_at,
             )
         return list(found.values())[:limit]

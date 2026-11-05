@@ -237,6 +237,7 @@ class StartTimerInput(BaseModel):
     user_id: UUID
     workspace_id: UUID
     project_id: UUID | None = None
+    task_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = ""
     # None follows the project's default.
@@ -256,6 +257,7 @@ class CreateTimeEntryInput(BaseModel):
     user_id: UUID
     workspace_id: UUID
     project_id: UUID | None = None
+    task_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = ""
     # None follows the project's default.
@@ -269,6 +271,7 @@ class UpdateTimeEntryInput(PatchInput):
     workspace_id: UUID
     entry_id: UUID
     project_id: UUID | None = None
+    task_id: UUID | None = None
     tag_ids: list[UUID] | None = None
     description: str | None = None
     billable: bool | None = None
@@ -283,6 +286,7 @@ class ListTimeEntriesInput(BaseModel):
     started_to: datetime | None = None
     project_id: UUID | None = None
     client_id: UUID | None = None
+    task_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     without_project: bool = False
     limit: int = 50

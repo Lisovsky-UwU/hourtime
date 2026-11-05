@@ -246,6 +246,10 @@ class TimeEntryModel(Base):
     project_id: Mapped[UUID | None] = mapped_column(
         PgUUID(as_uuid=True), sa.ForeignKey("projects.id", ondelete="SET NULL")
     )
+    # A deleted task takes itself off the entry, just like a deleted project.
+    task_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), sa.ForeignKey("tasks.id", ondelete="SET NULL")
+    )
     description: Mapped[str] = mapped_column(sa.Text, nullable=False, default="")
     billable: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default=sa.false())
     started_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
@@ -256,6 +260,7 @@ class TimeEntryModel(Base):
     __table_args__ = (
         sa.Index("ix_time_entries_user_started_at", "user_id", sa.text("started_at DESC")),
         sa.Index("ix_time_entries_project_id", "project_id"),
+        sa.Index("ix_time_entries_task_id", "task_id"),
         # Team reports: a workspace's entries over a period, whoever tracked them.
         sa.Index(
             "ix_time_entries_workspace_started_at", "workspace_id", sa.text("started_at DESC")

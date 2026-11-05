@@ -37,6 +37,7 @@ class ListTimeEntries:
             started_to=data.started_to,
             project_id=data.project_id,
             client_id=data.client_id,
+            task_id=data.task_id,
             tag_ids=data.tag_ids,
             without_project=data.without_project,
             limit=data.limit + 1,

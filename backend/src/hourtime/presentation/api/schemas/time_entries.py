@@ -13,6 +13,7 @@ class TimeEntryResponse(BaseModel):
     # The running timer may come from another workspace than the one on screen.
     workspace_id: UUID
     project_id: UUID | None
+    task_id: UUID | None
     # Sorted by id, never null; an untagged entry has [].
     tag_ids: list[UUID]
     description: str
@@ -36,6 +37,7 @@ class TimeEntryResponse(BaseModel):
             id=entry.id,
             workspace_id=entry.workspace_id,
             project_id=entry.project_id,
+            task_id=entry.task_id,
             tag_ids=entry.tag_ids,
             description=entry.description,
             billable=entry.billable,
@@ -68,6 +70,7 @@ class TimeEntryPageResponse(BaseModel):
 class TimeEntrySuggestionResponse(BaseModel):
     description: str
     project_id: UUID | None
+    task_id: UUID | None
     last_used_at: datetime
 
     @classmethod
@@ -75,12 +78,14 @@ class TimeEntrySuggestionResponse(BaseModel):
         return cls(
             description=suggestion.description,
             project_id=suggestion.project_id,
+            task_id=suggestion.task_id,
             last_used_at=suggestion.last_used_at,
         )
 
 
 class StartTimerRequest(BaseModel):
     project_id: UUID | None = None
+    task_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
     # Omitted: the project's default, or false without a project.
@@ -95,6 +100,7 @@ class StopTimerRequest(BaseModel):
 
 class CreateTimeEntryRequest(BaseModel):
     project_id: UUID | None = None
+    task_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
     # Omitted: the project's default, or false without a project.
@@ -105,12 +111,14 @@ class CreateTimeEntryRequest(BaseModel):
 
 class UpdateTimeEntryRequest(BaseModel):
     """Omitted fields are left untouched; `project_id: null` clears the project,
-    `tag_ids: []` clears the tags (`tag_ids: null` is rejected). A new project
-    brings its billable default unless `billable` is sent too."""
+    `tag_ids: []` clears the tags (`tag_ids: null` is rejected). Moving to another
+    project clears the task unless `task_id` is sent too. A new project brings its
+    billable default unless `billable` is sent too."""
 
     model_config = ConfigDict(extra="forbid")
 
     project_id: UUID | None = None
+    task_id: UUID | None = None
     tag_ids: list[UUID] | None = None
     description: str | None = Field(default=None, max_length=DESCRIPTION_MAX_LENGTH)
     billable: bool | None = None

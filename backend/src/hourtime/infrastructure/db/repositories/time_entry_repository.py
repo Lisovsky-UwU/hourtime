@@ -7,7 +7,12 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from hourtime.domain.entities import TimeEntry, TimeEntrySuggestion
 from hourtime.domain.errors import NotFound
-from hourtime.infrastructure.db.models import ProjectModel, TimeEntryModel, TimeEntryTagModel
+from hourtime.infrastructure.db.models import (
+    ProjectModel,
+    TaskModel,
+    TimeEntryModel,
+    TimeEntryTagModel,
+)
 from hourtime.infrastructure.db.repositories.integrity import translating_integrity_errors
 from hourtime.interfaces.repositories import TimeEntryRepository
 
@@ -18,6 +23,7 @@ def to_domain(model: TimeEntryModel, tag_ids: list[UUID]) -> TimeEntry:
         user_id=model.user_id,
         workspace_id=model.workspace_id,
         project_id=model.project_id,
+        task_id=model.task_id,
         tag_ids=tag_ids,
         description=model.description,
         billable=model.billable,
@@ -85,6 +91,7 @@ class SqlTimeEntryRepository(TimeEntryRepository):
         started_to: datetime | None,
         project_id: UUID | None,
         client_id: UUID | None,
+        task_id: UUID | None,
         tag_ids: list[UUID] | None,
         without_project: bool,
     ) -> list[ColumnElement[bool]]:
@@ -98,6 +105,8 @@ class SqlTimeEntryRepository(TimeEntryRepository):
             conditions.append(TimeEntryModel.started_at <= started_to)
         if project_id is not None:
             conditions.append(TimeEntryModel.project_id == project_id)
+        if task_id is not None:
+            conditions.append(TimeEntryModel.task_id == task_id)
         if without_project:
             conditions.append(TimeEntryModel.project_id.is_(None))
         # EXISTS rather than JOIN: an entry with two matching tags must still
@@ -127,6 +136,7 @@ class SqlTimeEntryRepository(TimeEntryRepository):
         started_to: datetime | None = None,
         project_id: UUID | None = None,
         client_id: UUID | None = None,
+        task_id: UUID | None = None,
         tag_ids: list[UUID] | None = None,
         without_project: bool = False,
         limit: int = 50,
@@ -139,6 +149,7 @@ class SqlTimeEntryRepository(TimeEntryRepository):
             started_to,
             project_id,
             client_id,
+            task_id,
             tag_ids,
             without_project,
         )
@@ -157,15 +168,22 @@ class SqlTimeEntryRepository(TimeEntryRepository):
     ) -> list[TimeEntrySuggestion]:
         last_used = sa.func.max(TimeEntryModel.started_at).label("last_used_at")
         statement = (
-            sa.select(TimeEntryModel.description, TimeEntryModel.project_id, last_used)
+            sa.select(
+                TimeEntryModel.description,
+                TimeEntryModel.project_id,
+                TimeEntryModel.task_id,
+                last_used,
+            )
             .outerjoin(ProjectModel, ProjectModel.id == TimeEntryModel.project_id)
+            .outerjoin(TaskModel, TaskModel.id == TimeEntryModel.task_id)
             .where(
                 TimeEntryModel.user_id == user_id,
                 TimeEntryModel.workspace_id == workspace_id,
                 TimeEntryModel.description != "",
                 ProjectModel.archived_at.is_(None),
+                sa.or_(TimeEntryModel.task_id.is_(None), TaskModel.completed_at.is_(None)),
             )
-            .group_by(TimeEntryModel.description, TimeEntryModel.project_id)
+            .group_by(TimeEntryModel.description, TimeEntryModel.project_id, TimeEntryModel.task_id)
             .order_by(last_used.desc())
             .limit(limit)
         )
@@ -178,6 +196,7 @@ class SqlTimeEntryRepository(TimeEntryRepository):
             TimeEntrySuggestion(
                 description=row.description,
                 project_id=row.project_id,
+                task_id=row.task_id,
                 last_used_at=row.last_used_at,
             )
             for row in rows

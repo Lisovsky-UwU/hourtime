@@ -23,6 +23,7 @@ class TimeEntryRepository(ABC):
         started_to: datetime | None = None,
         project_id: UUID | None = None,
         client_id: UUID | None = None,
+        task_id: UUID | None = None,
         tag_ids: list[UUID] | None = None,
         without_project: bool = False,
         limit: int = 50,
@@ -31,6 +32,7 @@ class TimeEntryRepository(ABC):
         """Newest first, ordered by `started_at` descending.
 
         `client_id` keeps entries whose project belongs to that client,
+        `task_id` keeps entries tracked against that task,
         `tag_ids` keeps entries carrying at least one of the tags, and
         `without_project` keeps entries with no project at all.
 
@@ -43,11 +45,12 @@ class TimeEntryRepository(ABC):
     async def suggest(
         self, user_id: UUID, workspace_id: UUID, *, query: str = "", limit: int = 10
     ) -> list[TimeEntrySuggestion]:
-        """Distinct (description, project) pairs, most recently used first.
+        """Distinct (description, project, task) triples, most recently used first.
 
-        Only pairs with a description whose text contains `query`
-        case-insensitively; pairs pointing at an archived project are left out,
-        since picking one would be rejected.
+        Only triples with a description whose text contains `query`
+        case-insensitively; triples pointing at an archived project are left out,
+        since picking one would be rejected. Completed tasks are left out too:
+        they cannot be assigned to a new entry.
         """
 
     @abstractmethod

@@ -598,9 +598,14 @@ def get_delete_task(tasks: TasksDep, projects: ProjectsDep, uow: UowDep) -> Dele
 
 
 def get_start_timer(
-    entries: EntriesDep, projects: ProjectsDep, tags: TagsDep, clock: ClockDep, uow: UowDep
+    entries: EntriesDep,
+    projects: ProjectsDep,
+    tags: TagsDep,
+    tasks: TasksDep,
+    clock: ClockDep,
+    uow: UowDep,
 ) -> StartTimer:
-    return StartTimer(entries, projects, tags, clock, uow)
+    return StartTimer(entries, projects, tags, tasks, clock, uow)
 
 
 def get_stop_timer(entries: EntriesDep, clock: ClockDep, uow: UowDep) -> StopTimer:
@@ -620,15 +625,25 @@ def get_suggest_time_entries(entries: EntriesDep) -> SuggestTimeEntries:
 
 
 def get_create_time_entry(
-    entries: EntriesDep, projects: ProjectsDep, tags: TagsDep, clock: ClockDep, uow: UowDep
+    entries: EntriesDep,
+    projects: ProjectsDep,
+    tags: TagsDep,
+    tasks: TasksDep,
+    clock: ClockDep,
+    uow: UowDep,
 ) -> CreateTimeEntry:
-    return CreateTimeEntry(entries, projects, tags, clock, uow)
+    return CreateTimeEntry(entries, projects, tags, tasks, clock, uow)
 
 
 def get_update_time_entry(
-    entries: EntriesDep, projects: ProjectsDep, tags: TagsDep, clock: ClockDep, uow: UowDep
+    entries: EntriesDep,
+    projects: ProjectsDep,
+    tags: TagsDep,
+    tasks: TasksDep,
+    clock: ClockDep,
+    uow: UowDep,
 ) -> UpdateTimeEntry:
-    return UpdateTimeEntry(entries, projects, tags, clock, uow)
+    return UpdateTimeEntry(entries, projects, tags, tasks, clock, uow)
 
 
 def get_delete_time_entry(entries: EntriesDep, uow: UowDep) -> DeleteTimeEntry:

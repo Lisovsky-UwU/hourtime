@@ -18,6 +18,8 @@ class TimeEntry(Entity):
     user_id: UUID
     workspace_id: UUID
     project_id: UUID | None = None
+    # Always a task of `project_id`; the API rules keep the pair consistent.
+    task_id: UUID | None = None
     # Sorted by id and free of duplicates, so the same set of tags always reads
     # the same no matter how it was sent or stored.
     tag_ids: list[UUID] = Field(default_factory=list)
@@ -59,8 +61,9 @@ class TimeEntry(Entity):
 
 
 class TimeEntrySuggestion(Entity):
-    """A description and project pair tracked before, offered while typing a new one."""
+    """A description, project and task tracked before, offered while typing a new one."""
 
     description: str
     project_id: UUID | None = None
+    task_id: UUID | None = None
     last_used_at: UtcDatetime

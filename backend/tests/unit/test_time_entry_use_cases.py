@@ -23,12 +23,20 @@ from hourtime.use_cases.time_entries import (
     SuggestTimeEntries,
     UpdateTimeEntry,
 )
-from tests.factories import make_client, make_entry, make_project, make_tag, make_user
+from tests.factories import (
+    make_client,
+    make_entry,
+    make_project,
+    make_tag,
+    make_task,
+    make_user,
+)
 from tests.fakes import (
     FakeClock,
     FakeUnitOfWork,
     InMemoryProjectRepository,
     InMemoryTagRepository,
+    InMemoryTaskRepository,
     InMemoryTimeEntryRepository,
 )
 
@@ -37,18 +45,25 @@ class TimerWorld:
     def __init__(self) -> None:
         self.clock = FakeClock()
         self.projects = InMemoryProjectRepository()
-        self.entries = InMemoryTimeEntryRepository(projects=self.projects)
+        self.tasks = InMemoryTaskRepository(projects=self.projects)
+        self.entries = InMemoryTimeEntryRepository(projects=self.projects, tasks=self.tasks)
         self.tags = InMemoryTagRepository()
         self.uow = FakeUnitOfWork()
         self.user = make_user()
         self.other_user = make_user(email="someone@example.com")
 
-        self.start = StartTimer(self.entries, self.projects, self.tags, self.clock, self.uow)
+        self.start = StartTimer(
+            self.entries, self.projects, self.tags, self.tasks, self.clock, self.uow
+        )
         self.stop = StopTimer(self.entries, self.clock, self.uow)
         self.running = GetRunningTimer(self.entries)
         self.listing = ListTimeEntries(self.entries)
-        self.create = CreateTimeEntry(self.entries, self.projects, self.tags, self.clock, self.uow)
-        self.update = UpdateTimeEntry(self.entries, self.projects, self.tags, self.clock, self.uow)
+        self.create = CreateTimeEntry(
+            self.entries, self.projects, self.tags, self.tasks, self.clock, self.uow
+        )
+        self.update = UpdateTimeEntry(
+            self.entries, self.projects, self.tags, self.tasks, self.clock, self.uow
+        )
         self.delete = DeleteTimeEntry(self.entries, self.uow)
         self.suggest = SuggestTimeEntries(self.entries)
 
@@ -839,3 +854,245 @@ class TestBillable:
         entry = await world.entries.add(make_entry(world.user))
         with pytest.raises(ValidationError):
             await world.update.execute(self._patch(world, entry.id, billable=None))
+
+
+class TestEntryTasks:
+    async def _project_with_task(
+        self, world: TimerWorld, *, name: str = "Website", **task_fields: Any
+    ) -> tuple[UUID, UUID]:
+        project = await world.projects.add(
+            make_project(world.user.default_workspace_id, name=name)
+        )
+        task = await world.tasks.add(make_task(project.id, **task_fields))
+        return project.id, task.id
+
+    def _start(self, world: TimerWorld, **fields: Any) -> StartTimerInput:
+        return StartTimerInput(
+            user_id=world.user.id, workspace_id=world.user.default_workspace_id, **fields
+        )
+
+    def _create(self, world: TimerWorld, **fields: Any) -> CreateTimeEntryInput:
+        return CreateTimeEntryInput(
+            user_id=world.user.id,
+            workspace_id=world.user.default_workspace_id,
+            started_at=world.clock.now() - timedelta(hours=1),
+            stopped_at=world.clock.now(),
+            **fields,
+        )
+
+    def _patch(self, world: TimerWorld, entry_id: UUID, **changes: Any) -> UpdateTimeEntryInput:
+        return UpdateTimeEntryInput(
+            user_id=world.user.id,
+            workspace_id=world.user.default_workspace_id,
+            entry_id=entry_id,
+            **changes,
+        )
+
+    async def test_start_and_create_keep_the_task(self, world: TimerWorld) -> None:
+        project_id, task_id = await self._project_with_task(world)
+
+        started = await world.start.execute(
+            self._start(world, project_id=project_id, task_id=task_id)
+        )
+        assert started.task_id == task_id
+
+        manual = await world.create.execute(
+            self._create(world, project_id=project_id, task_id=task_id)
+        )
+        assert manual.task_id == task_id
+
+    async def test_rejects_a_task_without_a_project(self, world: TimerWorld) -> None:
+        _, task_id = await self._project_with_task(world)
+        with pytest.raises(ValidationError):
+            await world.start.execute(self._start(world, task_id=task_id))
+
+    async def test_rejects_a_task_of_another_project(self, world: TimerWorld) -> None:
+        project_id, _ = await self._project_with_task(world)
+        _, other_task_id = await self._project_with_task(world, name="Other")
+        with pytest.raises(ValidationError):
+            await world.start.execute(
+                self._start(world, project_id=project_id, task_id=other_task_id)
+            )
+
+    async def test_rejects_a_task_of_another_workspace(self, world: TimerWorld) -> None:
+        foreign_project = await world.projects.add(
+            make_project(world.other_user.default_workspace_id)
+        )
+        foreign_task = await world.tasks.add(make_task(foreign_project.id))
+        with pytest.raises(NotFound):
+            await world.start.execute(
+                self._start(world, project_id=foreign_project.id, task_id=foreign_task.id)
+            )
+
+    async def test_rejects_a_completed_task(self, world: TimerWorld) -> None:
+        project_id, task_id = await self._project_with_task(
+            world, completed_at=world.clock.now()
+        )
+        with pytest.raises(ValidationError):
+            await world.start.execute(self._start(world, project_id=project_id, task_id=task_id))
+
+    async def test_rejects_a_task_of_an_archived_project(self, world: TimerWorld) -> None:
+        project = await world.projects.add(
+            make_project(
+                world.user.default_workspace_id, name="Legacy", archived_at=world.clock.now()
+            )
+        )
+        task = await world.tasks.add(make_task(project.id))
+        entry = await world.entries.add(make_entry(world.user, project_id=project.id))
+        with pytest.raises(ValidationError):
+            await world.update.execute(self._patch(world, entry.id, task_id=task.id))
+
+    async def test_moving_the_project_clears_the_task(self, world: TimerWorld) -> None:
+        project_id, task_id = await self._project_with_task(world)
+        other_project_id, _ = await self._project_with_task(world, name="Other")
+        entry = await world.entries.add(
+            make_entry(world.user, project_id=project_id, task_id=task_id)
+        )
+
+        moved = await world.update.execute(
+            self._patch(world, entry.id, project_id=other_project_id)
+        )
+        assert moved.project_id == other_project_id
+        assert moved.task_id is None
+
+    async def test_resending_the_same_project_keeps_the_task(self, world: TimerWorld) -> None:
+        project_id, task_id = await self._project_with_task(world)
+        entry = await world.entries.add(
+            make_entry(world.user, project_id=project_id, task_id=task_id)
+        )
+
+        updated = await world.update.execute(self._patch(world, entry.id, project_id=project_id))
+        assert updated.task_id == task_id
+
+    async def test_moving_to_another_project_with_a_task_in_one_patch(
+        self, world: TimerWorld
+    ) -> None:
+        other_project_id, other_task_id = await self._project_with_task(world, name="Other")
+        entry = await world.entries.add(make_entry(world.user))
+
+        moved = await world.update.execute(
+            self._patch(world, entry.id, project_id=other_project_id, task_id=other_task_id)
+        )
+        assert moved.project_id == other_project_id
+        assert moved.task_id == other_task_id
+
+    async def test_rejects_moving_the_project_with_a_task_of_the_old_one(
+        self, world: TimerWorld
+    ) -> None:
+        project_id, task_id = await self._project_with_task(world)
+        other_project_id, _ = await self._project_with_task(world, name="Other")
+        entry = await world.entries.add(
+            make_entry(world.user, project_id=project_id, task_id=task_id)
+        )
+
+        with pytest.raises(ValidationError):
+            await world.update.execute(
+                self._patch(world, entry.id, project_id=other_project_id, task_id=task_id)
+            )
+
+    async def test_clearing_the_task_explicitly(self, world: TimerWorld) -> None:
+        project_id, task_id = await self._project_with_task(world)
+        entry = await world.entries.add(
+            make_entry(world.user, project_id=project_id, task_id=task_id)
+        )
+
+        cleared = await world.update.execute(self._patch(world, entry.id, task_id=None))
+        assert cleared.task_id is None
+        assert cleared.project_id == project_id
+
+    async def test_editing_an_entry_with_a_completed_task_is_allowed(
+        self, world: TimerWorld
+    ) -> None:
+        project_id, task_id = await self._project_with_task(
+            world, completed_at=world.clock.now()
+        )
+        entry = await world.entries.add(
+            make_entry(world.user, project_id=project_id, task_id=task_id)
+        )
+
+        edited = await world.update.execute(self._patch(world, entry.id, description="Old work"))
+        assert edited.task_id == task_id
+        assert edited.description == "Old work"
+
+    async def test_rejects_assigning_a_completed_task_on_patch(self, world: TimerWorld) -> None:
+        project_id, task_id = await self._project_with_task(
+            world, completed_at=world.clock.now()
+        )
+        entry = await world.entries.add(make_entry(world.user, project_id=project_id))
+
+        with pytest.raises(ValidationError):
+            await world.update.execute(self._patch(world, entry.id, task_id=task_id))
+
+    async def test_listing_filters_by_task(self, world: TimerWorld) -> None:
+        project_id, task_id = await self._project_with_task(world)
+        _, second_task_id = await self._project_with_task(world, name="Other")
+        first = await world.entries.add(
+            make_entry(
+                world.user,
+                project_id=project_id,
+                task_id=task_id,
+                started_at=world.clock.now() - timedelta(hours=2),
+                stopped_at=world.clock.now() - timedelta(hours=1),
+            )
+        )
+        earlier = world.clock.now() - timedelta(hours=4)
+        await world.entries.add(
+            make_entry(
+                world.user,
+                started_at=earlier,
+                stopped_at=earlier + timedelta(minutes=30),
+            )
+        )
+
+        found = await world.listing.execute(
+            ListTimeEntriesInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                task_id=task_id,
+            )
+        )
+        assert [entry.id for entry in found.items] == [first.id]
+
+        empty = await world.listing.execute(
+            ListTimeEntriesInput(
+                user_id=world.user.id,
+                workspace_id=world.user.default_workspace_id,
+                task_id=second_task_id,
+            )
+        )
+        assert empty.items == []
+
+    async def test_suggestions_carry_the_task_and_skip_completed_ones(
+        self, world: TimerWorld
+    ) -> None:
+        project_id, task_id = await self._project_with_task(world)
+        _, done_task_id = await self._project_with_task(
+            world, name="Done", completed_at=world.clock.now()
+        )
+        for hours_ago, extra in (
+            (3, {"project_id": project_id, "task_id": task_id}),
+            (2, {"project_id": project_id, "task_id": done_task_id}),
+            (1, {"project_id": project_id}),
+        ):
+            started_at = world.clock.now() - timedelta(hours=hours_ago)
+            await world.entries.add(
+                make_entry(
+                    world.user,
+                    description="Code review",
+                    started_at=started_at,
+                    stopped_at=started_at + timedelta(minutes=30),
+                    **extra,
+                )
+            )
+
+        found = await world.suggest.execute(
+            SuggestTimeEntriesInput(
+                user_id=world.user.id, workspace_id=world.user.default_workspace_id
+            )
+        )
+
+        assert [(item.project_id, item.task_id) for item in found] == [
+            (project_id, None),
+            (project_id, task_id),
+        ]
+

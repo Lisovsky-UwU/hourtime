@@ -5,6 +5,7 @@ from hourtime.domain.errors import ValidationError
 from hourtime.interfaces.repositories import (
     ProjectRepository,
     TagRepository,
+    TaskRepository,
     TimeEntryRepository,
 )
 from hourtime.interfaces.services import Clock, UnitOfWork
@@ -15,6 +16,7 @@ from hourtime.use_cases.time_entries.rules import (
     resolve_billable,
     resolve_project,
     resolve_tags,
+    resolve_task,
 )
 
 
@@ -30,12 +32,14 @@ class StartTimer:
         entries: TimeEntryRepository,
         projects: ProjectRepository,
         tags: TagRepository,
+        tasks: TaskRepository,
         clock: Clock,
         uow: UnitOfWork,
     ) -> None:
         self._entries = entries
         self._projects = projects
         self._tags = tags
+        self._tasks = tasks
         self._clock = clock
         self._uow = uow
 
@@ -47,6 +51,13 @@ class StartTimer:
 
         project = await resolve_project(self._projects, data.workspace_id, data.project_id)
         tag_ids = await resolve_tags(self._tags, data.workspace_id, data.tag_ids)
+        task = await resolve_task(
+            self._tasks,
+            self._projects,
+            data.workspace_id,
+            task_id=data.task_id,
+            project_id=project.id if project else None,
+        )
 
         running = await self._entries.get_running(data.user_id)
         if running is not None:
@@ -64,6 +75,7 @@ class StartTimer:
             user_id=data.user_id,
             workspace_id=data.workspace_id,
             project_id=project.id if project else None,
+            task_id=task.id if task else None,
             tag_ids=tag_ids,
             description=data.description,
             billable=resolve_billable(data.billable, project),

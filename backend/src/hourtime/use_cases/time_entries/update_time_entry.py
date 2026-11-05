@@ -5,6 +5,7 @@ from hourtime.domain.errors import ValidationError
 from hourtime.interfaces.repositories import (
     ProjectRepository,
     TagRepository,
+    TaskRepository,
     TimeEntryRepository,
 )
 from hourtime.interfaces.services import Clock, UnitOfWork
@@ -16,15 +17,18 @@ from hourtime.use_cases.time_entries.rules import (
     reject_future,
     resolve_project,
     resolve_tags,
+    resolve_task,
 )
 
 
 class UpdateTimeEntry:
-    """Edits an entry from the list: project, tags, comment, billable, start and stop time.
+    """Edits an entry from the list: project, task, tags, comment, billable, start and stop time.
 
     A running entry stays running unless a stop time is supplied — sending
     `project_id: null` detaches the project, omitting the field leaves it be.
     Likewise `tag_ids: []` removes every tag and an omitted `tag_ids` keeps them.
+    Moving the entry to another project clears its task unless `task_id` is sent
+    in the same request.
     """
 
     def __init__(
@@ -32,12 +36,14 @@ class UpdateTimeEntry:
         entries: TimeEntryRepository,
         projects: ProjectRepository,
         tags: TagRepository,
+        tasks: TaskRepository,
         clock: Clock,
         uow: UnitOfWork,
     ) -> None:
         self._entries = entries
         self._projects = projects
         self._tags = tags
+        self._tasks = tasks
         self._clock = clock
         self._uow = uow
 
@@ -47,14 +53,17 @@ class UpdateTimeEntry:
         )
         now = self._clock.now()
         changes: dict[str, Any] = {}
+        project_changed = False
 
         if data.provided("project_id"):
             project = await resolve_project(self._projects, data.workspace_id, data.project_id)
-            changes["project_id"] = project.id if project else None
+            target_project_id = project.id if project else None
+            project_changed = target_project_id != entry.project_id
+            changes["project_id"] = target_project_id
             # Moving an entry to another project takes that project's billable
             # default, as picking a project does for a new entry. Detaching the
             # project leaves the flag as it was.
-            if project is not None and project.id != entry.project_id:
+            if project is not None and project_changed:
                 changes["billable"] = project.billable
 
         if data.provided("billable"):
@@ -66,6 +75,24 @@ class UpdateTimeEntry:
             if data.tag_ids is None:
                 raise ValidationError("tag_ids must be a list; send [] to remove every tag")
             changes["tag_ids"] = await resolve_tags(self._tags, data.workspace_id, data.tag_ids)
+
+        # A moved entry loses its task unless a new one is sent with the move.
+        if data.provided("task_id"):
+            wanted_task_id = data.task_id
+        elif project_changed:
+            wanted_task_id = None
+        else:
+            wanted_task_id = entry.task_id
+        if project_changed or data.provided("task_id"):
+            await resolve_task(
+                self._tasks,
+                self._projects,
+                data.workspace_id,
+                task_id=wanted_task_id,
+                project_id=changes.get("project_id", entry.project_id),
+                current_task_id=entry.task_id,
+            )
+            changes["task_id"] = wanted_task_id
 
         if data.provided("description"):
             changes["description"] = data.description or ""
