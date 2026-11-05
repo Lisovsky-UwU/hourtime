@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppIcon from '@/components/AppIcon.vue'
@@ -10,6 +10,7 @@ import { useDuration } from '@/composables/useDuration'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
 import { useTagsStore } from '@/stores/tags'
+import { useTasksStore } from '@/stores/tasks'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
 import { formatTimeOfDay, toTimeOfDay } from '@/utils/timeOfDay'
@@ -31,6 +32,7 @@ const timer = useTimerStore()
 const showDuration = useDuration()
 const projects = useProjectsStore()
 const tags = useTagsStore()
+const tasks = useTasksStore()
 const preferences = usePreferencesStore()
 
 const expanded = ref(false)
@@ -38,6 +40,17 @@ const expanded = ref(false)
 const newest = computed(() => props.entries[0]!)
 const oldest = computed(() => props.entries.at(-1)!)
 const project = computed(() => projects.find(newest.value.project_id))
+const task = computed(() => tasks.find(newest.value.task_id))
+
+// The header names the task while the rows below are still closed; the store
+// keeps one request per project, however many groups ask for it.
+watch(
+  () => newest.value.project_id,
+  (projectId) => {
+    if (projectId) void tasks.load(projectId).catch(() => {})
+  },
+  { immediate: true },
+)
 const tagNames = computed(() => tags.namesOf(newest.value.tag_ids))
 const total = computed(() =>
   showDuration(props.entries.reduce((sum, entry) => sum + timer.secondsOf(entry), 0)),
@@ -78,9 +91,14 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
         <span class="text" :class="{ muted: !newest.description }">{{ name }}</span>
       </span>
 
-      <span v-if="project" class="project" :title="project.name">
+      <span
+        v-if="project"
+        class="project"
+        :title="task ? `${project.name} · ${task.name}` : project.name"
+      >
         <span class="ui-combobox-dot" :style="{ background: project.color }" />
         <span class="project-name">{{ project.name }}</span>
+        <span v-if="task" class="task">· {{ task.name }}</span>
       </span>
 
       <span
@@ -140,7 +158,7 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
 /* The same columns as EntryRow, so the header lines up with the rows. */
 .head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 200px 44px 36px 116px 160px 64px 36px 36px;
+  grid-template-columns: minmax(0, 1fr) 220px 44px 36px 116px 160px 64px 36px 36px;
   grid-template-areas: 'description project tags billable date times duration continue menu';
   align-items: center;
   column-gap: 8px;
@@ -208,6 +226,7 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
   white-space: nowrap;
 }
 
+/* Read-only, like the row's project chip, with the dot and the task after it. */
 .project {
   grid-area: project;
   display: inline-flex;
@@ -218,8 +237,19 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
 }
 
 .project-name {
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Folded entries share one task by definition, so it needs no control. */
+.task {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -328,7 +358,8 @@ const name = computed(() => newest.value.description || t('timer.noDescription')
 
   .project {
     order: 4;
-    flex: 1 1 0;
+    flex: 1 1 auto;
+    min-width: 8ch;
   }
 
   .tags {

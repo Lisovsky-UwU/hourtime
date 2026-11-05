@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import * as entriesApi from '@/api/timeEntries'
 import AutoTextarea from '@/components/AutoTextarea.vue'
 import { useProjectsStore } from '@/stores/projects'
+import { useTasksStore } from '@/stores/tasks'
 import type { TimeEntrySuggestion } from '@/types'
 
 /**
@@ -23,6 +24,7 @@ const DEBOUNCE_MS = 150
 
 const { t } = useI18n()
 const projects = useProjectsStore()
+const tasks = useTasksStore()
 const listId = useId()
 
 const field = ref<InstanceType<typeof AutoTextarea> | null>(null)
@@ -47,6 +49,10 @@ async function fetchFor(text: string, byArrow = false) {
     const found = await entriesApi.suggestions(text.trim())
     if (seq !== requestSeq) return
     items.value = found
+    // Task names next to the projects; the store keeps one request per project.
+    for (const projectId of new Set(found.flatMap((item) => item.project_id ?? []))) {
+      void tasks.load(projectId).catch(() => {})
+    }
     active.value = byArrow && found.length > 0 ? 0 : -1
     open.value = found.length > 0 && (byArrow || text.trim() !== '')
   } catch {
@@ -148,7 +154,7 @@ defineExpose({ focus: () => field.value?.focus() })
       <div
         v-for="(item, index) in items"
         :id="`${listId}-${index}`"
-        :key="`${item.description}\u0000${item.project_id}`"
+        :key="`${item.description}\u0000${item.project_id}\u0000${item.task_id}`"
         class="ui-menu-item suggestion"
         role="option"
         :aria-selected="index === active"
@@ -164,6 +170,10 @@ defineExpose({ focus: () => field.value?.focus() })
             :style="{ background: projects.find(item.project_id)?.color }"
           />
           <span class="text">{{ projects.find(item.project_id)?.name }}</span>
+          <template v-if="tasks.find(item.task_id)">
+            <span aria-hidden="true">·</span>
+            <span class="text">{{ tasks.find(item.task_id)?.name }}</span>
+          </template>
         </span>
       </div>
     </div>

@@ -65,6 +65,7 @@
     "stop": "Stop timer",
     "noProject": "No project",
     "selectProject": "Select project",
+    "projectTask": "Project and task",
     "startTime": "from",
     "project": "Project",
     "noDescription": "No description",
@@ -159,6 +160,10 @@
     "namePlaceholder": "What has to be done",
     "estimate": "Estimate",
     "estimatePlaceholder": "4:00",
+    "none": "No task",
+    "backToProjects": "Back to projects",
+    "pickerEmpty": "No tasks in this project yet. Type a name to create one.",
+    "createFailed": "Could not create the task.",
     "estimateHint": "Optional: hours and minutes, or just hours, for example 4:00 or 4.",
     "estimateInvalid": "Type a duration like 4:00, or a number of hours.",
     "filter": {

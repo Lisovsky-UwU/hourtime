@@ -34,6 +34,7 @@ import { useDuration } from '@/composables/useDuration'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
 import { useTagsStore } from '@/stores/tags'
+import { useTasksStore } from '@/stores/tasks'
 import { useTimerStore } from '@/stores/timer'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { TimeEntry } from '@/types'
@@ -63,6 +64,7 @@ const router = useRouter()
 const preferences = usePreferencesStore()
 const projects = useProjectsStore()
 const tags = useTagsStore()
+const tasks = useTasksStore()
 const timer = useTimerStore()
 const workspace = useWorkspaceStore()
 const showDuration = useDuration()
@@ -139,6 +141,10 @@ async function load() {
     // Only the latest request lands: a quick click through weeks fires several.
     if (seq !== loadSeq) return
     items.value = found
+    // Task names on the blocks; the store keeps one request per project.
+    for (const projectId of new Set(found.flatMap((entry) => entry.project_id ?? []))) {
+      void tasks.load(projectId).catch(() => {})
+    }
     loadedKey.value = key
   } catch (cause) {
     if (seq === loadSeq) toast.error(t('calendar.loadFailed'), messageFor(cause))

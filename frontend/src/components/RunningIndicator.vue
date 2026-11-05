@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useDuration } from '@/composables/useDuration'
 import { useProjectsStore } from '@/stores/projects'
+import { useTasksStore } from '@/stores/tasks'
 import { useTimerStore } from '@/stores/timer'
 
 /** The running timer, visible from every screen; a link back to it. */
@@ -13,8 +14,10 @@ const { t } = useI18n()
 const timer = useTimerStore()
 const showDuration = useDuration()
 const projects = useProjectsStore()
+const tasks = useTasksStore()
 
 const project = computed(() => projects.find(timer.entry?.project_id ?? null))
+const task = computed(() => tasks.find(timer.entry?.task_id ?? null))
 const title = computed(
   () => timer.entry?.description || project.value?.name || t('timer.noDescription'),
 )
@@ -33,6 +36,7 @@ const title = computed(
     <span v-if="!compact" class="title">
       <span v-if="project" class="project-dot" :style="{ background: project.color }" />
       <span class="title-text">{{ title }}</span>
+      <span v-if="task" class="title-task" :title="task.name">{{ task.name }}</span>
     </span>
   </RouterLink>
 </template>
@@ -87,6 +91,16 @@ const title = computed(
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* The task sits after the description and gives way first. */
+.title-task {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.85;
 }
 
 .project-dot {

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useDuration } from '@/composables/useDuration'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
+import { useTasksStore } from '@/stores/tasks'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntry } from '@/types'
 import { formatTimeOfDay, toTimeOfDay } from '@/utils/timeOfDay'
@@ -19,11 +20,13 @@ const props = defineProps<{ entry: TimeEntry; start: Date; end: Date }>()
 const { t } = useI18n()
 const preferences = usePreferencesStore()
 const projects = useProjectsStore()
+const tasks = useTasksStore()
 const timer = useTimerStore()
 const showDuration = useDuration()
 
 const running = computed(() => props.entry.stopped_at === null)
 const project = computed(() => projects.find(props.entry.project_id))
+const task = computed(() => tasks.find(props.entry.task_id))
 
 const times = computed(() => {
   const startIso = props.start.toISOString()
@@ -47,7 +50,9 @@ const duration = computed(() =>
     <span class="cal-block-description" :data-empty="entry.description ? undefined : ''">
       {{ entry.description || t('timer.noDescription') }}
     </span>
-    <span v-if="project" class="cal-block-project">{{ project.name }}</span>
+    <span v-if="project" class="cal-block-project">
+      {{ task ? `${project.name} · ${task.name}` : project.name }}
+    </span>
     <span class="cal-block-time num">
       <span v-if="running" class="live-dot" aria-hidden="true" />
       <span class="cal-block-range">{{ times }}</span>

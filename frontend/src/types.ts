@@ -131,6 +131,8 @@ export interface TimeEntry {
   id: string
   workspace_id: string
   project_id: string | null
+  /** Only ever set together with the project the task belongs to. */
+  task_id: string | null
   tag_ids: string[]
   description: string
   billable: boolean
@@ -143,10 +145,11 @@ export interface TimeEntry {
   updated_at: string
 }
 
-/** A description tracked before, with the project it was tracked under. */
+/** A description tracked before, with the project and task it was tracked under. */
 export interface TimeEntrySuggestion {
   description: string
   project_id: string | null
+  task_id: string | null
   last_used_at: string
 }
 

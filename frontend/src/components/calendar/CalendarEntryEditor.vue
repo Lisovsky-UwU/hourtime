@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { EntryPatch } from '@/api/timeEntries'
 import AutoTextarea from '@/components/AutoTextarea.vue'
 import BillableToggle from '@/components/BillableToggle.vue'
-import ProjectPicker from '@/components/ProjectPicker.vue'
+import ProjectTaskPicker from '@/components/ProjectTaskPicker.vue'
 import TagPicker from '@/components/TagPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import UiButton from '@/components/ui/UiButton.vue'
@@ -37,6 +37,7 @@ const showDuration = useDuration()
 
 const description = ref('')
 const projectId = ref<string | null>(null)
+const taskId = ref<string | null>(null)
 const tagIds = ref<string[]>([])
 const billable = ref(false)
 const startDate = ref('')
@@ -50,6 +51,7 @@ const duration = computed(() => showDuration(timer.secondsOf(props.entry)))
 function adopt(entry: TimeEntry) {
   description.value = entry.description
   projectId.value = entry.project_id
+  taskId.value = entry.task_id
   tagIds.value = [...entry.tag_ids]
   billable.value = entry.billable
   startDate.value = toDateInput(entry.started_at)
@@ -108,9 +110,11 @@ function commitTimes() {
   void commit(patch)
 }
 
-watch(projectId, (value) => {
-  if (value === props.entry.project_id) return
-  void commit({ project_id: value })
+// The picker changes the project and its task together; one request, as in
+// EntryRow.
+watch([projectId, taskId], ([nextProject, nextTask]) => {
+  if (nextProject === props.entry.project_id && nextTask === props.entry.task_id) return
+  void commit({ project_id: nextProject, task_id: nextTask })
 })
 
 watch(tagIds, (value) => {
@@ -136,7 +140,9 @@ watch(billable, (value) => {
     />
 
     <div class="line">
-      <span class="project"><ProjectPicker v-model="projectId" /></span>
+      <span class="project">
+        <ProjectTaskPicker v-model:project-id="projectId" v-model:task-id="taskId" />
+      </span>
       <TagPicker v-model="tagIds" />
       <BillableToggle v-model="billable" />
     </div>

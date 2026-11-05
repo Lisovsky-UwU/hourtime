@@ -17,6 +17,7 @@ import { useEntriesStore } from '@/stores/entries'
 import { usePreferencesStore } from '@/stores/preferences'
 import { useProjectsStore } from '@/stores/projects'
 import { useTagsStore } from '@/stores/tags'
+import { useTasksStore } from '@/stores/tasks'
 import { useTimerStore } from '@/stores/timer'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { TimeEntry } from '@/types'
@@ -34,6 +35,7 @@ const preferences = usePreferencesStore()
 const projects = useProjectsStore()
 const clients = useClientsStore()
 const tags = useTagsStore()
+const tasks = useTasksStore()
 const workspace = useWorkspaceStore()
 const billing = useBilling()
 const initialLoad = ref(true)
@@ -73,9 +75,9 @@ interface DayGroup {
 }
 
 /**
- * Same description, project, tags and billable flag within a day make one row, placed where the
- * newest of them is. The running entry is never folded away: it is the one
- * row that has to stay in sight.
+ * Same description, project, task, tags and billable flag within a day make one row,
+ * placed where the newest of them is. The running entry is never folded away: it is
+ * the one row that has to stay in sight.
  */
 function foldAlike(items: TimeEntry[]): DayRow[] {
   const rows: DayRow[] = []
@@ -86,7 +88,7 @@ function foldAlike(items: TimeEntry[]): DayRow[] {
       continue
     }
     const tagKey = [...entry.tag_ids].sort().join(',')
-    const key = `alike:${entry.description}\u0000${entry.project_id ?? ''}\u0000${tagKey}\u0000${entry.billable}`
+    const key = `alike:${entry.description}\u0000${entry.project_id ?? ''}\u0000${entry.task_id ?? ''}\u0000${tagKey}\u0000${entry.billable}`
     const row = byKey.get(key)
     if (row) {
       row.entries.push(entry)
@@ -174,6 +176,24 @@ function usableTags(tagIds: string[]): string[] {
 }
 
 /**
+ * A copy keeps the task only while it is still open: a completed task is
+ * history and cannot be assigned again.
+ */
+function usableTask(entry: TimeEntry): string | null {
+  const projectId = usableProject(entry.project_id)
+  const task = tasks.find(entry.task_id)
+  if (!projectId || !task || task.completed || task.project_id !== projectId) return null
+  return task.id
+}
+
+/** The task name means nothing until its project's tasks are in the store. */
+function loadTasksOf(entry: TimeEntry): Promise<void> {
+  if (!entry.project_id) return Promise.resolve()
+  // Without the list the copy still goes, only without a task.
+  return tasks.load(entry.project_id).catch(() => {})
+}
+
+/**
  * Starts a new timer with the entry's description and project.
  *
  * The server stops a running timer itself, exactly where the new one starts,
@@ -182,9 +202,11 @@ function usableTags(tagIds: string[]): string[] {
 async function continueEntry(entry: TimeEntry) {
   const previous = timer.entry
   await act(async () => {
+    await loadTasksOf(entry)
     const started = await timer.start({
       description: entry.description,
       project_id: usableProject(entry.project_id),
+      task_id: usableTask(entry),
       tag_ids: usableTags(entry.tag_ids),
       billable: entry.billable,
     })
@@ -203,16 +225,18 @@ async function continueEntry(entry: TimeEntry) {
 async function duplicateEntry(entry: TimeEntry) {
   if (!entry.stopped_at) return
   const stoppedAt = entry.stopped_at
-  await act(() =>
-    entries.create({
+  await act(async () => {
+    await loadTasksOf(entry)
+    await entries.create({
       started_at: entry.started_at,
       stopped_at: stoppedAt,
       description: entry.description,
       project_id: usableProject(entry.project_id),
+      task_id: usableTask(entry),
       tag_ids: usableTags(entry.tag_ids),
       billable: entry.billable,
-    }),
-  )
+    })
+  })
 }
 
 const pendingDelete = ref<TimeEntry | null>(null)

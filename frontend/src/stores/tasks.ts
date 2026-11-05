@@ -15,6 +15,9 @@ export const useTasksStore = defineStore('tasks', () => {
   const loading = ref(false)
   const loadedProjects = ref<string[]>([])
 
+  /** One request per project: a list of rows all asks for the same tasks at once. */
+  const inFlight = new Map<string, Promise<void>>()
+
   const byId = computed(() => new Map(items.value.map((task) => [task.id, task])))
 
   function find(id: string | null): Task | undefined {
@@ -32,16 +35,25 @@ export const useTasksStore = defineStore('tasks', () => {
     return loadedProjects.value.includes(projectId)
   }
 
-  async function load(projectId: string, force = false): Promise<void> {
-    if (loaded(projectId) && !force) return
-    loading.value = true
-    try {
-      const found = await tasksApi.list(projectId, true)
-      items.value = [...items.value.filter((task) => task.project_id !== projectId), ...found]
-      loadedProjects.value = [...new Set([...loadedProjects.value, projectId])]
-    } finally {
-      loading.value = false
+  function load(projectId: string, force = false): Promise<void> {
+    if (!force) {
+      const running = inFlight.get(projectId)
+      if (running) return running
+      if (loaded(projectId)) return Promise.resolve()
     }
+    loading.value = true
+    const request = tasksApi
+      .list(projectId, true)
+      .then((found) => {
+        items.value = [...items.value.filter((task) => task.project_id !== projectId), ...found]
+        loadedProjects.value = [...new Set([...loadedProjects.value, projectId])]
+      })
+      .finally(() => {
+        loading.value = false
+        inFlight.delete(projectId)
+      })
+    inFlight.set(projectId, request)
+    return request
   }
 
   async function create(
@@ -74,6 +86,7 @@ export const useTasksStore = defineStore('tasks', () => {
   function reset(): void {
     items.value = []
     loadedProjects.value = []
+    inFlight.clear()
   }
 
   return {

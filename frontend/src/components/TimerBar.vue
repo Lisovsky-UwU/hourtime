@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import AppIcon from '@/components/AppIcon.vue'
 import BillableToggle from '@/components/BillableToggle.vue'
 import DescriptionInput from '@/components/DescriptionInput.vue'
-import ProjectPicker from '@/components/ProjectPicker.vue'
+import ProjectTaskPicker from '@/components/ProjectTaskPicker.vue'
 import TagPicker from '@/components/TagPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import { toast } from '@/components/ui/toast'
@@ -14,6 +14,7 @@ import { useDuration } from '@/composables/useDuration'
 import { useHotkeys } from '@/composables/useHotkeys'
 import { useEntriesStore } from '@/stores/entries'
 import { useProjectsStore } from '@/stores/projects'
+import { useTasksStore } from '@/stores/tasks'
 import { useTimerStore } from '@/stores/timer'
 import type { TimeEntrySuggestion } from '@/types'
 import { serverNow, serverNowIso } from '@/utils/serverTime'
@@ -27,6 +28,7 @@ const showDuration = useDuration()
 // rather than refetched.
 const entries = useEntriesStore()
 const projects = useProjectsStore()
+const tasks = useTasksStore()
 const { busy, error, run } = useAsyncAction()
 
 // The bar is sticky and sits on top of the list; a banner inside it would push
@@ -37,6 +39,7 @@ watch(error, (message) => {
 
 const description = ref('')
 const projectId = ref<string | null>(null)
+const taskId = ref<string | null>(null)
 const tagIds = ref<string[]>([])
 const billable = ref(false)
 const startTime = ref<TimeOfDay>(toTimeOfDay(serverNowIso()))
@@ -52,19 +55,19 @@ onUnmounted(() => window.clearInterval(clock))
 
 // The server owns the running entry: whenever it is replaced — start, stop, or
 // a resync from another device — mirror it into the fields.
-watch(
-  () => timer.entry,
-  (entry) => {
-    description.value = entry?.description ?? ''
-    projectId.value = entry?.project_id ?? null
-    // Tags picked while idle wait for the next start; a stopped timer clears them.
-    tagIds.value = entry?.tag_ids ?? []
-    billable.value = entry?.billable ?? false
-    startTime.value = toTimeOfDay(entry?.started_at ?? serverNowIso())
-    startPinned.value = false
-  },
-  { immediate: true },
-)
+function mirror() {
+  const entry = timer.entry
+  description.value = entry?.description ?? ''
+  projectId.value = entry?.project_id ?? null
+  taskId.value = entry?.task_id ?? null
+  // Tags picked while idle wait for the next start; a stopped timer clears them.
+  tagIds.value = entry?.tag_ids ?? []
+  billable.value = entry?.billable ?? false
+  startTime.value = toTimeOfDay(entry?.started_at ?? serverNowIso())
+  startPinned.value = false
+}
+
+watch(() => timer.entry, mirror, { immediate: true })
 
 /** The instant a fresh timer should start from, given only a time of day. */
 function resolveStart(): string | null {
@@ -89,6 +92,7 @@ async function toggle() {
     const started = await timer.start({
       description: description.value,
       project_id: projectId.value,
+      task_id: chosenTask(),
       tag_ids: tagIds.value,
       billable: billable.value,
       ...(startedAt ? { started_at: startedAt } : {}),
@@ -97,11 +101,24 @@ async function toggle() {
   })
 }
 
+/**
+ * The task worth tracking: an id the store does not know yet may still be valid
+ * (just picked from a suggestion), so only a known mismatch is dropped.
+ */
+function chosenTask(): string | null {
+  const task = tasks.find(taskId.value)
+  if (task && (task.completed || task.project_id !== projectId.value)) return null
+  return taskId.value
+}
+
 async function amend(patch: Parameters<typeof timer.amend>[0]) {
   await run(async () => {
     const updated = await timer.amend(patch)
     if (updated) entries.upsert(updated)
   })
+  // The server refused the change: snap the fields back to what it holds.
+  // The error itself stays for the toast watcher above.
+  if (error.value) mirror()
 }
 
 function commitDescription() {
@@ -109,15 +126,20 @@ function commitDescription() {
   void amend({ description: description.value })
 }
 
-// Picking a project brings its billable default, as the server does for a
-// running entry when its project changes.
+// An idle project brings its billable default, as the server does for a running
+// entry when its project changes.
 watch(projectId, (value) => {
-  if (!timer.entry) {
-    billable.value = projects.find(value)?.billable ?? false
-    return
-  }
-  if (timer.entry.project_id === value) return
-  void amend({ project_id: value })
+  if (timer.entry) return
+  billable.value = projects.find(value)?.billable ?? false
+})
+
+// The picker changes the project and its task together, so they go in one
+// request: a new project never meets the old task, even for a moment.
+watch([projectId, taskId], ([nextProject, nextTask]) => {
+  const running = timer.entry
+  if (!running) return
+  if (nextProject === running.project_id && nextTask === running.task_id) return
+  void amend({ project_id: nextProject, task_id: nextTask })
 })
 
 watch(billable, (value) => {
@@ -138,13 +160,17 @@ function pickSuggestion(suggestion: TimeEntrySuggestion) {
   // Archived since the list was fetched: assigning it would be rejected.
   const project = projects.find(suggestion.project_id)
   const nextProject = project?.archived ? null : suggestion.project_id
+  // The task goes with its project; a completed one cannot be assigned again.
+  const task = tasks.find(suggestion.task_id)
+  const nextTask = nextProject && !task?.completed ? suggestion.task_id : null
   if (timer.entry) {
-    // One request for both; the fields follow once the saved entry comes back.
-    void amend({ description: suggestion.description, project_id: nextProject })
+    // One request for all three; the fields follow once the saved entry comes back.
+    void amend({ description: suggestion.description, project_id: nextProject, task_id: nextTask })
     return
   }
   description.value = suggestion.description
   projectId.value = nextProject
+  taskId.value = nextTask
 }
 
 const descriptionField = ref<InstanceType<typeof DescriptionInput> | null>(null)
@@ -182,7 +208,9 @@ function commitStart() {
     />
 
     <div class="controls">
-      <span class="project"><ProjectPicker v-model="projectId" /></span>
+      <span class="project">
+        <ProjectTaskPicker v-model:project-id="projectId" v-model:task-id="taskId" />
+      </span>
 
       <span class="tags"><TagPicker v-model="tagIds" /></span>
 
@@ -249,7 +277,7 @@ function commitStart() {
   display: flex;
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 220px;
+  max-width: 360px;
 }
 
 .tags,
@@ -338,10 +366,38 @@ function commitStart() {
 
   .controls {
     flex: 1 1 100%;
+    /* Project and task first, the start time and the clock on the next line
+       when the bar is narrow: two chips shrunk to "П.." and "З.." say nothing. */
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  .project {
+    order: 1;
+    flex: 1 1 40%;
+    max-width: none;
+  }
+
+  .tags {
+    order: 3;
   }
 
   .billable {
+    order: 4;
     margin-right: auto;
+  }
+
+  .start {
+    order: 5;
+    margin-left: auto;
+  }
+
+  .clock {
+    order: 6;
+  }
+
+  .action {
+    order: 7;
   }
 
   .clock {

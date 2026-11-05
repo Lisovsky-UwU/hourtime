@@ -11,6 +11,8 @@ export interface ListQuery {
 
 export interface StartPayload {
   project_id?: string | null
+  /** Only with the project's own task: the server rejects any other pair. */
+  task_id?: string | null
   tag_ids?: string[]
   description?: string
   /** Omit to follow the project's default. */
@@ -25,6 +27,11 @@ export interface StartPayload {
  */
 export interface EntryPatch {
   project_id?: string | null
+  /**
+   * A new project clears the task unless this arrives in the same patch, so
+   * both fields are sent together when the project changes.
+   */
+  task_id?: string | null
   /** The whole new set; `[]` removes every tag. */
   tag_ids?: string[]
   description?: string
@@ -64,6 +71,7 @@ export function create(payload: {
   started_at: string
   stopped_at: string
   project_id?: string | null
+  task_id?: string | null
   tag_ids?: string[]
   description?: string
   billable?: boolean

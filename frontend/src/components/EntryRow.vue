@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { EntryPatch } from '@/api/timeEntries'
 import AutoTextarea from '@/components/AutoTextarea.vue'
 import BillableToggle from '@/components/BillableToggle.vue'
-import ProjectPicker from '@/components/ProjectPicker.vue'
+import ProjectTaskPicker from '@/components/ProjectTaskPicker.vue'
 import TagPicker from '@/components/TagPicker.vue'
 import TimeField from '@/components/TimeField.vue'
 import type { MenuEntry } from '@/components/ui/UiDropdownMenu.vue'
@@ -39,6 +39,7 @@ const showDuration = useDuration()
 
 const description = ref('')
 const projectId = ref<string | null>(null)
+const taskId = ref<string | null>(null)
 const tagIds = ref<string[]>([])
 const billable = ref(false)
 const startDate = ref('')
@@ -52,6 +53,7 @@ const duration = computed(() => showDuration(timer.secondsOf(props.entry)))
 function adopt(entry: TimeEntry) {
   description.value = entry.description
   projectId.value = entry.project_id
+  taskId.value = entry.task_id
   tagIds.value = [...entry.tag_ids]
   billable.value = entry.billable
   startDate.value = toDateInput(entry.started_at)
@@ -111,9 +113,11 @@ function commitTimes() {
   void commit(patch)
 }
 
-watch(projectId, (value) => {
-  if (value === props.entry.project_id) return
-  void commit({ project_id: value })
+// The picker changes the project and its task together, so they go in one
+// request: the task of the old project cannot survive the new one.
+watch([projectId, taskId], ([nextProject, nextTask]) => {
+  if (nextProject === props.entry.project_id && nextTask === props.entry.task_id) return
+  void commit({ project_id: nextProject, task_id: nextTask })
 })
 
 // TagPicker only writes when the set changed, so any write here is a real edit.
@@ -169,7 +173,9 @@ const menu = computed<MenuEntry[]>(() => [
       @blur="commitDescription"
     />
 
-    <span class="project"><ProjectPicker v-model="projectId" compact /></span>
+    <span class="project">
+      <ProjectTaskPicker v-model:project-id="projectId" v-model:task-id="taskId" compact />
+    </span>
 
     <span class="tags" :data-empty="tagIds.length ? undefined : ''">
       <TagPicker v-model="tagIds" />
@@ -238,7 +244,7 @@ const menu = computed<MenuEntry[]>(() => [
   /* Fixed side columns, so projects and times line up from row to row. The
      date has a column of its own: sharing one with the times, a long time
      range pushed it over the project. */
-  grid-template-columns: minmax(0, 1fr) 200px 44px 36px 116px 160px 64px 36px 36px;
+  grid-template-columns: minmax(0, 1fr) 220px 44px 36px 116px 160px 64px 36px 36px;
   grid-template-areas: 'description project tags billable date times duration continue menu';
   align-items: center;
   column-gap: 8px;
@@ -455,7 +461,9 @@ const menu = computed<MenuEntry[]>(() => [
 
   .project {
     order: 4;
-    flex: 1 1 0;
+    /* Content-based, so project and task keep a readable width. */
+    flex: 1 1 auto;
+    min-width: 8ch;
   }
 
   .tags,
