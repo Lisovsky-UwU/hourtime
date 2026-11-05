@@ -50,6 +50,13 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.projects' },
   },
   {
+    // The project's own page: its tasks live here.
+    path: '/projects/:projectId',
+    name: 'project',
+    component: () => import('@/views/ProjectDetailsView.vue'),
+    meta: { requiresAuth: true, layout: 'app', titleKey: 'nav.projects' },
+  },
+  {
     path: '/clients',
     name: 'clients',
     component: () => import('@/views/ClientsView.vue'),

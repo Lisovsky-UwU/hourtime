@@ -195,19 +195,13 @@ onMounted(() => {
       <tbody>
         <tr v-for="project in visible" :key="project.id">
           <td>
-            <button
-              v-if="workspace.canManage"
-              type="button"
+            <RouterLink
+              :to="{ name: 'project', params: { projectId: project.id } }"
               class="row-name"
-              @click="openDialog(project)"
             >
               <span class="row-dot" :style="{ background: project.color }" />
               <span class="row-name-text">{{ project.name }}</span>
-            </button>
-            <span v-else class="row-name">
-              <span class="row-dot" :style="{ background: project.color }" />
-              <span class="row-name-text">{{ project.name }}</span>
-            </span>
+            </RouterLink>
           </td>
           <td class="client">{{ clients.find(project.client_id)?.name }}</td>
           <td class="num-col num spent">{{ spent.has(project.id) ? duration(spent.get(project.id) ?? 0) : '' }}</td>

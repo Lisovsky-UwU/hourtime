@@ -2,6 +2,7 @@ import { useClientsStore } from '@/stores/clients'
 import { useEntriesStore } from '@/stores/entries'
 import { useProjectsStore } from '@/stores/projects'
 import { useTagsStore } from '@/stores/tags'
+import { useTasksStore } from '@/stores/tasks'
 import { useTimerStore } from '@/stores/timer'
 import { useWorkspaceStore } from '@/stores/workspace'
 
@@ -9,6 +10,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 export function resetAccountData(): void {
   useTimerStore().reset()
   useProjectsStore().reset()
+  useTasksStore().reset()
   useClientsStore().reset()
   useTagsStore().reset()
   useEntriesStore().reset()

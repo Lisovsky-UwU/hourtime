@@ -37,6 +37,25 @@ export function formatDuration(
   return formatClock(seconds)
 }
 
+/**
+ * Seconds from a typed duration: `1:30`, `1:30:15`, `1.5` or `1,5` (hours),
+ * `2` (hours). Empty is zero. Null when the text is not a duration. No upper
+ * bound: an estimate may be longer than a day, unlike a timesheet cell.
+ */
+export function parseDurationText(input: string): number | null {
+  const text = input.trim()
+  if (!text) return 0
+
+  const clock = /^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/.exec(text)
+  if (clock) {
+    const [, hours = '0', minutes = '0', secs = '0'] = clock
+    if (Number(minutes) > 59 || Number(secs) > 59) return null
+    return Number(hours) * 3600 + Number(minutes) * 60 + Number(secs)
+  }
+  if (/^\d{1,2}(?:[.,]\d+)?$/.test(text)) return Math.round(Number(text.replace(',', '.')) * 3600)
+  return null
+}
+
 export function secondsBetween(from: string, to: string): number {
   return Math.max(0, Math.floor((Date.parse(to) - Date.parse(from)) / 1000))
 }

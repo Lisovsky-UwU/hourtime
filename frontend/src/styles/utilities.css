@@ -174,8 +174,9 @@
   white-space: nowrap;
 }
 
-/* The name opens the edit dialog: a button that reads as the row's title.
-   For a workspace member it is plain text, so only the button reacts. */
+/* The name opens the row's own page or edit dialog: a button or a link that
+   reads as the title. For a workspace member it is plain text, so only the
+   interactive element reacts. */
 .row-name {
   display: inline-flex;
   align-items: center;
@@ -189,13 +190,16 @@
   font: inherit;
   font-weight: 500;
   text-align: left;
+  text-decoration: none;
 }
 
-button.row-name {
+button.row-name,
+a.row-name {
   cursor: pointer;
 }
 
-button.row-name:hover .row-name-text {
+button.row-name:hover .row-name-text,
+a.row-name:hover .row-name-text {
   text-decoration: underline;
 }
 

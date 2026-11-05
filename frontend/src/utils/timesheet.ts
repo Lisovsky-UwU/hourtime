@@ -7,6 +7,8 @@
  * is cut short, and one that is not long enough goes away whole.
  */
 
+import { parseDurationText } from './duration.ts'
+
 export interface CellEntry {
   id: string
   started_at: string
@@ -29,21 +31,8 @@ const WORKDAY_START_HOUR = 9
  * text is not a duration or is longer than a day.
  */
 export function parseDuration(input: string): number | null {
-  const text = input.trim()
-  if (!text) return 0
-
-  let seconds: number
-  const clock = /^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/.exec(text)
-  if (clock) {
-    const [, hours = '0', minutes = '0', secs = '0'] = clock
-    if (Number(minutes) > 59 || Number(secs) > 59) return null
-    seconds = Number(hours) * 3600 + Number(minutes) * 60 + Number(secs)
-  } else if (/^\d{1,2}(?:[.,]\d+)?$/.test(text)) {
-    seconds = Math.round(Number(text.replace(',', '.')) * 3600)
-  } else {
-    return null
-  }
-  return seconds <= DAY_SECONDS ? seconds : null
+  const seconds = parseDurationText(input)
+  return seconds !== null && seconds <= DAY_SECONDS ? seconds : null
 }
 
 /**

@@ -149,6 +149,41 @@
       "slate": "Slate"
     }
   },
+  "tasks": {
+    "title": "Tasks",
+    "back": "All projects",
+    "create": "Create task",
+    "createTitle": "New task",
+    "editTitle": "Edit task",
+    "name": "Task",
+    "namePlaceholder": "What has to be done",
+    "estimate": "Estimate",
+    "estimatePlaceholder": "4:00",
+    "estimateHint": "Optional: hours and minutes, or just hours, for example 4:00 or 4.",
+    "estimateInvalid": "Type a duration like 4:00, or a number of hours.",
+    "filter": {
+      "label": "Show tasks",
+      "active": "Active",
+      "completed": "Completed"
+    },
+    "actionsFor": "Actions for {name}",
+    "complete": "Mark as done",
+    "reopen": "Reopen",
+    "completed": "Task done",
+    "reopened": "Task reopened",
+    "deleteTitle": "Delete \"{name}\"?",
+    "deleteConfirm": "Its time entries are kept, but lose the task.",
+    "deleteAction": "Delete task",
+    "emptyTitle": "No tasks yet",
+    "empty": "Tasks break a project into pieces you can estimate. You can also add one right from a time entry.",
+    "emptyCompleted": "No completed tasks yet.",
+    "archivedTag": "Archived",
+    "archivedHint": "Tasks of an archived project are for reading only.",
+    "archivedRestore": "Restore project",
+    "notFound": "This project does not exist anymore.",
+    "notFoundBack": "Back to projects",
+    "loadFailed": "Could not load the tasks."
+  },
   "clients": {
     "title": "Clients",
     "create": "Create client",
@@ -420,7 +455,8 @@
     "unknown": "Something went wrong. Try again.",
     "invalid_current_password": "The current password is wrong.",
     "client_name_taken": "A client with this name already exists.",
-    "tag_name_taken": "A tag with this name already exists."
+    "tag_name_taken": "A tag with this name already exists.",
+    "task_name_taken": "An active task with this name already exists in this project."
   },
   "about": {
     "title": "About",

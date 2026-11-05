@@ -115,6 +115,18 @@ export interface Project {
   updated_at: string
 }
 
+export interface Task {
+  id: string
+  project_id: string
+  name: string
+  /** Seconds; null means "no estimate", never zero. */
+  estimated_seconds: number | null
+  completed: boolean
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface TimeEntry {
   id: string
   workspace_id: string
